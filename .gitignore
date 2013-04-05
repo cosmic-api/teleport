@@ -1,0 +1,47 @@
+*.py[co]
+
+# Vim swap files
+*.swp
+*.swo
+
+# Emacs swap and write-lock files
+*~
+.\#*
+\#*
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+/htmlcov
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+
+# Python virtual env
+/venv
+
+# Docs
+/docs/build
+
+/.pypirc
+

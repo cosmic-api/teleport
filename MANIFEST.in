@@ -1,0 +1,4 @@
+include *.rst
+include tox.ini
+recursive-include tests *
+include .coveragerc

@@ -3,7 +3,7 @@
 Teleport.py
 ===========
 
-The canonical implementation of Teleport, a cross-language extendable serialization library.
+The canonical implementation of Teleport, a cross-language extendable serialization system.
 
 License
 -------

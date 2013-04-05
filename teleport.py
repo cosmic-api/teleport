@@ -523,11 +523,11 @@ class JSONData(BaseModel):
     def from_string(cls, s):
         if s == "":
             return None
-        # No need to validate:
         return cls.normalize(json.loads(s))
 
     @classmethod
     def normalize(cls, datum):
+        # No need to validate
         return cls(datum)
 
     @classmethod

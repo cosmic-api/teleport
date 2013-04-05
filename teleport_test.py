@@ -296,6 +296,18 @@ class TestJSONData(TestCase):
         for i in [1, True, 2.3, "blah", [], {}]:
             self.assertEqual(JSONData.normalize(i).data, i)
 
+    def test_from_string(self):
+        j = JSONData.from_string('{"a": 1}')
+        self.assertTrue(isinstance(j, JSONData))
+        self.assertEqual(j.data, {"a": 1})
+        j = JSONData.from_string('')
+        self.assertEqual(j, None)
+
+    def test_to_string(self):
+        j = JSONData.normalize({"a": 1})
+        self.assertEqual(JSONData.to_string(j), '{"a": 1}')
+        self.assertEqual(JSONData.to_string(None), '')
+
     def test_repr_simple(self):
         j = JSONData(True)
         self.assertEqual(repr(j), "<JSONData true>")
@@ -316,6 +328,7 @@ class TestNormalizeSerializeJSON(TestCase):
         with self.assertRaisesRegexp(ValidationError, "Expected None"):
             normalize_json(None, arr)
         self.assertEqual(normalize_json(array_normalizer, JSONData(arr)), arr)
+        self.assertEqual(normalize_json(None, None), None)
 
     def test_serialize_json(self):
         arr = [True, False, True]
@@ -324,3 +337,4 @@ class TestNormalizeSerializeJSON(TestCase):
         with self.assertRaisesRegexp(ValidationError, "Expected None"):
             serialize_json(None, arr)
         self.assertEqual(serialize_json(array_normalizer, arr).data, arr)
+        self.assertEqual(serialize_json(None, None), None)

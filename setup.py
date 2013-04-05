@@ -9,7 +9,7 @@ setup(
     name = 'teleport',
     version = "0.0.1",
     modules = ['teleport'],
-    description = 'Extandable serialization library',
+    description = 'Extandable serialization system',
     license = "MIT",
     author_email = "alexei.boronine@gmail.com",
     long_description = long_description

@@ -338,3 +338,54 @@ class TestNormalizeSerializeJSON(TestCase):
             serialize_json(None, arr)
         self.assertEqual(serialize_json(array_normalizer, arr).data, arr)
         self.assertEqual(serialize_json(None, None), None)
+
+
+class TestCustomType(TestCase):
+
+    def setUp(self):
+
+        class FrenchBoolean(Model):
+
+            @classmethod
+            def normalize(cls, datum):
+                return {"Oui": True, "Non": False}[datum]
+
+            @classmethod
+            def serialize(cls, datum):
+                return {True: "Oui", False: "Non"}[datum]
+
+        def fetcher(name):
+            if name == "test.FrenchBoolean":
+                return FrenchBoolean
+            raise ValidationError("Unknown model")
+
+        self.FrenchBoolean = FrenchBoolean
+        self.fetcher = fetcher
+
+    def test_resolve(self):
+        s = Schema.normalize({"type": "test.FrenchBoolean"})
+        self.assertEqual(s.__class__, SimpleSchema)
+        self.assertEqual(s.model_cls, None)
+        s.resolve(self.fetcher)
+        self.assertEqual(s.model_cls, self.FrenchBoolean)
+        self.assertEqual(s.normalize_data("Oui"), True)
+
+    def test_resolve_recursive(self):
+        s = Schema.normalize({
+            "type": "object",
+            "properties": [
+                {
+                    "name": "a",
+                    "required": True,
+                    "schema": {
+                        "type": "array",
+                        "items": {
+                            "type": "test.FrenchBoolean"
+                        }
+                    }
+                }
+            ]
+        })
+        s.resolve(self.fetcher)
+        self.assertEqual(s.normalize_data({"a": ["Oui"]}), {"a": [True]})
+

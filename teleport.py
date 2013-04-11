@@ -27,7 +27,7 @@ class ValidationError(Exception):
         if self.stack:
             stack = ""
             for item in reversed(self.stack):
-                stack += func([item])
+                stack += '[' + func(item) + ']'
             ret += "Item at %s " % stack
         # Main message
         ret += self.message
@@ -553,7 +553,7 @@ class ClassModel(ObjectModel):
             if key in self.props.keys():
                 self.data[key] = value
             else:
-                self.__dict__[key] = value
+                raise TypeError("Unexpected keyword argument '%s'" % key)
 
     def __getattr__(self, key):
         for prop in self.properties:

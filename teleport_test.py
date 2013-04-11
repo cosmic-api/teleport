@@ -104,8 +104,14 @@ class TestSchema(TestCase):
             Schema.normalize({"type": "number"})
 
     def test_deep_schema_validation_stack(self):
-        with self.assertRaisesRegexp(ValidationError, "[0]"):
+        # Test Python representatioon
+        with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
             deep_normalizer.normalize_data([{"foo": True, "bar": False}])
+        # Test JSON representation
+        try:
+            deep_normalizer.normalize_data([{"foo": True, "bar": False}])
+        except ValidationError as e:
+            self.assertRegexpMatches(e.print_json(), '\[0\]\["bar"\]')
 
 
 class TestFloatModel(TestCase):
@@ -194,6 +200,30 @@ class TestObjectModel(TestCase):
             object_normalizer.normalize_data({"bar": 2.0})
         with self.assertRaisesRegexp(ValidationError, "Unexpected properties"):
             object_normalizer.normalize_data({"foo": True, "barr": 2.0})
+
+
+class TestModel(TestCase):
+
+    def setUp(self):
+
+        class Truth(Model):
+            schema = Schema.normalize({"type": "boolean"})
+
+            @classmethod
+            def validate(cls, datum):
+                if datum != True:
+                    raise ValidationError("Not true")
+
+        self.Truth = Truth
+
+    def test_normalize_okay(self):
+        self.assertEqual(self.Truth.normalize(True).data, True)
+
+    def test_normalize_fail(self):
+        with self.assertRaisesRegexp(ValidationError, "Not true"):
+            self.Truth.normalize(False)
+        with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
+            self.Truth.normalize(1)
 
 
 class TestClassModel(TestCase):
@@ -289,6 +319,10 @@ class TestClassModel(TestCase):
                 }
             ]
         })
+
+    def test_unexpected_kwarg(self):
+        with self.assertRaisesRegexp(TypeError, "Unexpected keyword argument 'foo'"):
+            self.RecipeModel(author="Joe", foo=0)
 
 class TestJSONData(TestCase):
 

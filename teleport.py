@@ -2,6 +2,11 @@ import sys
 import json
 import base64
 
+def prop(name, schema):
+    return {
+        "name": name,
+        "schema": schema
+    }
 
 class ValidationError(Exception):
     """Raised by the model system. Stores the location of the error in the
@@ -180,10 +185,7 @@ class SimpleSchema(Schema):
         return ObjectSchema({
             "type": "object",
             "properties": [
-                {
-                    "name": "type",
-                    "schema": StringSchema()
-                }
+                prop("type", StringSchema())
             ]
         })
 
@@ -260,27 +262,15 @@ class ObjectSchema(SimpleSchema):
         return ObjectSchema({
             "type": "object",
             "properties": [
-                {
-                    "name": "type",
-                    "schema": StringSchema()
-                },
-                {
-                    "name": "properties",
-                    "schema": ArraySchema({
-                        "items": ObjectSchema({
-                            "properties": [
-                                {
-                                    "name": "name",
-                                    "schema": StringSchema()
-                                },
-                                {
-                                    "name": "schema",
-                                    "schema": SchemaSchema()
-                                }
-                            ]
-                        })
+                prop("type", StringSchema()),
+                prop("properties", ArraySchema({
+                    "items": ObjectSchema({
+                        "properties": [
+                            prop("name", StringSchema()),
+                            prop("schema", SchemaSchema())
+                        ]
                     })
-                }
+                }))
             ]
         })
 
@@ -337,14 +327,8 @@ class ArraySchema(SimpleSchema):
     def get_schema(cls):
         return ObjectSchema({
             "properties": [
-                {
-                    "name": "type",
-                    "schema": StringSchema()
-                },
-                {
-                    "name": "items",
-                    "schema": SchemaSchema()
-                }
+                prop("type", StringSchema()),
+                prop("items", SchemaSchema())
             ]
         })
 

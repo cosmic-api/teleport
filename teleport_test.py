@@ -212,18 +212,9 @@ class TestClassModel(TestCase):
     def setUp(self):
         class RecipeModel(ClassModel):
             properties = [
-                {
-                    "name": "author",
-                    "schema": Schema.normalize({"type": "string"})
-                },
-                {
-                    "name": "spicy",
-                    "schema": Schema.normalize({"type": "boolean"})
-                },
-                {
-                    "name": "meta",
-                    "schema": Schema.normalize({"type": "json"})
-                }
+                prop("author", Schema.normalize({"type": "string"})),
+                prop("spicy", Schema.normalize({"type": "boolean"})),
+                prop("meta", Schema.normalize({"type": "json"}))
             ]
 
         self.RecipeModel = RecipeModel
@@ -280,18 +271,9 @@ class TestClassModel(TestCase):
         self.assertEqual(self.RecipeModel.get_schema().serialize(), {
             "type": "object",
             "properties": [
-                {
-                    "name": "author",
-                    "schema": {"type": "string"}
-                },
-                {
-                    "name": "spicy",
-                    "schema": {"type": "boolean"}
-                },
-                {
-                    "name": "meta",
-                    "schema": {"type": "json"}
-                }
+                prop("author", {"type": "string"}),
+                prop("spicy", {"type": "boolean"}),
+                prop("meta", {"type": "json"})
             ]
         })
 
@@ -383,15 +365,12 @@ class TestCustomType(TestCase):
         s = Schema.normalize({
             "type": "object",
             "properties": [
-                {
-                    "name": "a",
-                    "schema": {
-                        "type": "array",
-                        "items": {
-                            "type": "test.FrenchBoolean"
-                        }
+                prop("a", {
+                    "type": "array",
+                    "items": {
+                        "type": "test.FrenchBoolean"
                     }
-                }
+                })
             ]
         })
         s.resolve(self.fetcher)

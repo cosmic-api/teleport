@@ -208,37 +208,27 @@ class ObjectModel(BaseModel):
         the resulting dict. Otherwise raise a
         :exc:`~cosmic.exceptions.ValidationError`.
 
-        *properties* must be a list of dicts, where each dict has three
-        attributes: *name*, *required* and *schema*. *name* is a string
-        representing the property name, *required* is a boolean specifying
-        whether *datum* needs to contain this property in order to pass
-        validation and *schema* is an instance of a
+        *properties* must be a list of dicts, where each dict has two
+        attributes: *name*, and *schema*. *name* is a string representing the
+        property name, *schema* is an instance of a
         :class:`~cosmic.models.Schema` subclass, such as :class:`IntegerSchema`.
 
         A :exc:`~cosmic.exceptions.ValidationError` will be raised if:
 
-        1. *datum* is missing a required property
-        2. *datum* has a property not declared in *properties*
-        3. One of the properties of *datum* does not pass validation as defined
+        1. *datum* has a property not declared in *properties*
+        2. One of the properties of *datum* does not pass validation as defined
            by the corresponding *schema*
 
         """
         if type(datum) == dict:
             ret = {}
-            required = {}
-            optional = {}
+            props = {}
             for prop in properties:
-                if prop["required"] == True:
-                    required[prop["name"]] = prop["schema"]
-                else:
-                    optional[prop["name"]] = prop["schema"]
-            missing = set(required.keys()) - set(datum.keys())
-            if missing:
-                raise ValidationError("Missing properties", list(missing))
-            extra = set(datum.keys()) - set(required.keys() + optional.keys())
+                props[prop["name"]] = prop["schema"]
+            extra = set(datum.keys()) - set(props.keys())
             if extra:
                 raise ValidationError("Unexpected properties", list(extra))
-            for prop, schema in optional.items() + required.items():
+            for prop, schema in props.items():
                 if prop in datum.keys():
                     try:
                         ret[prop] = schema.normalize_data(datum[prop])
@@ -286,11 +276,6 @@ class ObjectSchema(SimpleSchema):
                                     "name": "name",
                                     "required": True,
                                     "schema": StringSchema()
-                                },
-                                {
-                                    "name": "required",
-                                    "required": True,
-                                    "schema": BooleanSchema()
                                 },
                                 {
                                     "name": "schema",

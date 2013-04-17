@@ -15,12 +15,10 @@ object_schema = {
     "properties": [
         {
             "name": "foo",
-            "required": True,
             "schema": {"type": "boolean"}
         },
         {
             "name": "bar",
-            "required": False,
             "schema": {"type": "integer"}
         }
     ]
@@ -32,12 +30,10 @@ deep_schema = {
         "properties": [
             {
                 "name": "foo",
-                "required": True,
                 "schema": {"type": "boolean"}
             },
             {
                 "name": "bar",
-                "required": False,
                 "schema": {"type": "integer"}
             }
         ]
@@ -64,18 +60,6 @@ class TestSchema(TestCase):
     def test_schema_subclass_wrong_type(self):
         with self.assertRaisesRegexp(ValidationError, "expects type=string"):
             StringSchema.normalize({"type": "str"})
-
-    def test_schema_missing_parts(self):
-        # Forgot items
-        s = deepcopy(array_schema)
-        s.pop("items")
-        with self.assertRaisesRegexp(ValidationError, "Missing properties"):
-            Schema.normalize(s)
-        # Forgot properties
-        s = deepcopy(object_schema)
-        s.pop("properties")
-        with self.assertRaisesRegexp(ValidationError, "Missing properties"):
-            Schema.normalize(s)
 
     def test_schema_extra_parts(self):
         # object with items
@@ -195,9 +179,6 @@ class TestObjectModel(TestCase):
         self.assertEqual(res, {"foo": True, "bar": 2})
         with self.assertRaisesRegexp(ValidationError, "Invalid object"):
             object_normalizer.normalize_data([])
-        # Problems with properties
-        with self.assertRaisesRegexp(ValidationError, "Missing properties"):
-            object_normalizer.normalize_data({"bar": 2.0})
         with self.assertRaisesRegexp(ValidationError, "Unexpected properties"):
             object_normalizer.normalize_data({"foo": True, "barr": 2.0})
 
@@ -233,17 +214,14 @@ class TestClassModel(TestCase):
             properties = [
                 {
                     "name": "author",
-                    "required": True,
                     "schema": Schema.normalize({"type": "string"})
                 },
                 {
                     "name": "spicy",
-                    "required": False,
                     "schema": Schema.normalize({"type": "boolean"})
                 },
                 {
                     "name": "meta",
-                    "required": False,
                     "schema": Schema.normalize({"type": "json"})
                 }
             ]
@@ -266,7 +244,7 @@ class TestClassModel(TestCase):
         self.assertTrue(isinstance(self.special_recipe.data["meta"], JSONData))
 
     def test_normalize_fail(self):
-        with self.assertRaisesRegexp(ValidationError, "Missing properties"):
+        with self.assertRaisesRegexp(ValidationError, "Unexpected properties"):
             recipe = self.RecipeModel.normalize({
                 "maker": "Alex",
                 "spicy": True
@@ -304,17 +282,14 @@ class TestClassModel(TestCase):
             "properties": [
                 {
                     "name": "author",
-                    "required": True,
                     "schema": {"type": "string"}
                 },
                 {
                     "name": "spicy",
-                    "required": False,
                     "schema": {"type": "boolean"}
                 },
                 {
                     "name": "meta",
-                    "required": False,
                     "schema": {"type": "json"}
                 }
             ]
@@ -410,7 +385,6 @@ class TestCustomType(TestCase):
             "properties": [
                 {
                     "name": "a",
-                    "required": True,
                     "schema": {
                         "type": "array",
                         "items": {

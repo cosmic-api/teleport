@@ -182,7 +182,6 @@ class SimpleSchema(Schema):
             "properties": [
                 {
                     "name": "type",
-                    "required": True,
                     "schema": StringSchema()
                 }
             ]
@@ -263,23 +262,19 @@ class ObjectSchema(SimpleSchema):
             "properties": [
                 {
                     "name": "type",
-                    "required": True,
                     "schema": StringSchema()
                 },
                 {
                     "name": "properties",
-                    "required": True,
                     "schema": ArraySchema({
                         "items": ObjectSchema({
                             "properties": [
                                 {
                                     "name": "name",
-                                    "required": True,
                                     "schema": StringSchema()
                                 },
                                 {
                                     "name": "schema",
-                                    "required": True,
                                     "schema": SchemaSchema()
                                 }
                             ]
@@ -344,12 +339,10 @@ class ArraySchema(SimpleSchema):
             "properties": [
                 {
                     "name": "type",
-                    "required": True,
                     "schema": StringSchema()
                 },
                 {
                     "name": "items",
-                    "required": True,
                     "schema": SchemaSchema()
                 }
             ]

@@ -36,7 +36,7 @@ The canonical implementation of Teleport is written in Python.
 Built-In Types
 --------------
 
-Cosmic provides 9 built-in types. Each implementation must provide 9
+Teleport provides 9 built-in types. Each implementation must provide 9
 corresponding models, each model containing a serialization and a
 normalization function.
 
@@ -144,10 +144,6 @@ Below is the grammar for a JSON schema:
     normalize such a schema must result in a validation error. The two identifiers
     above correspond to the API name and a name of the API's model. This makes it
     possible to reference models like so: ``{"type": "tweeter.Twit"}``.
-
-When an external model is referenced, Cosmic will find the model and plug it
-into the resulting schema object. If the model belongs to an external API,
-Cosmic will fetch its schema and build a dummy for the schema object.
 
 To validate ``[{"name": "Rose"}, {"name": "Lily"}]``, you could use the
 following schema:

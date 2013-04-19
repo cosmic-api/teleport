@@ -60,7 +60,7 @@ class UnicodeDecodeValidationError(ValidationError):
 
 class BaseModel(object):
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, data):
         self.data = data
 
     def serialize(self):
@@ -77,11 +77,16 @@ class BaseModel(object):
     @classmethod
     def normalize(cls, datum): # pragma: no cover
         cls.validate(datum)
-        return datum
+        return cls.instantiate(datum)
 
     @classmethod
     def validate(cls, datum):
         pass
+
+    @classmethod
+    def instantiate(cls, datum):
+        return datum
+
 
 
 class Model(BaseModel):
@@ -97,6 +102,10 @@ class Model(BaseModel):
         schema = cls.get_schema()
         datum = schema.normalize_data(datum)
         cls.validate(datum)
+        return cls.instantiate(datum)
+
+    @classmethod
+    def instantiate(cls, datum):
         return cls(datum)
 
     @classmethod
@@ -105,14 +114,55 @@ class Model(BaseModel):
 
 
 
+class ClassModel(Model):
+
+    def __init__(self, **kwargs):
+        self.data = {}
+        self.props = {}
+        for prop in self.properties:
+            self.props[prop["name"]] = prop
+        for key, value in kwargs.items():
+            if key in self.props.keys():
+                self.data[key] = value
+            else:
+                raise TypeError("Unexpected keyword argument '%s'" % key)
+
+    @classmethod
+    def instantiate(cls, datum):
+        return cls(**datum)
+
+    def __getattr__(self, key):
+        for prop in self.properties:
+            if prop["name"] == key:
+                return self.data.get(key, None)
+        raise AttributeError()
+
+    def __setattr__(self, key, value):
+        for prop in self.properties:
+            if prop["name"] == key:
+                if value == None:
+                    del self.data[key]
+                else:
+                    self.data[key] = value
+                return
+        super(Model, self).__setattr__(key, value)
+
+    @classmethod
+    def get_schema(cls):
+        return ObjectSchema(cls.properties)
+
+
+
 class Schema(Model):
 
-    def __init__(self, data=None, **kwargs):
+    def __init__(self, data=None):
         # It is okay to omit type in the constructor, the Schema
         # will know its type from the match_type attibute
         if data == None:
             data = {u"type": self.match_type}
-        super(Schema, self).__init__(data, **kwargs)
+        elif "type" not in data.keys():
+            data["type"] = self.match_type
+        super(Schema, self).__init__(data)
         # Everything except for the type becomes an option
         self.opts = self.data.copy()
         self.opts.pop("type", None)
@@ -172,22 +222,16 @@ class SimpleSchema(Schema):
     # COPY-PASTE
     @classmethod
     def normalize(cls, datum):
-        # Normalize against model schema
         schema = cls.get_schema()
         datum = schema.normalize_data(datum)
-        # Validate against model's custom validation function
         cls.validate(datum)
-        # Instantiate
-        return cls(datum)
+        return cls.instantiate(datum)
 
     @classmethod
     def get_schema(cls):
-        return ObjectSchema({
-            "type": "object",
-            "properties": [
-                prop("type", StringSchema())
-            ]
-        })
+        return ObjectSchema([
+            prop("type", StringSchema())
+        ])
 
     def resolve(self, fetcher):
         if self.model_cls == None:
@@ -257,22 +301,24 @@ class ObjectSchema(SimpleSchema):
     model_cls = ObjectModel
     match_type = "object"
 
+    def __init__(self, props):
+        super(ObjectSchema, self).__init__({
+            "properties": props
+        })
+
+    @classmethod
+    def instantiate(cls, datum):
+        return cls(datum["properties"])
+
     @classmethod
     def get_schema(cls):
-        return ObjectSchema({
-            "type": "object",
-            "properties": [
-                prop("type", StringSchema()),
-                prop("properties", ArraySchema({
-                    "items": ObjectSchema({
-                        "properties": [
-                            prop("name", StringSchema()),
-                            prop("schema", SchemaSchema())
-                        ]
-                    })
-                }))
-            ]
-        })
+        return ObjectSchema([
+            prop("type", StringSchema()),
+            prop("properties", ArraySchema(ObjectSchema([
+                prop("name", StringSchema()),
+                prop("schema", SchemaSchema())
+            ])))
+        ])
 
     @classmethod
     def validate(cls, datum):
@@ -323,14 +369,21 @@ class ArraySchema(SimpleSchema):
     model_cls = ArrayModel
     match_type = u"array"
 
+    def __init__(self, props):
+        super(ArraySchema, self).__init__({
+            "items": props
+        })
+
+    @classmethod
+    def instantiate(cls, datum):
+        return cls(datum["items"])
+
     @classmethod
     def get_schema(cls):
-        return ObjectSchema({
-            "properties": [
-                prop("type", StringSchema()),
-                prop("items", SchemaSchema())
-            ]
-        })
+        return ObjectSchema([
+            prop("type", StringSchema()),
+            prop("items", SchemaSchema())
+        ])
 
     def resolve(self, fetcher):
         super(ArraySchema, self).resolve(fetcher)
@@ -502,52 +555,6 @@ class JSONDataSchema(SimpleSchema):
     model_cls = JSONData
     match_type = "json"
 
-
-
-class ClassModel(ObjectModel):
-
-    def __init__(self, **kwargs):
-        self.data = {}
-        self.props = {}
-        for prop in self.properties:
-            self.props[prop["name"]] = prop
-        for key, value in kwargs.items():
-            if key in self.props.keys():
-                self.data[key] = value
-            else:
-                raise TypeError("Unexpected keyword argument '%s'" % key)
-
-    def __getattr__(self, key):
-        for prop in self.properties:
-            if prop["name"] == key:
-                return self.data.get(key, None)
-        raise AttributeError()
-
-    def __setattr__(self, key, value):
-        for prop in self.properties:
-            if prop["name"] == key:
-                if value == None:
-                    del self.data[key]
-                else:
-                    self.data[key] = value
-                return
-        super(ObjectModel, self).__setattr__(key, value)
-
-    @classmethod
-    def normalize(cls, datum):
-        datum = cls.get_schema().normalize_data(datum)
-        cls.validate(datum)
-        return cls(**datum)
-
-    def serialize(self):
-        return self.get_schema().serialize_data(self.data)
-
-    @classmethod
-    def get_schema(cls):
-        return ObjectSchema({
-            "type": "object",
-            "properties": cls.properties
-        })
 
 
 def normalize_json(schema, datum):

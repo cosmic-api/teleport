@@ -46,6 +46,7 @@ deep_normalizer = Schema.normalize(deep_schema)
 class TestSchema(TestCase):
 
     def test_serialize_schema(self):
+        self.assertEqual(object_schema, object_normalizer.serialize())
         self.assertEqual(deep_schema, deep_normalizer.serialize())
 
     def test_schema_subclass_delegation(self):

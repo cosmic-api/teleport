@@ -154,20 +154,11 @@ class ClassModel(Model):
 
 
 
-class Schema(Model):
+class Schema(BaseModel):
 
-    def serialize(self):
-        s = {
-            "type": self.match_type
-        }
-        s.update(self.get_schema().serialize_data(self.data))
-        return s
-
-    def normalize_data(self, datum):
-        return self.model_cls.normalize(datum, **self.data)
-
-    def serialize_data(self, datum):
-        return self.model_cls.serialize(datum, **self.data)
+    @classmethod
+    def serialize(cls, datum):
+        return datum.serialize()
 
     @classmethod
     def normalize(cls, datum):
@@ -207,15 +198,20 @@ class Schema(Model):
 
 
 
-class SimpleSchema(Schema):
+class SimpleSchema(Model):
 
-    # COPY-PASTE
-    @classmethod
-    def normalize(cls, datum):
-        schema = cls.get_schema()
-        datum = schema.normalize_data(datum)
-        cls.validate(datum)
-        return cls.instantiate(datum)
+    def serialize(self):
+        s = {
+            "type": self.match_type
+        }
+        s.update(self.get_schema().serialize_data(self.data))
+        return s
+
+    def normalize_data(self, datum):
+        return self.model_cls.normalize(datum, **self.data)
+
+    def serialize_data(self, datum):
+        return self.model_cls.serialize(datum, **self.data)
 
     @classmethod
     def get_schema(cls):

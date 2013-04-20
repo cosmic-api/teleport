@@ -1,6 +1,7 @@
 import sys
 import json
 import base64
+from copy import deepcopy
 
 def prop(name, schema):
     return {
@@ -155,40 +156,29 @@ class ClassModel(Model):
 
 class Schema(Model):
 
-    def __init__(self, data=None):
-        # It is okay to omit type in the constructor, the Schema
-        # will know its type from the match_type attibute
-        if data == None:
-            data = {u"type": self.match_type}
-        elif "type" not in data.keys():
-            data["type"] = self.match_type
-        super(Schema, self).__init__(data)
-        # Everything except for the type becomes an option
-        self.opts = self.data.copy()
-        self.opts.pop("type", None)
-
-    @classmethod
-    def validate(cls, datum):
-        if datum["type"] != cls.match_type:
-            raise ValidationError("%s expects type=%s" % (cls, cls.match_type,))
-
+    def serialize(self):
+        s = {
+            "type": self.match_type
+        }
+        s.update(self.get_schema().serialize_data(self.data))
+        return s
 
     def normalize_data(self, datum):
-        return self.model_cls.normalize(datum, **self.opts)
+        return self.model_cls.normalize(datum, **self.data)
 
     def serialize_data(self, datum):
-        return self.model_cls.serialize(datum, **self.opts)
+        return self.model_cls.serialize(datum, **self.data)
 
     @classmethod
     def normalize(cls, datum):
 
-        invalid = ValidationError("Invalid schema", datum)
-
         # Peek into the object before letting the real models
         # do proper validation
         if type(datum) != dict or "type" not in datum.keys():
-            raise invalid
-        st = datum["type"]
+            raise ValidationError("Invalid schema", datum)
+
+        datum = deepcopy(datum)
+        st = datum.pop("type")
 
         # Simple model?
         simple = [
@@ -208,7 +198,7 @@ class Schema(Model):
 
         # Model?
         if '.' in st:
-            schema = SimpleSchema({"type": st})
+            schema = SimpleSchema({})
             schema.match_type = st
             schema.model_cls = None
             return schema
@@ -229,9 +219,7 @@ class SimpleSchema(Schema):
 
     @classmethod
     def get_schema(cls):
-        return ObjectSchema([
-            prop("type", StringSchema())
-        ])
+        return ObjectSchema([])
 
     def resolve(self, fetcher):
         if self.model_cls == None:
@@ -313,10 +301,10 @@ class ObjectSchema(SimpleSchema):
     @classmethod
     def get_schema(cls):
         return ObjectSchema([
-            prop("type", StringSchema()),
+            prop("type", StringSchema({})),
             prop("properties", ArraySchema(ObjectSchema([
-                prop("name", StringSchema()),
-                prop("schema", SchemaSchema())
+                prop("name", StringSchema({})),
+                prop("schema", SchemaSchema({}))
             ])))
         ])
 
@@ -333,7 +321,7 @@ class ObjectSchema(SimpleSchema):
 
     def resolve(self, fetcher):
         super(ObjectSchema, self).resolve(fetcher)
-        for prop in self.opts["properties"]:
+        for prop in self.data["properties"]:
             prop["schema"].resolve(fetcher)
 
 
@@ -381,13 +369,13 @@ class ArraySchema(SimpleSchema):
     @classmethod
     def get_schema(cls):
         return ObjectSchema([
-            prop("type", StringSchema()),
-            prop("items", SchemaSchema())
+            prop("type", StringSchema({})),
+            prop("items", SchemaSchema({}))
         ])
 
     def resolve(self, fetcher):
         super(ArraySchema, self).resolve(fetcher)
-        self.opts["items"].resolve(fetcher)
+        self.data["items"].resolve(fetcher)
 
 
 

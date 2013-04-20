@@ -57,10 +57,6 @@ class TestSchema(TestCase):
         self.assertTrue(isinstance(Schema.normalize({"type": "json"}), JSONDataSchema))
         self.assertTrue(isinstance(Schema.normalize({"type": "schema"}), SchemaSchema))
 
-    def test_schema_subclass_wrong_type(self):
-        with self.assertRaisesRegexp(ValidationError, "expects type=string"):
-            StringSchema.normalize({"type": "str"})
-
     def test_schema_extra_parts(self):
         # object with items
         s = deepcopy(array_schema)

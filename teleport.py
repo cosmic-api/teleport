@@ -189,7 +189,7 @@ class Schema(BaseModel):
 
         # Model?
         if '.' in st:
-            schema = SimpleSchema({})
+            schema = SimpleSchema()
             schema.match_type = st
             schema.model_cls = None
             return schema
@@ -199,6 +199,9 @@ class Schema(BaseModel):
 
 
 class SimpleSchema(Model):
+
+    def __init__(self, opts={}):
+        super(SimpleSchema, self).__init__(opts)
 
     def serialize(self):
         s = {
@@ -297,10 +300,10 @@ class ObjectSchema(SimpleSchema):
     @classmethod
     def get_schema(cls):
         return ObjectSchema([
-            prop("type", StringSchema({})),
+            prop("type", StringSchema()),
             prop("properties", ArraySchema(ObjectSchema([
-                prop("name", StringSchema({})),
-                prop("schema", SchemaSchema({}))
+                prop("name", StringSchema()),
+                prop("schema", SchemaSchema())
             ])))
         ])
 
@@ -365,8 +368,7 @@ class ArraySchema(SimpleSchema):
     @classmethod
     def get_schema(cls):
         return ObjectSchema([
-            prop("type", StringSchema({})),
-            prop("items", SchemaSchema({}))
+            prop("items", SchemaSchema())
         ])
 
     def resolve(self, fetcher):

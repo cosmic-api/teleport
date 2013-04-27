@@ -59,13 +59,9 @@ class UnicodeDecodeValidationError(ValidationError):
     """
 
 
-class Template(object):
-    def normalize_data(self, datum):
-        return self.deserialize(datum)
-    def serialize_data(self, datum):
-        return self.serialize(datum)
 
-class IntegerTemplate(Template):
+class IntegerTemplate(object):
+    match_type = "integer"
 
     def deserialize(self, datum):
         if type(datum) == int:
@@ -79,7 +75,8 @@ class IntegerTemplate(Template):
 
 
 
-class FloatTemplate(Template):
+class FloatTemplate(object):
+    match_type = "float"
 
     def deserialize(self, datum):
         if type(datum) == float:
@@ -93,7 +90,8 @@ class FloatTemplate(Template):
 
 
 
-class StringTemplate(Template):
+class StringTemplate(object):
+    match_type = "string"
 
     def deserialize(self, datum):
         if type(datum) == unicode:
@@ -110,7 +108,8 @@ class StringTemplate(Template):
 
 
 
-class BinaryTemplate(Template):
+class BinaryTemplate(object):
+    match_type = "binary"
 
     def deserialize(self, datum):
         if type(datum) in (str, unicode,):
@@ -125,7 +124,8 @@ class BinaryTemplate(Template):
 
 
 
-class BooleanTemplate(Template):
+class BooleanTemplate(object):
+    match_type = "array"
 
     def deserialize(self, datum):
         if type(datum) == bool:
@@ -137,7 +137,8 @@ class BooleanTemplate(Template):
 
 
 
-class ArrayTemplate(Template):
+class ArrayTemplate(object):
+    match_type = "array"
 
     def __init__(self, items):
         self.items = self.data = items        
@@ -147,7 +148,7 @@ class ArrayTemplate(Template):
             ret = []
             for i, item in enumerate(datum):
                 try:
-                    ret.append(self.items.normalize_data(item))
+                    ret.append(self.items.deserialize(item))
                 except ValidationError as e:
                     e.stack.append(i)
                     raise
@@ -155,7 +156,7 @@ class ArrayTemplate(Template):
         raise ValidationError("Invalid array", datum)
 
     def serialize(self, datum):
-        return [self.items.serialize_data(item) for item in datum]
+        return [self.items.serialize(item) for item in datum]
 
     @classmethod
     def get_params(cls):
@@ -163,9 +164,19 @@ class ArrayTemplate(Template):
             field("items", SchemaTemplate())
         ])
 
+    def serialize_self(self):
+        s = {"type": "array"}
+        s.update(ArrayTemplate.get_params().serialize({"items": self.items}))
+        return s
+
+    @classmethod
+    def deserialize_self(self, datum):
+        opts = ArrayTemplate.get_params().deserialize(datum)
+        return ArrayTemplate(opts["items"])
 
 
-class StructTemplate(Template):
+class StructTemplate(object):
+    match_type = "struct"
 
     def __init__(self, fields):
         self.fields = self.data = fields
@@ -182,7 +193,7 @@ class StructTemplate(Template):
             for prop, schema in props.items():
                 if prop in datum.keys():
                     try:
-                        ret[prop] = schema.normalize_data(datum[prop])
+                        ret[prop] = schema.deserialize(datum[prop])
                     except ValidationError as e:
                         e.stack.append(prop)
                         raise
@@ -194,7 +205,7 @@ class StructTemplate(Template):
         for prop in self.fields:
             name = prop['name']
             if name in datum.keys() and datum[name] != None:
-                ret[name] = prop['schema'].serialize_data(datum[name])
+                ret[name] = prop['schema'].serialize(datum[name])
         return ret
 
     @classmethod
@@ -207,18 +218,27 @@ class StructTemplate(Template):
             ])))
         ])
 
+    def serialize_self(self):
+        s = {"type": "struct"}
+        s.update(StructTemplate.get_params().serialize({"fields": self.fields}))
+        return s
 
-class SchemaTemplate(Template):
+    @classmethod
+    def deserialize_self(cls, datum):
+        opts = StructTemplate.get_params().deserialize(datum)
+        # Additional validation to check for duplicate fields
+        fields = [field["name"] for field in opts["fields"]]
+        if len(fields) > len(set(fields)):
+            raise ValidationError("Duplicate fields")
+        return StructTemplate(opts["fields"])
+
+
+
+class SchemaTemplate(object):
 
     def serialize(self, datum):
-        if datum.__class__ == StructTemplate:
-            s = {"type": "struct"}
-            s.update(StructTemplate.get_params().serialize_data({"fields": datum.data}))
-            return s
-        if datum.__class__ == ArrayTemplate:
-            s = {"type": "array"}
-            s.update(ArrayTemplate.get_params().serialize_data({"items": datum.data}))
-            return s
+        if hasattr(datum, "serialize_self"):
+            return datum.serialize_self()
 
         return {
             "type": {
@@ -240,29 +260,22 @@ class SchemaTemplate(Template):
         datum = deepcopy(datum)
         st = datum.pop("type")
 
-        if st == "array":
-            opts = ArrayTemplate.get_params().normalize_data(datum)
-            return ArrayTemplate(opts["items"])
-
-        if st == "struct":
-            opts = StructTemplate.get_params().normalize_data(datum)
-            # Additional validation to check for duplicate fields
-            fields = [field["name"] for field in opts["fields"]]
-            if len(fields) > len(set(fields)):
-                raise ValidationError("Duplicate fields")
-            return StructTemplate(opts["fields"])
-
         templates = {
             "integer": IntegerTemplate,
             "float": FloatTemplate,
             "string": StringTemplate,
             "binary": BinaryTemplate,
             "boolean": BooleanTemplate,
-            "schema": SchemaTemplate
+            "schema": SchemaTemplate,
+            "array": ArrayTemplate,
+            "struct": StructTemplate
         }
+
 
         template_cls = templates.get(st, None)
         if template_cls:
+            if hasattr(template_cls, "deserialize_self"):
+                return template_cls.deserialize_self(datum)
             return template_cls()
 
         raise ValidationError("Unknown type", st)

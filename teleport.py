@@ -3,7 +3,7 @@ import json
 import base64
 from copy import deepcopy
 
-def prop(name, schema):
+def field(name, schema):
     return {
         "name": name,
         "schema": schema
@@ -59,110 +59,142 @@ class UnicodeDecodeValidationError(ValidationError):
     """
 
 
-class BaseModel(object):
 
-    def __init__(self, data):
-        self.data = data
 
-    def serialize(self):
-        """Serialize could be a classmethod like normalize, but by defining it
-        this way, we are allowing a more natural syntax. Both of these work
-        identically:
-         
-            >>> Animal.serialize(cat)
-            >>> cat.serialize()
+class IntegerTemplate(object):
 
-        """
-        return self.data
+    def deserialize(self, datum):
+        if type(datum) == int:
+            return datum
+        if type(datum) == float and datum.is_integer():
+            return int(datum)
+        raise ValidationError("Invalid integer", datum)
 
-    @classmethod
-    def normalize(cls, datum): # pragma: no cover
-        cls.validate(datum)
-        return cls.instantiate(datum)
-
-    @classmethod
-    def validate(cls, datum):
-        pass
-
-    @classmethod
-    def instantiate(cls, datum):
+    def serialize(self, datum):
         return datum
 
 
 
-class Model(BaseModel):
+class FloatTemplate(object):
 
-    def serialize(self):
-        # Serialize against model schema
-        schema = self.get_schema()
-        return schema.serialize_data(self.data)
+    def deserialize(self, datum):
+        if type(datum) == float:
+            return datum
+        if type(datum) == int:
+            return float(datum)
+        raise ValidationError("Invalid float", datum)
 
-    @classmethod
-    def normalize(cls, datum):
-        # Normalize against model schema
-        schema = cls.get_schema()
-        datum = schema.normalize_data(datum)
-        cls.validate(datum)
-        return cls.instantiate(datum)
-
-    @classmethod
-    def instantiate(cls, datum):
-        return cls(datum)
-
-    @classmethod
-    def get_schema(cls):
-        return cls.schema
+    def serialize(self, datum):
+        return datum
 
 
 
-class ClassModel(Model):
+class StringTemplate(object):
 
-    def __init__(self, **kwargs):
-        self.data = {}
-        self.props = {}
-        for prop in self.properties:
-            self.props[prop["name"]] = prop
-        for key, value in kwargs.items():
-            if key in self.props.keys():
-                self.data[key] = value
-            else:
-                raise TypeError("Unexpected keyword argument '%s'" % key)
+    def deserialize(self, datum):
+        if type(datum) == unicode:
+            return datum
+        if type(datum) == str:
+            try:
+                return datum.decode('utf_8')
+            except UnicodeDecodeError as inst:
+                raise UnicodeDecodeValidationError(unicode(inst))
+        raise ValidationError("Invalid string", datum)
 
-    @classmethod
-    def instantiate(cls, datum):
-        return cls(**datum)
-
-    def __getattr__(self, key):
-        for prop in self.properties:
-            if prop["name"] == key:
-                return self.data.get(key, None)
-        raise AttributeError()
-
-    def __setattr__(self, key, value):
-        for prop in self.properties:
-            if prop["name"] == key:
-                if value == None:
-                    del self.data[key]
-                else:
-                    self.data[key] = value
-                return
-        super(Model, self).__setattr__(key, value)
-
-    @classmethod
-    def get_schema(cls):
-        return ObjectSchema(cls.properties)
+    def serialize(self, datum):
+        return datum
 
 
 
-class Schema(BaseModel):
+class BinaryTemplate(object):
 
-    @classmethod
+    def deserialize(self, datum):
+        if type(datum) in (str, unicode,):
+            try:
+                return base64.b64decode(datum)
+            except TypeError:
+                raise ValidationError("Invalid base64 encoding", datum)
+        raise ValidationError("Invalid binary data", datum)
+
+    def serialize(self, datum):
+        return base64.b64encode(datum)
+
+
+
+class BooleanTemplate(object):
+
+    def deserialize(self, datum):
+        if type(datum) == bool:
+            return datum
+        raise ValidationError("Invalid boolean", datum)
+
     def serialize(cls, datum):
+        return datum
+
+
+
+class ArrayTemplate(object):
+
+    def __init__(self, items):
+        self.items = items        
+
+    def deserialize(self, datum):
+        if type(datum) == list:
+            ret = []
+            for i, item in enumerate(datum):
+                try:
+                    ret.append(self.items.normalize_data(item))
+                except ValidationError as e:
+                    e.stack.append(i)
+                    raise
+            return ret
+        raise ValidationError("Invalid array", datum)
+
+    def serialize(self, datum):
+        return [self.items.serialize_data(item) for item in datum]
+
+
+
+
+class StructTemplate(object):
+
+    def __init__(self, fields):
+        self.fields = fields
+
+    def deserialize(self, datum):
+        if type(datum) == dict:
+            ret = {}
+            props = {}
+            for prop in self.fields:
+                props[prop["name"]] = prop["schema"]
+            extra = set(datum.keys()) - set(props.keys())
+            if extra:
+                raise ValidationError("Unexpected fields", list(extra))
+            for prop, schema in props.items():
+                if prop in datum.keys():
+                    try:
+                        ret[prop] = schema.normalize_data(datum[prop])
+                    except ValidationError as e:
+                        e.stack.append(prop)
+                        raise
+            return ret
+        raise ValidationError("Invalid object", datum)
+
+    def serialize(self, datum):
+        ret = {}
+        for prop in self.fields:
+            name = prop['name']
+            if name in datum.keys() and datum[name] != None:
+                ret[name] = prop['schema'].serialize_data(datum[name])
+        return ret
+
+
+class SchemaTemplate(object):
+
+    def serialize(self, datum):
         return datum.serialize()
 
-    @classmethod
-    def normalize(cls, datum):
-
+    def deserialize(self, datum):
         # Peek into the object before letting the real models
         # do proper validation
         if type(datum) != dict or "type" not in datum.keys():
@@ -179,29 +211,37 @@ class Schema(BaseModel):
             BinarySchema,
             BooleanSchema,
             ArraySchema,
-            ObjectSchema,
-            JSONDataSchema,
+            StructSchema,
             SchemaSchema
         ]
         for simple_cls in simple:
             if st == simple_cls.match_type:
                 return simple_cls.normalize(datum)
 
-        # Model?
-        if '.' in st:
-            schema = SimpleSchema()
-            schema.match_type = st
-            schema.model_cls = None
-            return schema
-
         raise ValidationError("Unknown type", st)
 
 
 
-class SimpleSchema(Model):
+class SimpleSchema(object):
 
     def __init__(self, opts={}):
-        super(SimpleSchema, self).__init__(opts)
+        self.data = opts
+
+    @classmethod
+    def validate(cls, datum):
+        pass
+
+    @classmethod
+    def normalize(cls, datum):
+        # Normalize against model schema
+        schema = cls.get_schema()
+        datum = schema.normalize_data(datum)
+        cls.validate(datum)
+        return cls.instantiate(datum)
+
+    @classmethod
+    def instantiate(cls, datum):
+        return cls(datum)
 
     def serialize(self):
         s = {
@@ -211,154 +251,70 @@ class SimpleSchema(Model):
         return s
 
     def normalize_data(self, datum):
+        if hasattr(self, "template_cls"):
+            return self.template_cls(**self.data).deserialize(datum)
         return self.model_cls.normalize(datum, **self.data)
 
     def serialize_data(self, datum):
+        if hasattr(self, "template_cls"):
+            return self.template_cls(**self.data).serialize(datum)
         return self.model_cls.serialize(datum, **self.data)
 
     @classmethod
     def get_schema(cls):
-        return ObjectSchema([])
+        return StructSchema([])
 
-    def resolve(self, fetcher):
-        if self.model_cls == None:
-            self.model_cls = fetcher(self.match_type)
 
 
 class SchemaSchema(SimpleSchema):
     match_type = "schema"
-    model_cls = Schema
+    template_cls = SchemaTemplate
 
 
 
-
-class ObjectModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, properties):
-        """If *datum* is a dict, normalize it against *properties* and return
-        the resulting dict. Otherwise raise a
-        :exc:`~cosmic.exceptions.ValidationError`.
-
-        *properties* must be a list of dicts, where each dict has two
-        attributes: *name*, and *schema*. *name* is a string representing the
-        property name, *schema* is an instance of a
-        :class:`~cosmic.models.Schema` subclass, such as :class:`IntegerSchema`.
-
-        A :exc:`~cosmic.exceptions.ValidationError` will be raised if:
-
-        1. *datum* has a property not declared in *properties*
-        2. One of the properties of *datum* does not pass validation as defined
-           by the corresponding *schema*
-
-        """
-        if type(datum) == dict:
-            ret = {}
-            props = {}
-            for prop in properties:
-                props[prop["name"]] = prop["schema"]
-            extra = set(datum.keys()) - set(props.keys())
-            if extra:
-                raise ValidationError("Unexpected properties", list(extra))
-            for prop, schema in props.items():
-                if prop in datum.keys():
-                    try:
-                        ret[prop] = schema.normalize_data(datum[prop])
-                    except ValidationError as e:
-                        e.stack.append(prop)
-                        raise
-            return ret
-        raise ValidationError("Invalid object", datum)
-
-    @classmethod
-    def serialize(cls, datum, properties):
-        """For each property in *properties*, serialize the corresponding
-        value in *datum* (if the value exists) against the property schema.
-        Return the resulting dict.
-        """
-        ret = {}
-        for prop in properties:
-            name = prop['name']
-            if name in datum.keys() and datum[name] != None:
-                ret[name] = prop['schema'].serialize_data(datum[name])
-        return ret
-
-
-class ObjectSchema(SimpleSchema):
-    model_cls = ObjectModel
+class StructSchema(SimpleSchema):
+    template_cls = StructTemplate
     match_type = "object"
 
-    def __init__(self, props):
-        super(ObjectSchema, self).__init__({
-            "properties": props
+    def __init__(self, fields):
+        super(StructSchema, self).__init__({
+            "fields": fields
         })
 
     @classmethod
     def instantiate(cls, datum):
-        return cls(datum["properties"])
+        return cls(datum["fields"])
 
     @classmethod
     def get_schema(cls):
-        return ObjectSchema([
-            prop("type", StringSchema()),
-            prop("properties", ArraySchema(ObjectSchema([
-                prop("name", StringSchema()),
-                prop("schema", SchemaSchema())
+        return StructSchema([
+            field("type", StringSchema()),
+            field("fields", ArraySchema(StructSchema([
+                field("name", StringSchema()),
+                field("schema", SchemaSchema())
             ])))
         ])
 
     @classmethod
     def validate(cls, datum):
         """Raises :exc:`~cosmic.exception.ValidationError` if there are two
-        properties with the same name.
+        fields with the same name.
         """
-        super(ObjectSchema, cls).validate(datum)
-        # Additional validation to check for duplicate properties
-        props = [prop["name"] for prop in datum['properties']]
-        if len(props) > len(set(props)):
-            raise ValidationError("Duplicate properties")
-
-    def resolve(self, fetcher):
-        super(ObjectSchema, self).resolve(fetcher)
-        for prop in self.data["properties"]:
-            prop["schema"].resolve(fetcher)
+        super(StructSchema, cls).validate(datum)
+        # Additional validation to check for duplicate fields
+        fields = [field["name"] for field in datum['fields']]
+        if len(fields) > len(set(fields)):
+            raise ValidationError("Duplicate fields")
 
 
-
-class ArrayModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, items):
-        """If *datum* is a list, construct a new list by putting each element
-        of *datum* through a schema provided as *items*. This schema may raise
-        :exc:`~cosmic.exceptions.ValidationError`. If *datum* is not a list,
-        :exc:`~cosmic.exceptions.ValidationError` will be raised.
-        """
-        if type(datum) == list:
-            ret = []
-            for i, item in enumerate(datum):
-                try:
-                    ret.append(items.normalize_data(item))
-                except ValidationError as e:
-                    e.stack.append(i)
-                    raise
-            return ret
-        raise ValidationError("Invalid array", datum)
-
-    @classmethod
-    def serialize(cls, datum, items):
-        """Serialize each item in the *datum* list using the schema provided
-        in *items*. Return the resulting list.
-        """
-        return [items.serialize_data(item) for item in datum]
 
 class ArraySchema(SimpleSchema):
-    model_cls = ArrayModel
+    template_cls = ArrayTemplate
     match_type = u"array"
 
-    def __init__(self, props):
+    def __init__(self, fields):
         super(ArraySchema, self).__init__({
-            "items": props
+            "items": fields
         })
 
     @classmethod
@@ -367,197 +323,35 @@ class ArraySchema(SimpleSchema):
 
     @classmethod
     def get_schema(cls):
-        return ObjectSchema([
-            prop("items", SchemaSchema())
+        return StructSchema([
+            field("items", SchemaSchema())
         ])
 
-    def resolve(self, fetcher):
-        super(ArraySchema, self).resolve(fetcher)
-        self.data["items"].resolve(fetcher)
 
 
 
-
-
-class IntegerModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, **kwargs):
-        """If *datum* is an integer, return it; if it is a float with a 0 for
-        its fractional part, return the integer part as an int. Otherwise,
-        raise a
-        :exc:`~cosmic.exceptions.ValidationError`.
-        """
-        if type(datum) == int:
-            return datum
-        if type(datum) == float and datum.is_integer():
-            return int(datum)
-        raise ValidationError("Invalid integer", datum)
-
-    @classmethod
-    def serialize(cls, datum):
-        return datum
 
 class IntegerSchema(SimpleSchema):
-    model_cls = IntegerModel
+    template_cls = IntegerTemplate
     match_type = "integer"
 
 
-
-
-class FloatModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, **kwargs):
-        """If *datum* is a float, return it; if it is an integer, cast it to a
-        float and return it. Otherwise, raise a
-        :exc:`~cosmic.exceptions.ValidationError`.
-        """
-        if type(datum) == float:
-            return datum
-        if type(datum) == int:
-            return float(datum)
-        raise ValidationError("Invalid float", datum)
-
-    @classmethod
-    def serialize(cls, datum):
-        return datum
-
 class FloatSchema(SimpleSchema):
-    model_cls = FloatModel
+    template_cls = FloatTemplate
     match_type = "float"
 
 
-
-
-class StringModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, **kwargs):
-        """If *datum* is of unicode type, return it. If it is a string, decode
-        it as UTF-8 and return the result. Otherwise, raise a
-        :exc:`~cosmic.exceptions.ValidationError`. Unicode errors are dealt
-        with strictly by raising
-        :exc:`~cosmic.exceptions.UnicodeDecodeValidationError`, a
-        subclass of the above.
-        """
-        if type(datum) == unicode:
-            return datum
-        if type(datum) == str:
-            try:
-                return datum.decode('utf_8')
-            except UnicodeDecodeError as inst:
-                raise UnicodeDecodeValidationError(unicode(inst))
-        raise ValidationError("Invalid string", datum)
-
-    @classmethod
-    def serialize(cls, datum):
-        return datum
-
 class StringSchema(SimpleSchema):
-    model_cls = StringModel
+    template_cls = StringTemplate
     match_type = "string"
 
 
-
-
-
-class BinaryModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, **kwargs):
-        """If *datum* is a base64-encoded string, decode and return it. If not
-        a string, or encoding is wrong, raise
-        :exc:`~cosmic.exceptions.ValidationError`.
-        """
-        if type(datum) in (str, unicode,):
-            try:
-                return base64.b64decode(datum)
-            except TypeError:
-                raise ValidationError("Invalid base64 encoding", datum)
-        raise ValidationError("Invalid binary data", datum)
-
-    @classmethod
-    def serialize(cls, datum):
-        """Encode *datum* in base64."""
-        return base64.b64encode(datum)
-
 class BinarySchema(SimpleSchema):
-    model_cls = BinaryModel
+    template_cls = BinaryTemplate
     match_type = "binary"
 
 
-
-
-class BooleanModel(BaseModel):
-
-    @classmethod
-    def normalize(cls, datum, **kwargs):
-        """If *datum* is a boolean, return it. Otherwise, raise a
-        :exc:`~cosmic.exceptions.ValidationError`.
-        """
-        if type(datum) == bool:
-            return datum
-        raise ValidationError("Invalid boolean", datum)
-
-    @classmethod
-    def serialize(cls, datum):
-        return datum
-
 class BooleanSchema(SimpleSchema):
-    model_cls = BooleanModel
+    template_cls = BooleanTemplate
     match_type = "boolean"
-
-
-
-
-
-class JSONData(BaseModel):
-
-    def __repr__(self):
-        contents = json.dumps(self.data)
-        if len(contents) > 60:
-            contents = contents[:56] + " ..."
-        return "<JSONData %s>" % contents
-
-    @classmethod
-    def from_string(cls, s):
-        if s == "":
-            return None
-        return cls.normalize(json.loads(s))
-
-    @classmethod
-    def normalize(cls, datum):
-        # No need to validate
-        return cls(datum)
-
-    @classmethod
-    def to_string(cls, s):
-        if s == None:
-            return ""
-        return json.dumps(s.serialize())
-
-class JSONDataSchema(SimpleSchema):
-    model_cls = JSONData
-    match_type = "json"
-
-
-
-def normalize_json(schema, datum):
-    if schema and not datum:
-        raise ValidationError("Expected JSONData, found None")
-    if datum and not schema:
-        raise ValidationError("Expected None, found JSONData")
-    if schema and datum:
-        return schema.normalize_data(datum.data)
-    return None
-
-def serialize_json(schema, datum):
-    if schema and not datum:
-        raise ValidationError("Expected data, found None")
-    if datum and not schema:
-        raise ValidationError("Expected None, found data")
-    if schema and datum:
-        return JSONData(schema.serialize_data(datum))
-    return None
 

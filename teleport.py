@@ -137,10 +137,10 @@ class BooleanTemplate(Template):
 
 
 
-class ArrayTemplate(object):
+class ArrayTemplate(Template):
 
     def __init__(self, items):
-        self.items = items        
+        self.items = self.data = items        
 
     def deserialize(self, datum):
         if type(datum) == list:
@@ -157,13 +157,18 @@ class ArrayTemplate(object):
     def serialize(self, datum):
         return [self.items.serialize_data(item) for item in datum]
 
+    @classmethod
+    def get_params(cls):
+        return StructTemplate([
+            field("items", SchemaTemplate())
+        ])
 
 
 
-class StructTemplate(object):
+class StructTemplate(Template):
 
     def __init__(self, fields):
-        self.fields = fields
+        self.fields = self.data = fields
 
     def deserialize(self, datum):
         if type(datum) == dict:
@@ -192,24 +197,39 @@ class StructTemplate(object):
                 ret[name] = prop['schema'].serialize_data(datum[name])
         return ret
 
+    @classmethod
+    def get_params(cls):
+        return StructTemplate([
+            field("type", StringTemplate()),
+            field("fields", ArrayTemplate(StructTemplate([
+                field("name", StringTemplate()),
+                field("schema", SchemaTemplate())
+            ])))
+        ])
 
 
 class SchemaTemplate(Template):
 
     def serialize(self, datum):
-        if isinstance(datum, Template):
-            return {
-                "type": {
-                    IntegerTemplate: "integer",
-                    FloatTemplate: "float",
-                    StringTemplate: "string",
-                    BinaryTemplate: "binary",
-                    BooleanTemplate: "boolean",
-                    SchemaTemplate: "schema"
-                }[datum.__class__]
-            }
-        else:
-            return datum.serialize()
+        if datum.__class__ == StructTemplate:
+            s = {"type": "struct"}
+            s.update(StructTemplate.get_params().serialize_data({"fields": datum.data}))
+            return s
+        if datum.__class__ == ArrayTemplate:
+            s = {"type": "array"}
+            s.update(ArrayTemplate.get_params().serialize_data({"items": datum.data}))
+            return s
+
+        return {
+            "type": {
+                IntegerTemplate: "integer",
+                FloatTemplate: "float",
+                StringTemplate: "string",
+                BinaryTemplate: "binary",
+                BooleanTemplate: "boolean",
+                SchemaTemplate: "schema"
+            }[datum.__class__]
+        }
 
     def deserialize(self, datum):
         # Peek into the struct before letting the real models
@@ -219,6 +239,18 @@ class SchemaTemplate(Template):
 
         datum = deepcopy(datum)
         st = datum.pop("type")
+
+        if st == "array":
+            opts = ArrayTemplate.get_params().normalize_data(datum)
+            return ArrayTemplate(opts["items"])
+
+        if st == "struct":
+            opts = StructTemplate.get_params().normalize_data(datum)
+            # Additional validation to check for duplicate fields
+            fields = [field["name"] for field in opts["fields"]]
+            if len(fields) > len(set(fields)):
+                raise ValidationError("Duplicate fields")
+            return StructTemplate(opts["fields"])
 
         templates = {
             "integer": IntegerTemplate,
@@ -233,118 +265,6 @@ class SchemaTemplate(Template):
         if template_cls:
             return template_cls()
 
-        # Simple model?
-        simple = [
-            ArraySchema,
-            StructSchema
-        ]
-        for simple_cls in simple:
-            if st == simple_cls.match_type:
-                return simple_cls.normalize(datum)
-
         raise ValidationError("Unknown type", st)
-
-
-
-class SimpleSchema(object):
-
-    def __init__(self, opts={}):
-        self.data = opts
-
-    @classmethod
-    def validate(cls, datum):
-        pass
-
-    @classmethod
-    def normalize(cls, datum):
-        # Normalize against model schema
-        schema = cls.get_schema()
-        datum = schema.normalize_data(datum)
-        cls.validate(datum)
-        return cls.instantiate(datum)
-
-    @classmethod
-    def instantiate(cls, datum):
-        return cls(datum)
-
-    def serialize(self):
-        s = {
-            "type": self.match_type
-        }
-        s.update(self.get_schema().serialize_data(self.data))
-        return s
-
-    def normalize_data(self, datum):
-        if hasattr(self, "template_cls"):
-            return self.template_cls(**self.data).deserialize(datum)
-        return self.model_cls.normalize(datum, **self.data)
-
-    def serialize_data(self, datum):
-        if hasattr(self, "template_cls"):
-            return self.template_cls(**self.data).serialize(datum)
-        return self.model_cls.serialize(datum, **self.data)
-
-    @classmethod
-    def get_schema(cls):
-        return StructSchema([])
-
-
-
-
-class StructSchema(SimpleSchema):
-    template_cls = StructTemplate
-    match_type = "struct"
-
-    def __init__(self, fields):
-        super(StructSchema, self).__init__({
-            "fields": fields
-        })
-
-    @classmethod
-    def instantiate(cls, datum):
-        return cls(datum["fields"])
-
-    @classmethod
-    def get_schema(cls):
-        return StructSchema([
-            field("type", StringTemplate()),
-            field("fields", ArraySchema(StructSchema([
-                field("name", StringTemplate()),
-                field("schema", SchemaTemplate())
-            ])))
-        ])
-
-    @classmethod
-    def validate(cls, datum):
-        """Raises :exc:`~cosmic.exception.ValidationError` if there are two
-        fields with the same name.
-        """
-        super(StructSchema, cls).validate(datum)
-        # Additional validation to check for duplicate fields
-        fields = [field["name"] for field in datum['fields']]
-        if len(fields) > len(set(fields)):
-            raise ValidationError("Duplicate fields")
-
-
-
-class ArraySchema(SimpleSchema):
-    template_cls = ArrayTemplate
-    match_type = u"array"
-
-    def __init__(self, fields):
-        super(ArraySchema, self).__init__({
-            "items": fields
-        })
-
-    @classmethod
-    def instantiate(cls, datum):
-        return cls(datum["items"])
-
-    @classmethod
-    def get_schema(cls):
-        return StructSchema([
-            field("items", SchemaTemplate())
-        ])
-
 
 

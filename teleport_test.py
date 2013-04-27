@@ -46,8 +46,9 @@ deep_normalizer = SchemaTemplate().deserialize(deep_schema)
 class TestSchema(TestCase):
 
     def test_serialize_schema(self):
-        self.assertEqual(struct_schema, struct_normalizer.serialize())
-        self.assertEqual(deep_schema, deep_normalizer.serialize())
+        self.assertEqual(array_schema, SchemaTemplate().serialize(array_normalizer))
+        self.assertEqual(struct_schema, SchemaTemplate().serialize(struct_normalizer))
+        self.assertEqual(deep_schema, SchemaTemplate().serialize(deep_normalizer))
 
     def test_schema_subclass_delegation(self):
         self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "integer"}), IntegerTemplate))

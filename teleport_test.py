@@ -10,8 +10,8 @@ array_schema = {
         "type": "boolean"
     }
 }
-object_schema = {
-    "type": "object",
+struct_schema = {
+    "type": "struct",
     "fields": [
         {
             "name": "foo",
@@ -26,7 +26,7 @@ object_schema = {
 deep_schema = {
     "type": "array",
     "items": {
-        "type": "object",
+        "type": "struct",
         "fields": [
             {
                 "name": "foo",
@@ -40,42 +40,42 @@ deep_schema = {
     }
 }
 array_normalizer = SchemaTemplate().deserialize(array_schema)
-object_normalizer = SchemaTemplate().deserialize(object_schema)
+struct_normalizer = SchemaTemplate().deserialize(struct_schema)
 deep_normalizer = SchemaTemplate().deserialize(deep_schema)
 
 class TestSchema(TestCase):
 
     def test_serialize_schema(self):
-        self.assertEqual(object_schema, object_normalizer.serialize())
+        self.assertEqual(struct_schema, struct_normalizer.serialize())
         self.assertEqual(deep_schema, deep_normalizer.serialize())
 
     def test_schema_subclass_delegation(self):
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "integer"}), IntegerSchema))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "float"}), FloatSchema))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "boolean"}), BooleanSchema))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "string"}), StringSchema))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "binary"}), BinarySchema))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "schema"}), SchemaSchema))
+        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "integer"}), IntegerTemplate))
+        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "float"}), FloatTemplate))
+        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "boolean"}), BooleanTemplate))
+        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "string"}), StringTemplate))
+        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "binary"}), BinaryTemplate))
+        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "schema"}), SchemaTemplate))
 
     def test_schema_extra_parts(self):
-        # object with items
+        # struct with items
         s = deepcopy(array_schema)
-        s["fields"] = object_schema["fields"]
+        s["fields"] = struct_schema["fields"]
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
             SchemaTemplate().deserialize(s)
         # array with fields
-        s = deepcopy(object_schema)
+        s = deepcopy(struct_schema)
         s["items"] = array_schema["items"]
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
             SchemaTemplate().deserialize(s)
 
     def test_schema_duplicate_fields(self):
-        s = deepcopy(object_schema)
+        s = deepcopy(struct_schema)
         s["fields"][1]["name"] = "foo"
         with self.assertRaisesRegexp(ValidationError, "Duplicate fields"):
             SchemaTemplate().deserialize(s)
 
-    def test_schema_not_object(self):
+    def test_schema_not_struct(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid schema: True"):
             SchemaTemplate().deserialize(True)
 
@@ -171,11 +171,11 @@ class TestArray(TestCase):
 class TestStruct(TestCase):
 
     def test_normalize(self):
-        res = object_normalizer.normalize_data({"foo": True, "bar": 2.0})
+        res = struct_normalizer.normalize_data({"foo": True, "bar": 2.0})
         self.assertEqual(res, {"foo": True, "bar": 2})
-        with self.assertRaisesRegexp(ValidationError, "Invalid object"):
-            object_normalizer.normalize_data([])
+        with self.assertRaisesRegexp(ValidationError, "Invalid struct"):
+            struct_normalizer.normalize_data([])
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
-            object_normalizer.normalize_data({"foo": True, "barr": 2.0})
+            struct_normalizer.normalize_data({"foo": True, "barr": 2.0})
 
 

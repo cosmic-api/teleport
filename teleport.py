@@ -14,13 +14,13 @@ class ValidationError(Exception):
     JSON document relative to its root for a more useful stack trace.
 
     First parameter is the error *message*, second optional parameter is the
-    object that failed validation.
+    struct that failed validation.
     """
 
     def __init__(self, message, *args):
         super(ValidationError, self).__init__(message)
         self.stack = []
-        # Just the message or was there also an object passed in?
+        # Just the message or was there also an struct passed in?
         self.has_obj = len(args) > 0
         if self.has_obj:
             self.obj = args[0]
@@ -37,7 +37,7 @@ class ValidationError(Exception):
             ret += "Item at %s " % stack
         # Main message
         ret += self.message
-        # If an object was passed in, represent it at the end
+        # If an struct was passed in, represent it at the end
         if self.has_obj:
             ret += ": %s" % func(self.obj)
         return ret
@@ -59,9 +59,13 @@ class UnicodeDecodeValidationError(ValidationError):
     """
 
 
+class Template(object):
+    def normalize_data(self, datum):
+        return self.deserialize(datum)
+    def serialize_data(self, datum):
+        return self.serialize(datum)
 
-
-class IntegerTemplate(object):
+class IntegerTemplate(Template):
 
     def deserialize(self, datum):
         if type(datum) == int:
@@ -75,7 +79,7 @@ class IntegerTemplate(object):
 
 
 
-class FloatTemplate(object):
+class FloatTemplate(Template):
 
     def deserialize(self, datum):
         if type(datum) == float:
@@ -89,7 +93,7 @@ class FloatTemplate(object):
 
 
 
-class StringTemplate(object):
+class StringTemplate(Template):
 
     def deserialize(self, datum):
         if type(datum) == unicode:
@@ -106,7 +110,7 @@ class StringTemplate(object):
 
 
 
-class BinaryTemplate(object):
+class BinaryTemplate(Template):
 
     def deserialize(self, datum):
         if type(datum) in (str, unicode,):
@@ -121,7 +125,7 @@ class BinaryTemplate(object):
 
 
 
-class BooleanTemplate(object):
+class BooleanTemplate(Template):
 
     def deserialize(self, datum):
         if type(datum) == bool:
@@ -178,7 +182,7 @@ class StructTemplate(object):
                         e.stack.append(prop)
                         raise
             return ret
-        raise ValidationError("Invalid object", datum)
+        raise ValidationError("Invalid struct", datum)
 
     def serialize(self, datum):
         ret = {}
@@ -189,13 +193,26 @@ class StructTemplate(object):
         return ret
 
 
-class SchemaTemplate(object):
+
+class SchemaTemplate(Template):
 
     def serialize(self, datum):
-        return datum.serialize()
+        if isinstance(datum, Template):
+            return {
+                "type": {
+                    IntegerTemplate: "integer",
+                    FloatTemplate: "float",
+                    StringTemplate: "string",
+                    BinaryTemplate: "binary",
+                    BooleanTemplate: "boolean",
+                    SchemaTemplate: "schema"
+                }[datum.__class__]
+            }
+        else:
+            return datum.serialize()
 
     def deserialize(self, datum):
-        # Peek into the object before letting the real models
+        # Peek into the struct before letting the real models
         # do proper validation
         if type(datum) != dict or "type" not in datum.keys():
             raise ValidationError("Invalid schema", datum)
@@ -203,16 +220,23 @@ class SchemaTemplate(object):
         datum = deepcopy(datum)
         st = datum.pop("type")
 
+        templates = {
+            "integer": IntegerTemplate,
+            "float": FloatTemplate,
+            "string": StringTemplate,
+            "binary": BinaryTemplate,
+            "boolean": BooleanTemplate,
+            "schema": SchemaTemplate
+        }
+
+        template_cls = templates.get(st, None)
+        if template_cls:
+            return template_cls()
+
         # Simple model?
         simple = [
-            IntegerSchema,
-            FloatSchema,
-            StringSchema,
-            BinarySchema,
-            BooleanSchema,
             ArraySchema,
-            StructSchema,
-            SchemaSchema
+            StructSchema
         ]
         for simple_cls in simple:
             if st == simple_cls.match_type:
@@ -266,15 +290,10 @@ class SimpleSchema(object):
 
 
 
-class SchemaSchema(SimpleSchema):
-    match_type = "schema"
-    template_cls = SchemaTemplate
-
-
 
 class StructSchema(SimpleSchema):
     template_cls = StructTemplate
-    match_type = "object"
+    match_type = "struct"
 
     def __init__(self, fields):
         super(StructSchema, self).__init__({
@@ -288,10 +307,10 @@ class StructSchema(SimpleSchema):
     @classmethod
     def get_schema(cls):
         return StructSchema([
-            field("type", StringSchema()),
+            field("type", StringTemplate()),
             field("fields", ArraySchema(StructSchema([
-                field("name", StringSchema()),
-                field("schema", SchemaSchema())
+                field("name", StringTemplate()),
+                field("schema", SchemaTemplate())
             ])))
         ])
 
@@ -324,34 +343,8 @@ class ArraySchema(SimpleSchema):
     @classmethod
     def get_schema(cls):
         return StructSchema([
-            field("items", SchemaSchema())
+            field("items", SchemaTemplate())
         ])
 
 
-
-
-
-class IntegerSchema(SimpleSchema):
-    template_cls = IntegerTemplate
-    match_type = "integer"
-
-
-class FloatSchema(SimpleSchema):
-    template_cls = FloatTemplate
-    match_type = "float"
-
-
-class StringSchema(SimpleSchema):
-    template_cls = StringTemplate
-    match_type = "string"
-
-
-class BinarySchema(SimpleSchema):
-    template_cls = BinaryTemplate
-    match_type = "binary"
-
-
-class BooleanSchema(SimpleSchema):
-    template_cls = BooleanTemplate
-    match_type = "boolean"
 

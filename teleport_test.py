@@ -5,84 +5,84 @@ from copy import deepcopy
 from teleport import *
 
 array_schema = {
-    "type": "array",
+    "type": u"array",
     "items": {
-        "type": "boolean"
+        "type": u"boolean"
     }
 }
 struct_schema = {
-    "type": "struct",
+    "type": u"struct",
     "fields": [
         {
-            "name": "foo",
-            "schema": {"type": "boolean"}
+            "name": u"foo",
+            "schema": {"type": u"boolean"}
         },
         {
-            "name": "bar",
-            "schema": {"type": "integer"}
+            "name": u"bar",
+            "schema": {"type": u"integer"}
         }
     ]
 }
 deep_schema = {
-    "type": "array",
+    "type": u"array",
     "items": {
-        "type": "struct",
+        "type": u"struct",
         "fields": [
             {
-                "name": "foo",
-                "schema": {"type": "boolean"}
+                "name": u"foo",
+                "schema": {"type": u"boolean"}
             },
             {
-                "name": "bar",
-                "schema": {"type": "integer"}
+                "name": u"bar",
+                "schema": {"type": u"integer"}
             }
         ]
     }
 }
-array_normalizer = SchemaTemplate().deserialize(array_schema)
-struct_normalizer = SchemaTemplate().deserialize(struct_schema)
-deep_normalizer = SchemaTemplate().deserialize(deep_schema)
+array_normalizer = Schema().deserialize(array_schema)
+struct_normalizer = Schema().deserialize(struct_schema)
+deep_normalizer = Schema().deserialize(deep_schema)
 
 class TestSchema(TestCase):
 
     def test_serialize_schema(self):
-        self.assertEqual(array_schema, SchemaTemplate().serialize(array_normalizer))
-        self.assertEqual(struct_schema, SchemaTemplate().serialize(struct_normalizer))
-        self.assertEqual(deep_schema, SchemaTemplate().serialize(deep_normalizer))
+        self.assertEqual(array_schema, Schema().serialize(array_normalizer))
+        self.assertEqual(struct_schema, Schema().serialize(struct_normalizer))
+        self.assertEqual(deep_schema, Schema().serialize(deep_normalizer))
 
     def test_schema_subclass_delegation(self):
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "integer"}), IntegerTemplate))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "float"}), FloatTemplate))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "boolean"}), BooleanTemplate))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "string"}), StringTemplate))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "binary"}), BinaryTemplate))
-        self.assertTrue(isinstance(SchemaTemplate().deserialize({"type": "schema"}), SchemaTemplate))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"integer"}), Integer))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"float"}), Float))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"boolean"}), Boolean))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"string"}), String))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"binary"}), Binary))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"schema"}), Schema))
 
     def test_schema_extra_parts(self):
         # struct with items
         s = deepcopy(array_schema)
         s["fields"] = struct_schema["fields"]
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
-            SchemaTemplate().deserialize(s)
+            Schema().deserialize(s)
         # array with fields
         s = deepcopy(struct_schema)
         s["items"] = array_schema["items"]
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
-            SchemaTemplate().deserialize(s)
+            Schema().deserialize(s)
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
-        s["fields"][1]["name"] = "foo"
+        s["fields"][1]["name"] = u"foo"
         with self.assertRaisesRegexp(ValidationError, "Duplicate fields"):
-            SchemaTemplate().deserialize(s)
+            Schema().deserialize(s)
 
     def test_schema_not_struct(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid schema: True"):
-            SchemaTemplate().deserialize(True)
+            Schema().deserialize(True)
 
     def test_schema_unknown_type(self):
         with self.assertRaisesRegexp(ValidationError, "Unknown type"):
-            SchemaTemplate().deserialize({"type": "number"})
+            Schema().deserialize({"type": "number"})
 
     def test_deep_schema_validation_stack(self):
         # Test Python representatioon
@@ -98,65 +98,66 @@ class TestSchema(TestCase):
 class TestFloat(TestCase):
 
     def test_normalize(self):
-        self.assertEqual(FloatTemplate().deserialize(1), 1.0)
-        self.assertEqual(FloatTemplate().deserialize(1.0), 1.0)
+        self.assertEqual(Float().deserialize(1), 1.0)
+        self.assertEqual(Float().deserialize(1.0), 1.0)
         with self.assertRaisesRegexp(ValidationError, "Invalid float"):
-            FloatTemplate().deserialize(True)
+            Float().deserialize(True)
 
     def test_serialize(self):
-        self.assertEqual(FloatTemplate().serialize(1.1), 1.1)
+        self.assertEqual(Float().serialize(1.1), 1.1)
 
 
 class TestInteger(TestCase):
 
     def test_normalize(self):
-        self.assertEqual(IntegerTemplate().deserialize(1), 1)
-        self.assertEqual(IntegerTemplate().deserialize(1.0), 1)
+        self.assertEqual(Integer().deserialize(1), 1)
+        self.assertEqual(Integer().deserialize(1.0), 1)
         with self.assertRaisesRegexp(ValidationError, "Invalid integer"):
-            IntegerTemplate().deserialize(1.1)
+            Integer().deserialize(1.1)
 
     def test_serialize(self):
-        self.assertEqual(IntegerTemplate().serialize(1), 1)
+        self.assertEqual(Integer().serialize(1), 1)
 
 
 class TestBoolean(TestCase):
 
     def test_normalize(self):
-        self.assertEqual(BooleanTemplate().deserialize(True), True)
+        self.assertEqual(Boolean().deserialize(True), True)
         with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
-            BooleanTemplate().deserialize(0)
+            Boolean().deserialize(0)
 
     def test_serialize(self):
-        self.assertEqual(BooleanTemplate().serialize(True), True)
+        self.assertEqual(Boolean().serialize(True), True)
 
 
 class TestString(TestCase):
 
-    def test_string(self):
-        self.assertEqual(StringTemplate().deserialize("omg"), u"omg")
-        self.assertEqual(StringTemplate().deserialize(u"omg"), u"omg")
+    def test_string_okay(self):
+        self.assertEqual(String().deserialize(u"omg"), u"omg")
+
+    def test_string_fail(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid string"):
-            StringTemplate().deserialize(0)
-        with self.assertRaisesRegexp(UnicodeDecodeValidationError, "invalid start byte"):
-            StringTemplate().deserialize("\xff")
+            self.assertEqual(String().deserialize("omg"), u"omg")
+        with self.assertRaisesRegexp(ValidationError, "Invalid string"):
+            String().deserialize(0)
 
     def test_serialize(self):
-        self.assertEqual(StringTemplate().serialize("yo"), "yo")
+        self.assertEqual(String().serialize(u"yo"), u"yo")
 
 
 class TestBinary(TestCase):
 
     def test_binary(self):
-        self.assertEqual(BinaryTemplate().deserialize('YWJj'), "abc")
-        self.assertEqual(BinaryTemplate().deserialize(u'YWJj'), "abc")
+        self.assertEqual(Binary().deserialize('YWJj'), "abc")
+        self.assertEqual(Binary().deserialize(u'YWJj'), "abc")
         with self.assertRaisesRegexp(ValidationError, "Invalid base64"):
             # Will complain about incorrect padding
-            BinaryTemplate().deserialize("a")
+            Binary().deserialize("a")
         with self.assertRaisesRegexp(ValidationError, "Invalid binary"):
-            BinaryTemplate().deserialize(1)
+            Binary().deserialize(1)
 
     def test_serialize(self):
-        self.assertEqual(BinaryTemplate().serialize("abc"), "YWJj")
+        self.assertEqual(Binary().serialize("abc"), "YWJj")
 
 
 class TestArray(TestCase):

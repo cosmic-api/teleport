@@ -14,56 +14,56 @@ class ValidationError(Exception):
     JSON document relative to its root for a more useful stack trace.
 
     First parameter is the error *message*, second optional parameter is the
-    struct that failed validation.
+    object that failed validation.
     """
 
     def __init__(self, message, *args):
         super(ValidationError, self).__init__(message)
         self.stack = []
-        # Just the message or was there also an struct passed in?
+        # Just the message or was there also an object passed in?
         self.has_obj = len(args) > 0
         if self.has_obj:
             self.obj = args[0]
 
-    def _print_with_format(self, func):
-        # Returns the full error message with the representation
-        # of its literals determined by the passed in function.
+    def _print_with_format(self, repr_func):
+        """Returns the full error message with the representation of its
+        literals determined by func.
+        """
         ret = ""
         # If there is a stack, preface the message with a location
         if self.stack:
             stack = ""
             for item in reversed(self.stack):
-                stack += '[' + func(item) + ']'
+                stack += '[' + repr_func(item) + ']'
             ret += "Item at %s " % stack
         # Main message
         ret += self.message
         # If an struct was passed in, represent it at the end
         if self.has_obj:
-            ret += ": %s" % func(self.obj)
+            ret += ": %s" % repr_func(self.obj)
         return ret
 
     def __str__(self):
         return self._print_with_format(repr)
 
     def print_json(self):
-        """Print the same message as the one you would find in a
-        console stack trace, but using JSON to output all the language
-        literals. This representation is used for sending error
-        messages over the wire.
+        """Print the same message as the one you would find in a console stack
+        trace, but using JSON to output all the language literals. This
+        representation is used for sending error messages over the wire.
         """
         return self._print_with_format(json.dumps)
 
-class UnicodeDecodeValidationError(ValidationError):
-    """A subclass of :exc:`~cosmic.exceptions.ValidationError` raised
-    in place of a :exc:`UnicodeDecodeError`.
-    """
 
 
 
-class IntegerTemplate(object):
+class Integer(object):
     match_type = "integer"
 
     def deserialize(self, datum):
+        """If *datum* is an integer, return it; if it is a float with a 0 for
+        its fractional part, return the integer part as an int. Otherwise,
+        raise a :exc:`~teleport.ValidationError`.
+        """
         if type(datum) == int:
             return datum
         if type(datum) == float and datum.is_integer():
@@ -75,10 +75,13 @@ class IntegerTemplate(object):
 
 
 
-class FloatTemplate(object):
+class Float(object):
     match_type = "float"
 
     def deserialize(self, datum):
+        """If *datum* is a float, return it; if it is an integer, cast it to a
+        float and return it. Otherwise, raise a :exc:`~teleport.ValidationError`.
+        """
         if type(datum) == float:
             return datum
         if type(datum) == int:
@@ -90,17 +93,17 @@ class FloatTemplate(object):
 
 
 
-class StringTemplate(object):
+class String(object):
     match_type = "string"
 
     def deserialize(self, datum):
+        """If *datum* is of unicode type, return it. Note that strings of str
+        type needs to be decoded.
+        """
         if type(datum) == unicode:
             return datum
         if type(datum) == str:
-            try:
-                return datum.decode('utf_8')
-            except UnicodeDecodeError as inst:
-                raise UnicodeDecodeValidationError(unicode(inst))
+            raise ValidationError("Invalid string. Expected unicode, got str", datum)
         raise ValidationError("Invalid string", datum)
 
     def serialize(self, datum):
@@ -108,10 +111,13 @@ class StringTemplate(object):
 
 
 
-class BinaryTemplate(object):
+class Binary(object):
     match_type = "binary"
 
     def deserialize(self, datum):
+        """If *datum* is a base64-encoded string, decode and return it. If not
+        a string, or encoding is wrong, raise :exc:`~teleport.ValidationError`.
+        """
         if type(datum) in (str, unicode,):
             try:
                 return base64.b64decode(datum)
@@ -124,10 +130,13 @@ class BinaryTemplate(object):
 
 
 
-class BooleanTemplate(object):
-    match_type = "array"
+class Boolean(object):
+    match_type = "boolean"
 
     def deserialize(self, datum):
+        """If *datum* is a boolean, return it. Otherwise, raise a
+        :exc:`~teleport.ValidationError`.
+        """
         if type(datum) == bool:
             return datum
         raise ValidationError("Invalid boolean", datum)
@@ -137,13 +146,18 @@ class BooleanTemplate(object):
 
 
 
-class ArrayTemplate(object):
+class Array(object):
     match_type = "array"
 
     def __init__(self, items):
         self.items = self.data = items        
 
     def deserialize(self, datum):
+        """If *datum* is a list, construct a new list by putting each element
+        of *datum* through a serializer provided as *items*. This serializer
+        may raise a :exc:`~teleport.ValidationError`. If *datum* is not a list,
+        :exc:`~teleport.ValidationError` will also be raised.
+        """
         if type(datum) == list:
             ret = []
             for i, item in enumerate(datum):
@@ -156,32 +170,53 @@ class ArrayTemplate(object):
         raise ValidationError("Invalid array", datum)
 
     def serialize(self, datum):
+        """Serialize each item in the *datum* list using the serializer
+        provided as *items*. Return the resulting list.
+        """
         return [self.items.serialize(item) for item in datum]
 
     @classmethod
     def get_params(cls):
-        return StructTemplate([
-            field("items", SchemaTemplate())
+        return Struct([
+            field("type", String()),
+            field("items", Schema())
         ])
 
     def serialize_self(self):
         s = {"type": "array"}
-        s.update(ArrayTemplate.get_params().serialize({"items": self.items}))
+        s.update(Array.get_params().serialize({"items": self.items}))
         return s
 
     @classmethod
     def deserialize_self(self, datum):
-        opts = ArrayTemplate.get_params().deserialize(datum)
-        return ArrayTemplate(opts["items"])
+        opts = Array.get_params().deserialize(datum)
+        return Array(opts["items"])
 
 
-class StructTemplate(object):
+
+class Struct(object):
     match_type = "struct"
 
     def __init__(self, fields):
+        """*fields* must be a list of dicts, where each dict has two
+        attributes: *name*, and *schema*. *name* is a string representing the
+        property name, *schema* is a serializer.
+        """
+
         self.fields = self.data = fields
 
     def deserialize(self, datum):
+        """If *datum* is a dict, deserialize it against *fields*
+        and return the resulting dict. Otherwise raise a
+        :exc:`~teleport.ValidationError`.
+
+        A :exc:`~teleport.ValidationError` will be raised if:
+
+        1. *datum* has a property not declared in *fields*
+        2. One of the properties of *datum* does not pass validation as defined
+           by the corresponding *schema*
+
+        """
         if type(datum) == dict:
             ret = {}
             props = {}
@@ -210,46 +245,36 @@ class StructTemplate(object):
 
     @classmethod
     def get_params(cls):
-        return StructTemplate([
-            field("type", StringTemplate()),
-            field("fields", ArrayTemplate(StructTemplate([
-                field("name", StringTemplate()),
-                field("schema", SchemaTemplate())
+        return Struct([
+            field("type", String()),
+            field("fields", Array(Struct([
+                field("name", String()),
+                field("schema", Schema())
             ])))
         ])
 
     def serialize_self(self):
         s = {"type": "struct"}
-        s.update(StructTemplate.get_params().serialize({"fields": self.fields}))
+        s.update(Struct.get_params().serialize({"fields": self.fields}))
         return s
 
     @classmethod
     def deserialize_self(cls, datum):
-        opts = StructTemplate.get_params().deserialize(datum)
+        opts = Struct.get_params().deserialize(datum)
         # Additional validation to check for duplicate fields
         fields = [field["name"] for field in opts["fields"]]
         if len(fields) > len(set(fields)):
             raise ValidationError("Duplicate fields")
-        return StructTemplate(opts["fields"])
+        return Struct(opts["fields"])
 
 
 
-class SchemaTemplate(object):
+class Schema(object):
 
     def serialize(self, datum):
         if hasattr(datum, "serialize_self"):
             return datum.serialize_self()
-
-        return {
-            "type": {
-                IntegerTemplate: "integer",
-                FloatTemplate: "float",
-                StringTemplate: "string",
-                BinaryTemplate: "binary",
-                BooleanTemplate: "boolean",
-                SchemaTemplate: "schema"
-            }[datum.__class__]
-        }
+        return {"type": datum.match_type}
 
     def deserialize(self, datum):
         # Peek into the struct before letting the real models
@@ -258,26 +283,24 @@ class SchemaTemplate(object):
             raise ValidationError("Invalid schema", datum)
 
         datum = deepcopy(datum)
-        st = datum.pop("type")
+        st = datum["type"]
 
-        templates = {
-            "integer": IntegerTemplate,
-            "float": FloatTemplate,
-            "string": StringTemplate,
-            "binary": BinaryTemplate,
-            "boolean": BooleanTemplate,
-            "schema": SchemaTemplate,
-            "array": ArrayTemplate,
-            "struct": StructTemplate
-        }
-
-
-        template_cls = templates.get(st, None)
-        if template_cls:
-            if hasattr(template_cls, "deserialize_self"):
-                return template_cls.deserialize_self(datum)
-            return template_cls()
+        schema_cls = schemas.get(st, None)
+        if schema_cls:
+            if hasattr(schema_cls, "deserialize_self"):
+                return schema_cls.deserialize_self(datum)
+            return schema_cls()
 
         raise ValidationError("Unknown type", st)
 
 
+schemas = {
+    "integer": Integer,
+    "float": Float,
+    "string": String,
+    "binary": Binary,
+    "boolean": Boolean,
+    "schema": Schema,
+    "array": Array,
+    "struct": Struct
+}

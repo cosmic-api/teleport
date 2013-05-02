@@ -1,7 +1,5 @@
-import sys
 import json
 import base64
-from copy import deepcopy
 
 def field(name, schema):
     return {
@@ -277,24 +275,34 @@ class Schema(object):
         return {"type": datum.match_type}
 
     def deserialize(self, datum):
-        # Peek into the struct before letting the real models
-        # do proper validation
+        """Datum must be a dict with a key *type* that has a string value,
+        which is used to find a serializer class. If this serializer 
+        defines a :meth:`deserialize_self` method, *datum* will be passed 
+        into this method in order to deserialize it. Otherwise, the 
+        serializer will be instantiated with no arguments. The instance
+        is returned.
+        """
+        # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():
             raise ValidationError("Invalid schema", datum)
 
-        datum = deepcopy(datum)
         st = datum["type"]
 
-        schema_cls = schemas.get(st, None)
-        if schema_cls:
-            if hasattr(schema_cls, "deserialize_self"):
-                return schema_cls.deserialize_self(datum)
-            return schema_cls()
+        # Try to fetch the serializer class
+        try:
+            serializer = serializers[st]
+        except KeyError:
+            raise ValidationError("Unknown type", st)
 
-        raise ValidationError("Unknown type", st)
+        # Deserialize or instantiate
+        if hasattr(serializer, "deserialize_self"):
+            return serializer.deserialize_self(datum)
+        else:
+            return serializer()
 
 
-schemas = {
+
+serializers = {
     "integer": Integer,
     "float": Float,
     "string": String,

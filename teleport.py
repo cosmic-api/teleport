@@ -148,13 +148,13 @@ class Array(object):
     match_type = "array"
 
     def __init__(self, items):
-        self.items = self.data = items        
+        self.items = items        
 
     def deserialize(self, datum):
         """If *datum* is a list, construct a new list by putting each element
         of *datum* through a serializer provided as *items*. This serializer
-        may raise a :exc:`~teleport.ValidationError`. If *datum* is not a list,
-        :exc:`~teleport.ValidationError` will also be raised.
+        may raise a :exc:`~teleport.ValidationError`. If *datum* is not a
+        list, :exc:`~teleport.ValidationError` will also be raised.
         """
         if type(datum) == list:
             ret = []
@@ -200,13 +200,11 @@ class Struct(object):
         attributes: *name*, and *schema*. *name* is a string representing the
         property name, *schema* is a serializer.
         """
-
-        self.fields = self.data = fields
+        self.fields = fields
 
     def deserialize(self, datum):
-        """If *datum* is a dict, deserialize it against *fields*
-        and return the resulting dict. Otherwise raise a
-        :exc:`~teleport.ValidationError`.
+        """If *datum* is a dict, deserialize it against *fields* and return
+        the resulting dict. Otherwise raise a :exc:`~teleport.ValidationError`.
 
         A :exc:`~teleport.ValidationError` will be raised if:
 
@@ -278,11 +276,10 @@ class Schema(object):
 
     def deserialize(self, datum):
         """Datum must be a dict with a key *type* that has a string value,
-        which is used to find a serializer class. If this serializer 
-        defines a :meth:`deserialize_self` method, *datum* will be passed 
-        into this method in order to deserialize it. Otherwise, the 
-        serializer will be instantiated with no arguments. The instance
-        is returned.
+        which is used to find a serializer class. If this serializer defines a
+        :meth:`deserialize_self` method, *datum* will be passed into this
+        method in order to deserialize it. Otherwise, the serializer will be
+        instantiated with no arguments. The instance is returned.
         """
         # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():

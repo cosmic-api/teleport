@@ -175,6 +175,10 @@ class TestStruct(TestCase):
     def test_deserialize(self):
         res = struct_serializer.deserialize({"foo": True, "bar": 2.0})
         self.assertEqual(res, {"foo": True, "bar": 2})
+        res = struct_serializer.deserialize({"foo": True})
+        self.assertEqual(res, {"foo": True})
+
+    def test_deserialize_fail(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid struct"):
             struct_serializer.deserialize([])
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):

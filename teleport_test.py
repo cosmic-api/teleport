@@ -39,16 +39,16 @@ deep_schema = {
         ]
     }
 }
-array_normalizer = Schema().deserialize(array_schema)
-struct_normalizer = Schema().deserialize(struct_schema)
-deep_normalizer = Schema().deserialize(deep_schema)
+array_serializer = Schema().deserialize(array_schema)
+struct_serializer = Schema().deserialize(struct_schema)
+deep_serializer = Schema().deserialize(deep_schema)
 
 class TestSchema(TestCase):
 
     def test_serialize_schema(self):
-        self.assertEqual(array_schema, Schema().serialize(array_normalizer))
-        self.assertEqual(struct_schema, Schema().serialize(struct_normalizer))
-        self.assertEqual(deep_schema, Schema().serialize(deep_normalizer))
+        self.assertEqual(array_schema, Schema().serialize(array_serializer))
+        self.assertEqual(struct_schema, Schema().serialize(struct_serializer))
+        self.assertEqual(deep_schema, Schema().serialize(deep_serializer))
 
     def test_schema_subclass_delegation(self):
         self.assertTrue(isinstance(Schema().deserialize({"type": u"integer"}), Integer))
@@ -87,17 +87,17 @@ class TestSchema(TestCase):
     def test_deep_schema_validation_stack(self):
         # Test Python representatioon
         with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
-            deep_normalizer.deserialize([{"foo": True, "bar": False}])
+            deep_serializer.deserialize([{"foo": True, "bar": False}])
         # Test JSON representation
         try:
-            deep_normalizer.deserialize([{"foo": True, "bar": False}])
+            deep_serializer.deserialize([{"foo": True, "bar": False}])
         except ValidationError as e:
             self.assertRegexpMatches(e.print_json(), '\[0\]\["bar"\]')
 
 
 class TestFloat(TestCase):
 
-    def test_normalize(self):
+    def test_deserialize(self):
         self.assertEqual(Float().deserialize(1), 1.0)
         self.assertEqual(Float().deserialize(1.0), 1.0)
         with self.assertRaisesRegexp(ValidationError, "Invalid float"):
@@ -109,7 +109,7 @@ class TestFloat(TestCase):
 
 class TestInteger(TestCase):
 
-    def test_normalize(self):
+    def test_deserialize(self):
         self.assertEqual(Integer().deserialize(1), 1)
         self.assertEqual(Integer().deserialize(1.0), 1)
         with self.assertRaisesRegexp(ValidationError, "Invalid integer"):
@@ -121,7 +121,7 @@ class TestInteger(TestCase):
 
 class TestBoolean(TestCase):
 
-    def test_normalize(self):
+    def test_deserialize(self):
         self.assertEqual(Boolean().deserialize(True), True)
         with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
             Boolean().deserialize(0)
@@ -162,22 +162,22 @@ class TestBinary(TestCase):
 
 class TestArray(TestCase):
 
-    def test_normalize(self):
-        self.assertEqual(array_normalizer.deserialize([True, False]), [True, False])
+    def test_deserialize(self):
+        self.assertEqual(array_serializer.deserialize([True, False]), [True, False])
         with self.assertRaisesRegexp(ValidationError, "Invalid array"):
-            array_normalizer.deserialize(("no", "tuples",))
+            array_serializer.deserialize(("no", "tuples",))
         with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
-            array_normalizer.deserialize([True, False, 1])
+            array_serializer.deserialize([True, False, 1])
 
 
 class TestStruct(TestCase):
 
-    def test_normalize(self):
-        res = struct_normalizer.deserialize({"foo": True, "bar": 2.0})
+    def test_deserialize(self):
+        res = struct_serializer.deserialize({"foo": True, "bar": 2.0})
         self.assertEqual(res, {"foo": True, "bar": 2})
         with self.assertRaisesRegexp(ValidationError, "Invalid struct"):
-            struct_normalizer.deserialize([])
+            struct_serializer.deserialize([])
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
-            struct_normalizer.deserialize({"foo": True, "barr": 2.0})
+            struct_serializer.deserialize({"foo": True, "barr": 2.0})
 
 

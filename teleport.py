@@ -217,28 +217,29 @@ class Struct(object):
         """
         if type(datum) == dict:
             ret = {}
-            props = {}
-            for prop in self.fields:
-                props[prop["name"]] = prop["schema"]
-            extra = set(datum.keys()) - set(props.keys())
+            fields = {}
+            for field in self.fields:
+                fields[field["name"]] = field["schema"]
+            extra = set(datum.keys()) - set(fields.keys())
             if extra:
                 raise ValidationError("Unexpected fields", list(extra))
-            for prop, schema in props.items():
-                if prop in datum.keys():
+            for name, schema in fields.items():
+                if name in datum.keys():
                     try:
-                        ret[prop] = schema.deserialize(datum[prop])
+                        ret[name] = schema.deserialize(datum[name])
                     except ValidationError as e:
-                        e.stack.append(prop)
+                        e.stack.append(name)
                         raise
             return ret
         raise ValidationError("Invalid struct", datum)
 
     def serialize(self, datum):
         ret = {}
-        for prop in self.fields:
-            name = prop['name']
+        for field in self.fields:
+            name = field['name']
+            schema = field['schema']
             if name in datum.keys() and datum[name] != None:
-                ret[name] = prop['schema'].serialize(datum[name])
+                ret[name] = schema.serialize(datum[name])
         return ret
 
     @classmethod

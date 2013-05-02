@@ -273,7 +273,8 @@ class Schema(object):
     def serialize(self, datum):
         if hasattr(datum, "serialize_self"):
             return datum.serialize_self()
-        return {"type": datum.match_type}
+        else:
+            return {"type": datum.match_type}
 
     def deserialize(self, datum):
         """Datum must be a dict with a key *type* that has a string value,
@@ -287,13 +288,13 @@ class Schema(object):
         if type(datum) != dict or "type" not in datum.keys():
             raise ValidationError("Invalid schema", datum)
 
-        st = datum["type"]
+        t = datum["type"]
 
         # Try to fetch the serializer class
         try:
-            serializer = serializers[st]
+            serializer = serializers[t]
         except KeyError:
-            raise ValidationError("Unknown type", st)
+            raise ValidationError("Unknown type", t)
 
         # Deserialize or instantiate
         if hasattr(serializer, "deserialize_self"):

@@ -8,7 +8,7 @@ with open("README.rst") as readme:
 setup(
     name = 'teleport',
     version = "0.0.1",
-    modules = ['teleport'],
+    py_modules = ['teleport'],
     description = 'Extandable serialization system',
     license = "MIT",
     author_email = "alexei.boronine@gmail.com",

@@ -50,6 +50,10 @@ class TestSchema(TestCase):
         self.assertEqual(struct_schema, Schema().serialize(struct_serializer))
         self.assertEqual(deep_schema, Schema().serialize(deep_serializer))
 
+    def test_serialize_unfamiliar_schema(self):
+        with self.assertRaisesRegexp(KeyError, "Teleport is unfamiliar"):
+            Schema().serialize("This is a string, not a serializer")
+
     def test_schema_subclass_delegation(self):
         self.assertTrue(isinstance(Schema().deserialize({"type": u"integer"}), Integer))
         self.assertTrue(isinstance(Schema().deserialize({"type": u"float"}), Float))

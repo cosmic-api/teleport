@@ -92,11 +92,6 @@ class TestSchema(TestCase):
         # Test Python representatioon
         with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
             deep_serializer.deserialize([{"foo": True, "bar": False}])
-        # Test JSON representation
-        try:
-            deep_serializer.deserialize([{"foo": True, "bar": False}])
-        except ValidationError as e:
-            self.assertRegexpMatches(e.print_json(), '\[0\]\["bar"\]')
 
 
 class TestFloat(TestCase):

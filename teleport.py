@@ -8,48 +8,35 @@ def field(name, schema):
     }
 
 class ValidationError(Exception):
-    """Raised by the model system. Stores the location of the error in the
-    JSON document relative to its root for a more useful stack trace.
+    """Raised during desearialization. Stores the location of the error in the
+    JSON document relative to its root.
 
-    First parameter is the error *message*, second optional parameter is the
+    First argument is the error message, second optional argument is the
     object that failed validation.
     """
 
     def __init__(self, message, *args):
-        super(ValidationError, self).__init__(message)
+        self.message = message
         self.stack = []
         # Just the message or was there also an object passed in?
         self.has_obj = len(args) > 0
         if self.has_obj:
             self.obj = args[0]
 
-    def _print_with_format(self, repr_func):
-        """Returns the full error message with the representation of its
-        literals determined by func.
-        """
+    def __str__(self):
         ret = ""
         # If there is a stack, preface the message with a location
         if self.stack:
             stack = ""
             for item in reversed(self.stack):
-                stack += '[' + repr_func(item) + ']'
+                stack += '[' + repr(item) + ']'
             ret += "Item at %s " % stack
         # Main message
         ret += self.message
         # If an struct was passed in, represent it at the end
         if self.has_obj:
-            ret += ": %s" % repr_func(self.obj)
+            ret += ": %s" % repr(self.obj)
         return ret
-
-    def __str__(self):
-        return self._print_with_format(repr)
-
-    def print_json(self):
-        """Print the same message as the one you would find in a console stack
-        trace, but using JSON to output all the language literals. This
-        representation is used for sending error messages over the wire.
-        """
-        return self._print_with_format(json.dumps)
 
 
 
@@ -58,7 +45,7 @@ class Integer(object):
     def deserialize(self, datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
         its fractional part, return the integer part as an int. Otherwise,
-        raise a :exc:`~teleport.ValidationError`.
+        raise a :exc:`ValidationError`.
         """
         if type(datum) == int:
             return datum
@@ -75,7 +62,7 @@ class Float(object):
 
     def deserialize(self, datum):
         """If *datum* is a float, return it; if it is an integer, cast it to a
-        float and return it. Otherwise, raise a :exc:`~teleport.ValidationError`.
+        float and return it. Otherwise, raise a :exc:`ValidationError`.
         """
         if type(datum) == float:
             return datum
@@ -109,7 +96,7 @@ class Binary(object):
 
     def deserialize(self, datum):
         """If *datum* is a base64-encoded string, decode and return it. If not
-        a string, or encoding is wrong, raise :exc:`~teleport.ValidationError`.
+        a string, or encoding is wrong, raise :exc:`ValidationError`.
         """
         if type(datum) in (str, unicode,):
             try:
@@ -127,7 +114,7 @@ class Boolean(object):
 
     def deserialize(self, datum):
         """If *datum* is a boolean, return it. Otherwise, raise a
-        :exc:`~teleport.ValidationError`.
+        :exc:`ValidationError`.
         """
         if type(datum) == bool:
             return datum
@@ -139,6 +126,9 @@ class Boolean(object):
 
 
 class Array(object):
+    """The argument *items* is a serializer that defines the type of each item
+    in the array.
+    """
 
     def __init__(self, items):
         self.items = items        
@@ -146,8 +136,8 @@ class Array(object):
     def deserialize(self, datum):
         """If *datum* is a list, construct a new list by putting each element
         of *datum* through a serializer provided as *items*. This serializer
-        may raise a :exc:`~teleport.ValidationError`. If *datum* is not a
-        list, :exc:`~teleport.ValidationError` will also be raised.
+        may raise a :exc:`ValidationError`. If *datum* is not a
+        list, :exc:`ValidationError` will also be raised.
         """
         if type(datum) == list:
             ret = []
@@ -161,8 +151,8 @@ class Array(object):
         raise ValidationError("Invalid array", datum)
 
     def serialize(self, datum):
-        """Serialize each item in the *datum* list using the serializer
-        provided as *items*. Return the resulting list.
+        """Serialize each item in the *datum* iterable using *items*. Return
+        the resulting values in a list.
         """
         return [self.items.serialize(item) for item in datum]
 
@@ -186,24 +176,23 @@ class Array(object):
 
 
 class Struct(object):
+    """*fields* must be a list of dicts, where each dict has two items: *name*
+    (string), and *schema* (serializer). For each pair, *schema* is used to
+    serialize and deserialize a dictionary value matched by the key *name*.
+    """
 
     def __init__(self, fields):
-        """*fields* must be a list of dicts, where each dict has two
-        attributes: *name*, and *schema*. *name* is a string representing the
-        property name, *schema* is a serializer.
-        """
         self.fields = fields
 
     def deserialize(self, datum):
         """If *datum* is a dict, deserialize it against *fields* and return
-        the resulting dict. Otherwise raise a :exc:`~teleport.ValidationError`.
+        the resulting dict. Otherwise raise a :exc:`ValidationError`.
 
-        A :exc:`~teleport.ValidationError` will be raised if:
+        A :exc:`ValidationError` will be raised if:
 
-        1. *datum* has a property not declared in *fields*
-        2. One of the properties of *datum* does not pass validation as defined
-           by the corresponding *schema*
-
+        1. *datum* has a property not declared in *fields*.
+        2. One of the values of *datum* does not pass validation as defined
+           by the corresponding *schema*.
         """
         if type(datum) == dict:
             ret = {}
@@ -261,20 +250,25 @@ class Struct(object):
 class Schema(object):
 
     def serialize(self, datum):
+        """If the serializer passed in as *datum* has a :meth:`serialize_self`
+        method, use it. Otherwise, return a simple schema by finding the type
+        in the global :data:`types` object.
+        """
         if hasattr(datum, "serialize_self"):
             return datum.serialize_self()
         else:
-            for t, cls in serializers.items():
+            for t, cls in types.items():
                 if datum.__class__ == cls:
                     return {"type": t}
             raise KeyError("Teleport is unfamiliar with serializer %s" % datum)
 
     def deserialize(self, datum):
         """Datum must be a dict with a key *type* that has a string value,
-        which is used to find a serializer class. If this serializer defines a
-        :meth:`deserialize_self` method, *datum* will be passed into this
-        method in order to deserialize it. Otherwise, the serializer will be
-        instantiated with no arguments. The instance is returned.
+        which is used to find a serializer class in :data:`types`. If this
+        serializer defines a :meth:`deserialize_self` method, *datum* will be
+        passed into this method in order to deserialize it. Otherwise, the
+        serializer will be instantiated with no arguments. The instance is
+        returned.
         """
         # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():
@@ -284,7 +278,7 @@ class Schema(object):
 
         # Try to fetch the serializer class
         try:
-            serializer = serializers[t]
+            serializer = types[t]
         except KeyError:
             raise ValidationError("Unknown type", t)
 
@@ -295,8 +289,7 @@ class Schema(object):
             return serializer()
 
 
-
-serializers = {
+types = {
     "integer": Integer,
     "float": Float,
     "string": String,

@@ -1,10 +1,18 @@
 import json
 import base64
 
-def field(name, schema):
+def required(name, schema):
     return {
         "name": name,
-        "schema": schema
+        "schema": schema,
+        "required": True
+    }
+
+def optional(name, schema):
+    return {
+        "name": name,
+        "schema": schema,
+        "required": False
     }
 
 class ValidationError(Exception):
@@ -159,8 +167,8 @@ class Array(object):
     @classmethod
     def get_params(cls):
         return Struct([
-            field("type", String()),
-            field("items", Schema())
+            required("type", String()),
+            required("items", Schema())
         ])
 
     def serialize_self(self):
@@ -190,27 +198,36 @@ class Struct(object):
 
         A :exc:`ValidationError` will be raised if:
 
-        1. *datum* has a property not declared in *fields*.
-        2. One of the values of *datum* does not pass validation as defined
+        1. *datum* is missing a required field
+        2. *datum* has a property not declared in *fields*.
+        3. One of the values of *datum* does not pass validation as defined
            by the corresponding *schema*.
         """
         if type(datum) == dict:
             ret = {}
-            fields = {}
+            required = {}
+            optional = {}
             for field in self.fields:
-                fields[field["name"]] = field["schema"]
-            extra = set(datum.keys()) - set(fields.keys())
+                if field["required"] == True:
+                    required[field["name"]] = field["schema"]
+                else:
+                    optional[field["name"]] = field["schema"]
+            missing = set(required.keys()) - set(datum.keys())
+            if missing:
+                raise ValidationError("Missing fields", list(missing))
+            extra = set(datum.keys()) - set(required.keys() + optional.keys())
             if extra:
                 raise ValidationError("Unexpected fields", list(extra))
-            for name, schema in fields.items():
-                if name in datum.keys():
+            for field, schema in optional.items() + required.items():
+                if field in datum.keys():
                     try:
-                        ret[name] = schema.deserialize(datum[name])
+                        ret[field] = schema.deserialize(datum[field])
                     except ValidationError as e:
-                        e.stack.append(name)
+                        e.stack.append(field)
                         raise
             return ret
-        raise ValidationError("Invalid struct", datum)
+        else:
+            raise ValidationError("Invalid struct", datum)
 
     def serialize(self, datum):
         ret = {}
@@ -224,10 +241,11 @@ class Struct(object):
     @classmethod
     def get_params(cls):
         return Struct([
-            field("type", String()),
-            field("fields", Array(Struct([
-                field("name", String()),
-                field("schema", Schema())
+            required("type", String()),
+            required("fields", Array(Struct([
+                required("name", String()),
+                required("schema", Schema()),
+                required("required", Boolean())
             ])))
         ])
 

@@ -13,31 +13,13 @@ array_schema = {
 struct_schema = {
     "type": u"struct",
     "fields": [
-        {
-            "name": u"foo",
-            "schema": {"type": u"boolean"}
-        },
-        {
-            "name": u"bar",
-            "schema": {"type": u"integer"}
-        }
+        required(u"foo", {"type": u"boolean"}),
+        optional(u"bar", {"type": u"integer"})
     ]
 }
 deep_schema = {
     "type": u"array",
-    "items": {
-        "type": u"struct",
-        "fields": [
-            {
-                "name": u"foo",
-                "schema": {"type": u"boolean"}
-            },
-            {
-                "name": u"bar",
-                "schema": {"type": u"integer"}
-            }
-        ]
-    }
+    "items": struct_schema
 }
 array_serializer = Schema().deserialize(array_schema)
 struct_serializer = Schema().deserialize(struct_schema)
@@ -182,5 +164,7 @@ class TestStruct(TestCase):
             struct_serializer.deserialize([])
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
             struct_serializer.deserialize({"foo": True, "barr": 2.0})
+        with self.assertRaisesRegexp(ValidationError, "Missing fields"):
+            struct_serializer.deserialize({"bar": 2})
 
 

@@ -12,6 +12,7 @@ Teleport
    ``"boolean"`` (:class:`Boolean`),
    ``"string"`` (:class:`String`),
    ``"binary"`` (:class:`Binary`),
+   ``"json"`` (:class:`JSON`),
    ``"array"`` (:class:`Array`),
    ``"struct"`` (:class:`Struct`) and
    ``"schema"`` (:class:`Schema`).
@@ -32,6 +33,12 @@ Teleport
    :members:
 
 .. autoclass:: Binary
+   :members:
+
+.. autoclass:: JSON
+   :members:
+
+.. autoclass:: Box
    :members:
 
 .. autoclass:: Array

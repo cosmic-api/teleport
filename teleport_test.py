@@ -43,6 +43,7 @@ class TestSchema(TestCase):
         self.assertTrue(isinstance(Schema().deserialize({"type": u"string"}), String))
         self.assertTrue(isinstance(Schema().deserialize({"type": u"binary"}), Binary))
         self.assertTrue(isinstance(Schema().deserialize({"type": u"schema"}), Schema))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"json"}), JSON))
 
     def test_schema_extra_parts(self):
         # struct with items
@@ -128,7 +129,7 @@ class TestString(TestCase):
 
 class TestBinary(TestCase):
 
-    def test_binary(self):
+    def test_deserialize(self):
         self.assertEqual(Binary().deserialize('YWJj'), "abc")
         self.assertEqual(Binary().deserialize(u'YWJj'), "abc")
         with self.assertRaisesRegexp(ValidationError, "Invalid base64"):
@@ -139,6 +140,16 @@ class TestBinary(TestCase):
 
     def test_serialize(self):
         self.assertEqual(Binary().serialize("abc"), "YWJj")
+
+
+class TestJSON(TestCase):
+
+    def test_deserialize(self):
+        self.assertTrue(isinstance(JSON().deserialize("A string?"), Box))
+        self.assertEqual(JSON().deserialize('ABC').datum, "ABC")
+
+    def test_serialize(self):
+        self.assertEqual(JSON().serialize(Box("abc")), "abc")
 
 
 class TestArray(TestCase):

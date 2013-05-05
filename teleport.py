@@ -133,6 +133,27 @@ class Boolean(object):
 
 
 
+class Box(object):
+    """Used as a wrapper around JSON data to disambugate None as a JSON value
+    (``null``) from None as an absense of value.
+    """
+    def __init__(self, datum):
+        self.datum = datum
+
+
+
+class JSON(object):
+
+    def deserialize(self, datum):
+        """Return the JSON value wrapped in a :class:`Box`.
+        """
+        return Box(datum)
+
+    def serialize(self, datum):
+        return datum.datum
+
+
+
 class Array(object):
     """The argument *items* is a serializer that defines the type of each item
     in the array.
@@ -315,6 +336,7 @@ types = {
     "binary": Binary,
     "boolean": Boolean,
     "schema": Schema,
+    "json": JSON,
     "array": Array,
     "struct": Struct
 }

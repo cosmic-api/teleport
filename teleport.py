@@ -185,8 +185,9 @@ class Array(object):
 
 class Struct(object):
     """*fields* must be a list of dicts, where each dict has two items: *name*
-    (string), and *schema* (serializer). For each pair, *schema* is used to
-    serialize and deserialize a dictionary value matched by the key *name*.
+    (string), *schema* (serializer) and *required* (boolean). For each pair,
+    *schema* is used to serialize and deserialize a dictionary value matched
+    by the key *name*.
     """
 
     def __init__(self, fields):
@@ -199,7 +200,7 @@ class Struct(object):
         A :exc:`ValidationError` will be raised if:
 
         1. *datum* is missing a required field
-        2. *datum* has a property not declared in *fields*.
+        2. *datum* has a field not declared in *fields*.
         3. One of the values of *datum* does not pass validation as defined
            by the corresponding *schema*.
         """

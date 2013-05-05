@@ -17,11 +17,11 @@ The canonical implementation of Teleport is written in Python.
     Serializer
 
         An object that defines a serialization and deserialization function.
-        The output of a model's deserialization function must be of the same
-        form as the input of its serialization function. Likewise, the input
-        of its deserialization function must be of the same form as the output
-        of its serialization function. Together, these functions define the
-        *native form* as well as the *JSON form* of the data.
+        The output of the deserialization function must be of the same form as
+        the input of the serialization function. Likewise, the input of the
+        deserialization function must be of the same form as the output of the
+        serialization function. Together, these functions define the *native
+        form* as well as the *JSON form* of the data.
 
         Serializers may take parameters. For example, an array serializer
         needs to know what type of items the array is expected to contain.
@@ -53,7 +53,7 @@ The canonical implementation of Teleport is written in Python.
 Built-In Types
 --------------
 
-Teleport provides 8 built-in types. Each implementation must provide 8
+Teleport provides 9 built-in types. Each implementation must provide 9
 corresponding serializers.
 
 The native form of the built-in types is implementation-dependent and will be
@@ -78,6 +78,11 @@ list of all built-in models and their validation logic.
 ``binary``
     Must be expressed as a JSON string containing Base64 encoded binary data.
     Base64 errors must result in a validation error.
+
+``json``
+    Can be any JSON value. No validation is performed during deserialization.
+    Depending on the implementation, it may be useful to wrap the JSON in a
+    different object, so that a ``null`` JSON value won't cause ambiguity.
 
 ``array`` (parametrized by *items*)
     Must be expressed as a JSON array. The implementation must deserialize
@@ -112,31 +117,19 @@ Schemas
 One of the unique design requirements of Teleport is being able to pass
 serializers over the wire by means of a JSON schema.
 
-A schema is always a JSON object, it must always have a *type* attribute. An
-array schema also requires an *items* attribute, which will be a schema that
-describes every item in the matched array. A struct schema requires a *fields*
-attribute, which will be an array of objects describing each property of the
-data.
+A schema is always a JSON object, it must always have a *type* property.
+All built-in types except for ``array`` and ``struct`` contain no other
+properties.
 
-Below is the grammar for a JSON schema:
+An ``array`` schema must contain a property *items*, whose value must be a
+schema that describes every item in the array.
 
-.. _schema-grammar:
-
-.. productionlist:: schema
-    schema: `simple_schema` | `array_schema` | `struct_schema`
-    simple_type: '"integer"' | '"float"' | '"string"' | '"boolean"' | '"binary"' |
-               : '"json"' | '"schema"'
-    simple_schema: '{' '"type"' ':' `simple_type` '}'
-    array_schema: '{' '"type"' ':' '"array"' ',' '"items"' ':' `schema` '}'
-    struct_schema: '{' '"type"' ':' '"struct"' ',' '"fields"' ':' '[' `fields` ']' '}'
-    fields: `field` | `field` ',' `fields`
-    field: '{' '"name"'   ':' `string` ','
-         :     '"schema"' ':' `schema` '}'
-
-.. note::
-
-    An struct schema cannot define two fields with the same name. Trying to
-    deserialize such a schema must result in a validation error.
+A ``struct`` schema must contain a property *fields*, which must be an array
+of field objects. Each field object must contain 3 properties: *name*,
+*schema* and *required*. *Name* must be a string, there cannot be two field
+objects in a ``struct`` schema with the same name. *Schema* must be a schema
+that describes the value matched by the *name*. *Required* must be a boolean
+that specifies whether omitting the item will cause a validation error or not.
 
 To validate ``[{"name": "Rose"}, {"name": "Lily"}]``, you could use the
 following schema:
@@ -150,7 +143,8 @@ following schema:
             "fields": [
                 {
                     "name": "name",
-                    "schema": {"type": "string"}
+                    "schema": {"type": "string"},
+                    "required": true
                 }
             ]
         }
@@ -159,29 +153,36 @@ following schema:
 Implementation Notes
 --------------------
 
-While parsing the schema :ref:`grammar <schema-grammar>` is entirely up to the
-implementations, it should be noted that the structure of a JSON schema can be
-validated by a meta-schema. This is how the canonical Python implementation
-works.
-
-For example, *fields* can be described as follows:
+How to validate schema parameters is up to the implementation. However, it
+should be noted that these parameters can be described as Teleport schemas
+themselves. For example, *fields* can be described as follows:
 
 .. code:: json
 
     {
         "type": "array",
         "items": {
-            "type": "object",
+            "type": "struct",
             "fields": [
                 {
                     "name": "name",
-                    "schema": {"type": "string"}
+                    "schema": {"type": "string"},
+                    "required": true
                 },
                 {
                     "name": "schema",
-                    "schema": {"type": "schema"}
+                    "schema": {"type": "schema"},
+                    "required": true
+                },
+                {
+                    "name": "required",
+                    "schema": {"type": "boolean"},
+                    "required": true
                 }
             ]
         }
     }
+
+Note that after using the above schema the implementation still needs to make
+sure there are no duplicate names.
 

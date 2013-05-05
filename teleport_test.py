@@ -179,3 +179,25 @@ class TestStruct(TestCase):
             struct_serializer.deserialize({"bar": 2})
 
 
+class TestSuit(TestCase):
+
+    def setUp(self):
+
+        class Suit(object):
+
+            def deserialize(self, datum):
+                if datum not in ["hearts", "spades", "clubs", "diamonds"]:
+                    raise ValidationError("Invalid suit", datum)
+                return datum
+
+            def serialize(self, datum):
+                return datum
+
+        self.Suit = Suit
+
+    def test_deserialize(self):
+        suits = ["hearts", "clubs", "clubs"]
+        self.assertEqual(Array(self.Suit()).deserialize(suits), suits)
+        with self.assertRaisesRegexp(ValidationError, "Invalid suit"):
+            suits = ["hearts", "clubs", "clubz"]
+            self.assertEqual(Array(self.Suit()).deserialize(suits), suits)

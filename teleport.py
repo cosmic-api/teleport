@@ -46,6 +46,8 @@ class ValidationError(Exception):
             ret += ": %s" % repr(self.obj)
         return ret
 
+class UnicodeDecodeValidationError(ValidationError):
+    pass
 
 
 class Integer(object):
@@ -86,13 +88,19 @@ class Float(object):
 class String(object):
 
     def deserialize(self, datum):
-        """If *datum* is of unicode type, return it. Note that strings of str
-        type needs to be decoded.
+        """If *datum* is of unicode type, return it. If it is a string, decode
+        it as UTF-8 and return the result. Otherwise, raise a
+        :exc:`ValidationError`. Unicode errors are dealt
+        with strictly by raising :exc:`UnicodeDecodeValidationError`, a
+        subclass of the above.
         """
         if type(datum) == unicode:
             return datum
         if type(datum) == str:
-            raise ValidationError("Invalid string. Expected unicode, got str", datum)
+            try:
+                return datum.decode('utf_8')
+            except UnicodeDecodeError as inst:
+                raise UnicodeDecodeValidationError(unicode(inst))
         raise ValidationError("Invalid string", datum)
 
     def serialize(self, datum):

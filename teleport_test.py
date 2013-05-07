@@ -116,12 +116,13 @@ class TestString(TestCase):
 
     def test_string_okay(self):
         self.assertEqual(String().deserialize(u"omg"), u"omg")
+        self.assertEqual(String().deserialize("omg"), u"omg")
 
     def test_string_fail(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid string"):
-            self.assertEqual(String().deserialize("omg"), u"omg")
-        with self.assertRaisesRegexp(ValidationError, "Invalid string"):
             String().deserialize(0)
+        with self.assertRaisesRegexp(UnicodeDecodeValidationError, "invalid start byte"):
+            String().deserialize("\xff")
 
     def test_serialize(self):
         self.assertEqual(String().serialize(u"yo"), u"yo")

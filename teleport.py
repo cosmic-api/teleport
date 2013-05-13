@@ -51,6 +51,7 @@ class UnicodeDecodeValidationError(ValidationError):
 
 
 class Integer(object):
+    match_type = "integer"
 
     def deserialize(self, datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
@@ -69,6 +70,7 @@ class Integer(object):
 
 
 class Float(object):
+    match_type = "float"
 
     def deserialize(self, datum):
         """If *datum* is a float, return it; if it is an integer, cast it to a
@@ -86,6 +88,7 @@ class Float(object):
 
 
 class String(object):
+    match_type = "string"
 
     def deserialize(self, datum):
         """If *datum* is of unicode type, return it. If it is a string, decode
@@ -109,6 +112,7 @@ class String(object):
 
 
 class Binary(object):
+    match_type = "binary"
 
     def deserialize(self, datum):
         """If *datum* is a base64-encoded string, decode and return it. If not
@@ -127,6 +131,7 @@ class Binary(object):
 
 
 class Boolean(object):
+    match_type = "boolean"
 
     def deserialize(self, datum):
         """If *datum* is a boolean, return it. Otherwise, raise a
@@ -151,6 +156,7 @@ class Box(object):
 
 
 class JSON(object):
+    match_type = "json"
 
     def deserialize(self, datum):
         """Return the JSON value wrapped in a :class:`Box`.
@@ -166,6 +172,7 @@ class Array(object):
     """The argument *items* is a serializer that defines the type of each item
     in the array.
     """
+    match_type = "array"
 
     def __init__(self, items):
         self.items = items        
@@ -218,6 +225,7 @@ class Struct(object):
     *schema* is used to serialize and deserialize a dictionary value matched
     by the key *name*.
     """
+    match_type = "struct"
 
     def __init__(self, fields):
         self.fields = fields
@@ -296,6 +304,7 @@ class Struct(object):
 
 
 class Schema(object):
+    match_type = "schema"
 
     def serialize(self, datum):
         """If the serializer passed in as *datum* has a :meth:`serialize_self`
@@ -305,10 +314,7 @@ class Schema(object):
         if hasattr(datum, "serialize_self"):
             return datum.serialize_self()
         else:
-            for t, cls in types.items():
-                if datum.__class__ == cls:
-                    return {"type": t}
-            raise KeyError("Teleport is unfamiliar with serializer %s" % datum)
+            return {"type": datum.match_type}
 
     def deserialize(self, datum):
         """Datum must be a dict with a key *type* that has a string value,
@@ -326,7 +332,7 @@ class Schema(object):
 
         # Try to fetch the serializer class
         try:
-            serializer = types[t]
+            serializer = self.fetch(t)
         except KeyError:
             raise ValidationError("Unknown type", t)
 
@@ -335,6 +341,9 @@ class Schema(object):
             return serializer.deserialize_self(datum)
         else:
             return serializer()
+
+    def fetch(self, t):
+        return types[t]
 
 
 types = {
@@ -348,3 +357,4 @@ types = {
     "array": Array,
     "struct": Struct
 }
+

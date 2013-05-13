@@ -47,6 +47,27 @@ The client that receives this JSON object can then deserialize it::
     >>> Schema().deserialize({'type': 'array', 'items': {'type': 'integer'}})
     <teleport.Array object at 0xb7189d6c>
 
+Another complex serializer is the :class:`Struct`. It is used for dicts with
+non-arbitrary keys::
+
+    >>> from teleport import Struct, required, optional
+    >>> s = Struct([
+    ...     required("name", String()),
+    ...     optional("scores", array_of_integers)
+    ... ])
+    >>> s.deserialize({"name": "Bob"})
+    {"name": u"Bob"}
+    >>> s.deserialize({"name": "Bob", "scores": [1, 2, 3.1]})
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "teleport.py", line 268, in deserialize
+        ret[field] = schema.deserialize(datum[field])
+      File "teleport.py", line 196, in deserialize
+        ret.append(self.items.deserialize(item))
+      File "teleport.py", line 71, in deserialize
+        raise ValidationError("Invalid integer", datum)
+    teleport.ValidationError: Item at ['scores'][2] Invalid integer: 3.1
+
 Creating Custom Types
 ---------------------
 
@@ -74,12 +95,35 @@ Now let's try to make an array of suits::
     teleport.ValidationError: Item at [1] Invalid suit: clubz
 
 If we want to be able to pass this serializer over the wire, we need to let
-Teleport know of its existence. This is how it's done::
+Teleport know of its existence. In order to avoid editing global state, this
+is done by extending the :class:`TypeMap` class like so::
 
-    >>> from teleport import types
-    >>> types["suit"] = Suit
-    >>> Schema().serialize(Array(Suit()))
-    {'type': 'array', 'items': {'type': 'suit'}}
+    class CardsTypeMap(TypeMap):
+
+        def get(self, name):
+            if name == "suit":
+                return Suit
+            return DEFAULT_TYPES[name]
+
+:class:`CardsTypeMap` is our extension of Teleport, we can use it via Python's
+:keyword:`with` statement. Any code that executes inside the :keyword:`with`
+block will have access to our custom type::
+
+    >>> with CardsTypeMap():
+    ...     Schema().deserialize({"type": "suit"})
+    <__main__.Suit object at 0xb7189d6c>
+
+Code outside of the block will only have access to the built-in types::
+
+    >>> Schema().deserialize({"type": "suit"})
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "teleport.py", line 349, in deserialize
+        raise UnknownTypeValidationError("Unknown type", t)
+    teleport.UnknownTypeValidationError: Unknown type: 'suit' 
+
+This is achieved using Werkzeug's `Context Locals
+<http://werkzeug.pocoo.org/docs/local/>`_.
 
 Custom Types With Parameters
 ----------------------------
@@ -99,7 +143,7 @@ take a look at the source code of :class:`Array` for a simple example.
 API
 ---
 
-.. data:: types
+.. data:: DEFAULT_TYPES
 
    A dictionary mapping type names to serializer classes. By default, contains
    the following members: 
@@ -113,8 +157,9 @@ API
    ``"struct"`` (:class:`Struct`) and
    ``"schema"`` (:class:`Schema`).
 
-.. autoclass:: ValidationError
-   :members:
+.. autoclass:: TypeMap
+
+   .. automethod:: get
 
 .. autoclass:: Integer
    :members:
@@ -155,3 +200,10 @@ API
 
    .. automethod:: serialize
    .. automethod:: deserialize
+
+.. autoclass:: ValidationError
+   :members:
+
+.. autoclass:: UnicodeDecodeValidationError
+
+.. autoclass:: UnknownTypeValidationError

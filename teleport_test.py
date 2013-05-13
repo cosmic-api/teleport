@@ -198,3 +198,40 @@ class TestSuit(TestCase):
         with self.assertRaisesRegexp(ValidationError, "Invalid suit"):
             suits = ["hearts", "clubs", "clubz"]
             self.assertEqual(Array(self.Suit()).deserialize(suits), suits)
+
+
+class TestTypeMap(TestCase):
+
+    def setUp(self):
+
+        class AllStrings(TypeMap):
+
+            def get(self, name):
+                if name == "array":
+                    return Array
+                elif name == "string":
+                    return String
+                else:
+                    raise KeyError()
+
+        self.AllStrings = AllStrings
+
+    def test_custom_type_map_okay(self):
+
+        with self.AllStrings():
+            self.assertEqual(Schema().deserialize({
+                "type": "string"
+            }).__class__, String)
+            self.assertEqual(Schema().deserialize({
+                "type": "array",
+                "items": {"type": "string"}
+            }).__class__, Array)
+
+    def test_custom_type_map_fail(self):
+
+        Schema().deserialize({"type": "integer"})
+
+        with self.assertRaises(UnknownTypeValidationError):
+            with self.AllStrings():
+                Schema().deserialize({"type": "integer"})
+

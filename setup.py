@@ -7,10 +7,13 @@ with open("README.rst") as readme:
 
 setup(
     name = 'teleport',
-    version = "0.0.3",
+    version = "0.0.4",
     py_modules = ['teleport'],
     description = 'An extandable serialization system',
     license = "MIT",
     author_email = "alexei.boronine@gmail.com",
+    install_requires=[
+      "Werkzeug >= 0.8.3"
+    ],
     long_description = long_description
 )

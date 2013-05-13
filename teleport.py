@@ -1,5 +1,7 @@
 import json
 import base64
+from werkzeug.local import LocalStack
+
 
 def required(name, schema):
     return {
@@ -47,6 +49,9 @@ class ValidationError(Exception):
         return ret
 
 class UnicodeDecodeValidationError(ValidationError):
+    pass
+
+class UnknownTypeValidationError(ValidationError):
     pass
 
 
@@ -239,7 +244,7 @@ class Struct(object):
         1. *datum* is missing a required field
         2. *datum* has a field not declared in *fields*.
         3. One of the values of *datum* does not pass validation as defined
-           by the corresponding *schema*.
+           by the *schema* of the corresponding field.
         """
         if type(datum) == dict:
             ret = {}
@@ -309,7 +314,7 @@ class Schema(object):
     def serialize(self, datum):
         """If the serializer passed in as *datum* has a :meth:`serialize_self`
         method, use it. Otherwise, return a simple schema by finding the type
-        in the global :data:`types` object.
+        in the serializer's :attr:`match_type` attribute.
         """
         if hasattr(datum, "serialize_self"):
             return datum.serialize_self()
@@ -317,12 +322,18 @@ class Schema(object):
             return {"type": datum.match_type}
 
     def deserialize(self, datum):
-        """Datum must be a dict with a key *type* that has a string value,
-        which is used to find a serializer class in :data:`types`. If this
-        serializer defines a :meth:`deserialize_self` method, *datum* will be
-        passed into this method in order to deserialize it. Otherwise, the
-        serializer will be instantiated with no arguments. The instance is
-        returned.
+        """Datum must be a dict with a key *type* that has a string value.
+        This value will me passed into the :meth:`get` method of the current
+        :class:`TypeMap` instance to get the matching serializer. If no serializer
+        is found, :exc:`UnknownTypeValidationError` will be raised.
+
+        If this serializer defines a :meth:`deserialize_self` method, *datum*
+        will be passed into items
+
+        This function will use the serializer's :meth:`deserialize_self`
+        instantiation method if such exists (*datum* will be passed into it).
+        Otherwise, it will simply instantiate the serializer. Either way, the
+        instance is returned.
         """
         # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():
@@ -330,11 +341,11 @@ class Schema(object):
 
         t = datum["type"]
 
-        # Try to fetch the serializer class
+        # Try to get the serializer class from the current TypeMap
         try:
-            serializer = self.fetch(t)
+            serializer = _ctx_stack.top.get(t)
         except KeyError:
-            raise ValidationError("Unknown type", t)
+            raise UnknownTypeValidationError("Unknown type", t)
 
         # Deserialize or instantiate
         if hasattr(serializer, "deserialize_self"):
@@ -342,11 +353,29 @@ class Schema(object):
         else:
             return serializer()
 
-    def fetch(self, t):
-        return types[t]
 
 
-types = {
+class TypeMap(object):
+
+    def get(self, name):
+        """Fetches the serializer responsible for the type *name*. The default
+        implementation simply queries the :const:`DEFAULT_TYPES` dict. Subclass
+        :class:`TypeMap` to override it.
+        """
+        return DEFAULT_TYPES[name]
+
+    def __enter__(self):
+        _ctx_stack.push(self)
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        _ctx_stack.pop()
+
+
+_ctx_stack = LocalStack()
+_ctx_stack.push(TypeMap())
+
+DEFAULT_TYPES = {
     "integer": Integer,
     "float": Float,
     "string": String,

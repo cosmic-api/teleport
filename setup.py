@@ -11,6 +11,7 @@ setup(
     py_modules = ['teleport'],
     description = 'An extandable serialization system',
     license = "MIT",
+    author = "8313547 Canada Inc.",
     author_email = "alexei.boronine@gmail.com",
     install_requires=[
       "Werkzeug >= 0.8.3"

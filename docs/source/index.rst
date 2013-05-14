@@ -71,59 +71,10 @@ non-arbitrary keys::
 Creating Custom Types
 ---------------------
 
-Let's define a special type that stores a playing card suit in a string::
+.. autoclass:: TypeMap
 
-    class Suit(object):
-
-        def deserialize(self, datum):
-            if datum not in ["hearts", "spades", "clubs", "diamonds"]:
-                raise ValidationError("Invalid suit", datum)
-            return datum
-
-        def serialize(self, datum):
-            return datum
-
-Now let's try to make an array of suits::
-
-    >>> Array(Suit()).deserialize(["hearts", "clubs"])
-    ["hearts", "clubs"]
-    >>> Array(Suit()).deserialize(["hearts", "clubz"])
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-      File "teleport.py", line 175, in deserialize
-        ret.append(self.items.deserialize(item))
-    teleport.ValidationError: Item at [1] Invalid suit: clubz
-
-If we want to be able to pass this serializer over the wire, we need to let
-Teleport know of its existence. In order to avoid editing global state, this
-is done by extending the :class:`TypeMap` class like so::
-
-    class CardsTypeMap(TypeMap):
-
-        def get(self, name):
-            if name == "suit":
-                return Suit
-            return DEFAULT_TYPES[name]
-
-:class:`CardsTypeMap` is our extension of Teleport, we can use it via Python's
-:keyword:`with` statement. Any code that executes inside the :keyword:`with`
-block will have access to our custom type::
-
-    >>> with CardsTypeMap():
-    ...     Schema().deserialize({"type": "suit"})
-    <__main__.Suit object at 0xb7189d6c>
-
-Code outside of the block will only have access to the built-in types::
-
-    >>> Schema().deserialize({"type": "suit"})
-    Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-      File "teleport.py", line 349, in deserialize
-        raise UnknownTypeValidationError("Unknown type", t)
-    teleport.UnknownTypeValidationError: Unknown type: 'suit' 
-
-This is achieved using Werkzeug's `Context Locals
-<http://werkzeug.pocoo.org/docs/local/>`_.
+   .. automethod:: get
+   .. automethod:: middleware
 
 Custom Types With Parameters
 ----------------------------
@@ -140,10 +91,10 @@ But if you look at the JSON form of an array type, you can see that it has a
 parameter *items*. It is quite easy to create custom types with parameters,
 take a look at the source code of :class:`Array` for a simple example.
 
-API
----
+Built-In Serializers
+--------------------
 
-.. data:: DEFAULT_TYPES
+.. data:: BUILTIN_TYPES
 
    A dictionary mapping type names to serializer classes. By default, contains
    the following members: 
@@ -156,10 +107,6 @@ API
    ``"array"`` (:class:`Array`),
    ``"struct"`` (:class:`Struct`) and
    ``"schema"`` (:class:`Schema`).
-
-.. autoclass:: TypeMap
-
-   .. automethod:: get
 
 .. autoclass:: Integer
    :members:
@@ -200,6 +147,9 @@ API
 
    .. automethod:: serialize
    .. automethod:: deserialize
+
+Exceptions
+----------
 
 .. autoclass:: ValidationError
    :members:

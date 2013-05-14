@@ -176,55 +176,49 @@ class TestStruct(TestCase):
             struct_serializer.deserialize({"bar": 2})
 
 
+class Suit(object):
+
+    def deserialize(self, datum):
+        if datum not in ["hearts", "spades", "clubs", "diamonds"]:
+            raise ValidationError("Invalid suit", datum)
+        return datum
+
+    def serialize(self, datum):
+        return datum
+
+
 class TestSuit(TestCase):
-
-    def setUp(self):
-
-        class Suit(object):
-
-            def deserialize(self, datum):
-                if datum not in ["hearts", "spades", "clubs", "diamonds"]:
-                    raise ValidationError("Invalid suit", datum)
-                return datum
-
-            def serialize(self, datum):
-                return datum
-
-        self.Suit = Suit
 
     def test_deserialize(self):
         suits = ["hearts", "clubs", "clubs"]
-        self.assertEqual(Array(self.Suit()).deserialize(suits), suits)
+        self.assertEqual(Array(Suit()).deserialize(suits), suits)
         with self.assertRaisesRegexp(ValidationError, "Invalid suit"):
             suits = ["hearts", "clubs", "clubz"]
-            self.assertEqual(Array(self.Suit()).deserialize(suits), suits)
+            self.assertEqual(Array(Suit()).deserialize(suits), suits)
+
+
+class AllSuits(TypeMap):
+
+    def __getitem__(self, name):
+        if name == "array":
+            return Array
+        elif name == "suit":
+            return Suit
+        else:
+            raise KeyError()
 
 
 class TestTypeMap(TestCase):
 
-    def setUp(self):
-
-        class AllStrings(TypeMap):
-
-            def get(self, name):
-                if name == "array":
-                    return Array
-                elif name == "string":
-                    return String
-                else:
-                    raise KeyError()
-
-        self.AllStrings = AllStrings
-
     def test_custom_type_map_okay(self):
 
-        with self.AllStrings():
+        with AllSuits():
             self.assertEqual(Schema().deserialize({
-                "type": "string"
-            }).__class__, String)
+                "type": "suit"
+            }).__class__, Suit)
             self.assertEqual(Schema().deserialize({
                 "type": "array",
-                "items": {"type": "string"}
+                "items": {"type": "suit"}
             }).__class__, Array)
 
     def test_custom_type_map_fail(self):
@@ -232,6 +226,24 @@ class TestTypeMap(TestCase):
         Schema().deserialize({"type": "integer"})
 
         with self.assertRaises(UnknownTypeValidationError):
-            with self.AllStrings():
+            with AllSuits():
                 Schema().deserialize({"type": "integer"})
+
+    def test_wsgi_middleware(self):
+        # Inspired by https://github.com/mitsuhiko/werkzeug/blob/master/werkzeug/testapp.py
+        from werkzeug.wrappers import BaseResponse
+        from werkzeug.test import Client
+
+        def test_app(environ, start_response):
+            # Needs to access AllSuits
+            S = Schema().deserialize({"type": "suit"})
+            response = BaseResponse(S.__class__.__name__, mimetype="text/plain")
+            return response(environ, start_response)
+
+        test_app = AllSuits.middleware(test_app)
+
+        c = Client(test_app, BaseResponse)
+        resp = c.get('/')
+
+        self.assertEqual(resp.data, "Suit")
 

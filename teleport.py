@@ -3,19 +3,97 @@ import base64
 from werkzeug.local import LocalStack
 
 
+class TypeMap(object):
+    """Teleport is made extendable by allowing the application to define a
+    custom mapping of type names (strings such as ``"integer"``) to the
+    corresponding serializer classes. I could have defined a global mapping
+    object for all applications to share, like Python's own
+    :keyword:`sys.modules`, but this would prohibit multiple Teleport
+    extentions to operate in clean isolation. Global state is evil, and
+    Teleport successfully avoids it using Werkzeug's brilliant `Context Locals
+    <http://werkzeug.pocoo.org/docs/local/>`_.
+
+    First, let's create a type by defining a serializer::
+
+        class Suit(object):
+
+            def deserialize(self, datum):
+                if datum not in ["hearts", "spades", "clubs", "diamonds"]:
+                    raise ValidationError("Invalid suit", datum)
+                return datum
+
+            def serialize(self, datum):
+                return datum
+
+    To extend Teleport with your custom type, subclass :class:`TypeMap`::
+
+        class PokerTypeMap(TypeMap):
+
+            def __getitem__(self, name):
+                if name == "suit":
+                    return Suit
+                else:
+                    return BUILTIN_TYPES[name]
+
+    :class:`PokerTypeMap` is an extention of Teleport, to enable it within
+    a specific code block, use Python's :keyword:`with` statement::
+
+        # Only built-in types accessible here
+        with PokerTypeMap():
+            # Built-in types as well as "suit" are accessible
+            with TypeMap():
+                # Only built-in types here
+                pass
+
+    To avoid repeating this :keyword:`with` statement, put it at the entry
+    point of your program. If your program is a WSGI server, use the
+    :meth:`middleware` class method to set the mapping for the entire
+    application.
+    """
+
+    def __getitem__(self, name):
+        return BUILTIN_TYPES[name]
+
+    @classmethod
+    def middleware(cls, wsgi_app):
+        """To use in `Flask <http://flask.pocoo.org/>`_::
+
+            app = Flask(__name__)
+
+            app.wsgi_app = PokerTypeMap.middleware(app.wsgi_app)
+            app.run()
+
+        In `Django <https://www.djangoproject.com/>`_ (see the
+        auto-generated ``wsgi.py`` module)::
+
+            from django.core.wsgi import get_wsgi_application
+            application = get_wsgi_application()
+            application = PokerTypeMap.middleware(application)
+
+        """
+        def wrapped(environ, start_response):
+            with cls():
+                return wsgi_app(environ, start_response)
+        return wrapped
+
+    def __enter__(self):
+        _ctx_stack.push(self)
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        _ctx_stack.pop()
+
+
+_ctx_stack = LocalStack()
+_ctx_stack.push(TypeMap())
+
+# Some syntax sugar
 def required(name, schema):
-    return {
-        "name": name,
-        "schema": schema,
-        "required": True
-    }
+    return {"name": name, "schema": schema, "required": True}
 
 def optional(name, schema):
-    return {
-        "name": name,
-        "schema": schema,
-        "required": False
-    }
+    return {"name": name, "schema": schema, "required": False}
+
 
 class ValidationError(Exception):
     """Raised during desearialization. Stores the location of the error in the
@@ -343,7 +421,7 @@ class Schema(object):
 
         # Try to get the serializer class from the current TypeMap
         try:
-            serializer = _ctx_stack.top.get(t)
+            serializer = _ctx_stack.top[t]
         except KeyError:
             raise UnknownTypeValidationError("Unknown type", t)
 
@@ -354,28 +432,7 @@ class Schema(object):
             return serializer()
 
 
-
-class TypeMap(object):
-
-    def get(self, name):
-        """Fetches the serializer responsible for the type *name*. The default
-        implementation simply queries the :const:`DEFAULT_TYPES` dict. Subclass
-        :class:`TypeMap` to override it.
-        """
-        return DEFAULT_TYPES[name]
-
-    def __enter__(self):
-        _ctx_stack.push(self)
-        return self
-
-    def __exit__(self, exc_type, exc_value, tb):
-        _ctx_stack.pop()
-
-
-_ctx_stack = LocalStack()
-_ctx_stack.push(TypeMap())
-
-DEFAULT_TYPES = {
+BUILTIN_TYPES = {
     "integer": Integer,
     "float": Float,
     "string": String,
@@ -386,4 +443,3 @@ DEFAULT_TYPES = {
     "array": Array,
     "struct": Struct
 }
-

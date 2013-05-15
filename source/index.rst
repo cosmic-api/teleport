@@ -1,5 +1,5 @@
-Teleport
-========
+Teleport Spec
+=============
 
 Teleport is a JSON-based extendable system for cross-language serialization
 and validation. Teleport is not a serialization *layer*, it is meant to

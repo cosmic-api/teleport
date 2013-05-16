@@ -47,20 +47,19 @@ class TypeMap(object):
 
     To avoid repeating this :keyword:`with` statement, put it at the entry
     point of your program. If your program is a WSGI server, use the
-    :meth:`middleware` class method to set the mapping for the entire
+    :meth:`middleware` method to set the mapping for the entire
     application.
     """
 
     def __getitem__(self, name):
         return BUILTIN_TYPES[name]
 
-    @classmethod
-    def middleware(cls, wsgi_app):
+    def middleware(self, wsgi_app):
         """To use in `Flask <http://flask.pocoo.org/>`_::
 
             app = Flask(__name__)
 
-            app.wsgi_app = PokerTypeMap.middleware(app.wsgi_app)
+            app.wsgi_app = PokerTypeMap().middleware(app.wsgi_app)
             app.run()
 
         In `Django <https://www.djangoproject.com/>`_ (see the
@@ -68,11 +67,11 @@ class TypeMap(object):
 
             from django.core.wsgi import get_wsgi_application
             application = get_wsgi_application()
-            application = PokerTypeMap.middleware(application)
+            application = PokerTypeMap().middleware(application)
 
         """
         def wrapped(environ, start_response):
-            with cls():
+            with self:
                 return wsgi_app(environ, start_response)
         return wrapped
 

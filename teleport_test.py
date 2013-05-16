@@ -240,7 +240,7 @@ class TestTypeMap(TestCase):
             response = BaseResponse(S.__class__.__name__, mimetype="text/plain")
             return response(environ, start_response)
 
-        test_app = AllSuits.middleware(test_app)
+        test_app = AllSuits().middleware(test_app)
 
         c = Client(test_app, BaseResponse)
         resp = c.get('/')

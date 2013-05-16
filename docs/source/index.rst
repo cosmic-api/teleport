@@ -73,7 +73,6 @@ Creating Custom Types
 
 .. autoclass:: TypeMap
 
-   .. automethod:: get
    .. automethod:: middleware
 
 Custom Types With Parameters

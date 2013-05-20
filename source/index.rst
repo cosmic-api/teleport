@@ -1,16 +1,31 @@
-Teleport Spec
-=============
+Introduction
+============
+
+.. note::
+
+     If you're looking to dive right in, check out the `Python docs
+     </docs/teleport/python/>`_.
 
 Teleport is a JSON-based extendable system for cross-language serialization
 and validation. Teleport is not a serialization *layer*, it is meant to
-integrate with a language's type system. Using Teleport for a non-trivial
-project involves defining data types. In object-oriented languages, this
+integrate with a language's type system. Teleport provides 9 built-in data
+types to get you started, however, using Teleport for a non-trivial project
+means defining data types of your own. In object-oriented languages, this
 involves augmenting your classes to make them serializable.
 
-The real power of Teleport comes from the fact that once a data type is
-defined, it can be referenced by name in other data type definitions.
+Once registered with Teleport, a custom data type will become a first-class
+citizen within your application. Defining an array of integers is just as easy
+as defining an array of widgets, provided that you made the Widget class
+serializeable.
+
+Such definitions (like "array of widgets") are also serializable. This feature
+is crucial in allowing `Cosmic <http://www.cosmic-api.com/>`_ clients to share
+a deeper understanding of each other.
 
 The canonical implementation of Teleport is written in Python.
+
+Teleport Spec
+=============
 
 .. glossary::
 

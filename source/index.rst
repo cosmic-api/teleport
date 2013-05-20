@@ -1,10 +1,18 @@
-Introduction
-============
+========
+Teleport
+========
 
 .. note::
 
      If you're looking to dive right in, check out the `Python docs
      </docs/teleport/python/>`_.
+
+Teleport is:
+
+1. A serialization library
+2. An input validation library
+3. A JSON schema system
+4. An aid in automatically generating API documentation
 
 Teleport is a JSON-based extendable system for cross-language serialization
 and validation. Teleport is not a serialization *layer*, it is meant to
@@ -14,9 +22,9 @@ means defining data types of your own. In object-oriented languages, this
 involves augmenting your classes to make them serializable.
 
 Once registered with Teleport, a custom data type will become a first-class
-citizen within your application. Defining an array of integers is just as easy
-as defining an array of widgets, provided that you made the Widget class
-serializeable.
+citizen of your application. Defining an array of integers is just as easy as
+defining an array of widgets, provided that you made the Widget class
+serializable.
 
 Such definitions (like "array of widgets") are also serializable. This feature
 is crucial in allowing `Cosmic <http://www.cosmic-api.com/>`_ clients to share
@@ -24,35 +32,81 @@ a deeper understanding of each other.
 
 The canonical implementation of Teleport is written in Python.
 
-Teleport Spec
-=============
+Motivation
+----------
+
+Many languages such as Python or JavaScript do not support static typing. But
+Python (to use it as an example) is not without type definitions! Even the
+biggest proponent of dynamic typing will admit that it's a good idea to
+document the parameter types of public library functions. They may know the
+types themselves, but they can't expect a person unfamiliar with the library
+to know them just by looking at them. This approach may be adequate for
+libraries, but web APIs have 3 characteristics that make them practically beg
+for more:
+
+1. When a user passes in a wrong value into your library's function, it is
+   *their code* failing, even if the stack trace points in your direction.
+   When an API call fails in a similar manner, it is your code, your server,
+   your database. If data is not checked at input, it may travel deep into
+   your code before causing an error, possibly leaving your system in an
+   inconsistent state.
+2. While libraries need only worry about occasional mistakes, web APIs need to
+   consider malicious clients. With this in mind, the idea of the likelihood
+   a certain type of input becomes irrelevant. An attacker will craft precicely
+   the unlikeliest piece of data in order to make your system fail.
+3. Unlike data passed between libraries, web API data needs to be serialized
+   and deserialized. Any non-trivial serialization system needs to be
+   instructed with regards to the data types, either declaratively with a
+   schema or imperatively with a bunch of custom functions.
+
+Assuming that serialization, deserialization and validation code needs to be
+written, the question is: how do we structure this code? Teleport is a
+solution to precicely this problem.
+
+Design goals:
+
+1. Public functions need not worry about serialization or validation, they
+   must take and return rich native data regardless of whether they are called
+   remotely or locally.
+2. Type information should be specified declaratively, not imperatively.
+3. These definitions must be serializable (as *schemas*).
+4. Schemas must be well-suited for automatically generating API documentation.
+5. The generated JSON must be readable and familiar in a web programming
+   context.
+
+Principles
+----------
 
 .. glossary::
 
     Serializer
 
         An object that defines a serialization and deserialization function.
-        The output of the deserialization function must be of the same form as
-        the input of the serialization function. Likewise, the input of the
-        deserialization function must be of the same form as the output of the
-        serialization function. Together, these functions define the *native
-        form* as well as the *JSON form* of the data.
+        Together, these functions define the *native form* as well as the
+        *JSON form* of the data. As far as Teleport is concerned, a serializer
+        is a data type definition.
 
         Serializers may take parameters. For example, an array serializer
         needs to know what type of items the array is expected to contain.
+        It's these kinds of serializers that allow building deeply nested
+        schemas for describing rich internet data.
 
     Native form
 
         Data in its rich internal representation. For most built-in types,
-        this data will consist of language primitives. In object-oriented
-        languages, the native form of user-defined types will often take the
-        form of class instances.
+        this data will consist of language primitives.
+
+        In object-oriented languages, the native form of user-defined types
+        will often take the form of class instances. When you describe your
+        classes to Teleport, it will be able to deserialize them from JSON and
+        instantiate them for you.
 
     JSON form
 
         Data in its JSON represenation. There are many ways to represent the
-        same data in JSON. This representation must be reasonably readable
-        and, most importantly, unambiguous.
+        same data in JSON. This representation must be unambiguous. Because
+        Teleport was designed for web APIs, the JSON data should look familiar
+        and be quite readable as JSON was designed to be.
 
     Deserialization
 

@@ -1,3 +1,4 @@
+
 ========
 Teleport
 ========
@@ -7,23 +8,25 @@ Teleport
      If you're looking to dive right in, check out the `Python docs
      </docs/teleport/python/>`_.
 
+.. image:: _static/transporter.jpg
+   :align: right
+
 Teleport is:
 
-1. A serialization library
-2. An input validation library
-3. A JSON schema system
-4. An aid in automatically generating API documentation
+1. A serialization system on top of JSON
+2. An input validation system
+3. A declarative schema system
+4. An aid in automatically generating API docs
+5. Portable and extendable
 
-Teleport is a JSON-based extendable system for cross-language serialization
-and validation. Teleport is not a serialization *layer*, it is meant to
-integrate with a language's type system. Teleport provides 9 built-in data
-types to get you started, however, using Teleport for a non-trivial project
-means defining data types of your own. In object-oriented languages, this
-involves augmenting your classes to make them serializable.
+Teleport is not a serialization *layer*. It provides 9 built-in data types to
+get you started, however, using Teleport for a non-trivial project means
+defining data types of your own. In object-oriented languages, this involves
+augmenting your classes to make them serializable.
 
 Once registered with Teleport, a custom data type will become a first-class
-citizen of your application. Defining an array of integers is just as easy as
-defining an array of widgets, provided that you made the Widget class
+citizen of your application. Defining an array of widgets is just as easy as
+defining an array of integers, provided that you made the Widget class
 serializable.
 
 Such definitions (like "array of widgets") are also serializable. This feature
@@ -38,11 +41,9 @@ Motivation
 Many languages such as Python or JavaScript do not support static typing. But
 Python (to use it as an example) is not without type definitions! Even the
 biggest proponent of dynamic typing will admit that it's a good idea to
-document the parameter types of public library functions. They may know the
-types themselves, but they can't expect a person unfamiliar with the library
-to know them just by looking at them. This approach may be adequate for
-libraries, but web APIs have 3 characteristics that make them practically beg
-for more:
+document the parameter types of public library functions. This kind of static
+typing may be adequate for libraries, but web APIs have 3 characteristics that
+make them practically beg for more:
 
 1. When a user passes in a wrong value into your library's function, it is
    *their code* failing, even if the stack trace points in your direction.
@@ -73,6 +74,7 @@ Design goals:
 4. Schemas must be well-suited for automatically generating API documentation.
 5. The generated JSON must be readable and familiar in a web programming
    context.
+6. Teleport should be small and portable.
 
 Principles
 ----------
@@ -83,8 +85,8 @@ Principles
 
         An object that defines a serialization and deserialization function.
         Together, these functions define the *native form* as well as the
-        *JSON form* of the data. As far as Teleport is concerned, a serializer
-        is a data type definition.
+        *JSON form* of one particular type of data. As far as Teleport is
+        concerned, a serializer is a data type definition.
 
         Serializers may take parameters. For example, an array serializer
         needs to know what type of items the array is expected to contain.
@@ -106,7 +108,7 @@ Principles
         Data in its JSON represenation. There are many ways to represent the
         same data in JSON. This representation must be unambiguous. Because
         Teleport was designed for web APIs, the JSON data should look familiar
-        and be quite readable as JSON was designed to be.
+        and be readable as JSON was indeed designed to be.
 
     Deserialization
 
@@ -165,8 +167,15 @@ list of all built-in models and their validation logic.
     Must be expressed as a JSON object. If the object has a key that is
     different from every field name in *fields*, a validation error must be
     thrown. For every key-value pair in the object, the value must be
-    normalized against the *schema* of the corresponding field in *fields*.
-    The native form of the object must be an associative array containing all
+    deserialized against the *schema* of the corresponding field in *fields*.
+
+    Each field must have a boolean attribute *required*, that, if true, will
+    cause the struct to throw a validation error when the corresponding value
+    is missing from the data being validated.
+
+    Note that fields are ordered.
+
+    The native form of the object must be a associative array containing all
     key-value pairs from the original object with native values replacing the
     JSON values.
 
@@ -182,9 +191,6 @@ Schemas
     Schema
 
         The JSON form of a :term:`serializer`.
-
-One of the unique design requirements of Teleport is being able to pass
-serializers over the wire by means of a JSON schema.
 
 A schema is always a JSON object, it must always have a *type* property.
 All built-in types except for ``array`` and ``struct`` contain no other

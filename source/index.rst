@@ -13,11 +13,12 @@ Teleport
 
 Teleport is:
 
-1. A serialization system on top of JSON
-2. An input validation system
-3. A declarative schema system
-4. An aid in automatically generating API docs
-5. Portable and extendable
+* A serialization system on top of JSON
+* An input validation system
+* A declarative schema system
+* An aid in automatically generating API docs
+* Portable and extendable
+* Open Source (`MIT license <http://opensource.org/licenses/MIT>`_)
 
 Teleport is not a serialization *layer*. It provides 9 built-in data types to
 get you started, however, using Teleport for a non-trivial project means

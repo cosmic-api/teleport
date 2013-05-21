@@ -5,13 +5,12 @@ from werkzeug.local import LocalStack
 
 class TypeMap(object):
     """Teleport is made extendable by allowing the application to define a
-    custom mapping of type names (strings such as ``"integer"``) to the
-    corresponding serializer classes. I could have defined a global mapping
-    object for all applications to share, like Python's own
-    :keyword:`sys.modules`, but this would prohibit multiple Teleport
-    extentions to operate in clean isolation. Global state is evil, and
-    Teleport successfully avoids it using Werkzeug's brilliant `Context Locals
-    <http://werkzeug.pocoo.org/docs/local/>`_.
+    custom mapping of type names (strings such as ``"integer"``) to serializer
+    classes. I could have defined a global mapping object for all applications
+    to share, like Python's own :keyword:`sys.modules`, but this would
+    prohibit multiple Teleport extentions to operate in clean isolation.
+    Global state is evil, and Teleport successfully avoids it using Werkzeug's
+    brilliant `Context Locals <http://werkzeug.pocoo.org/docs/local/>`_.
 
     First, let's create a type by defining a serializer::
 
@@ -230,7 +229,12 @@ class Boolean(object):
 
 class Box(object):
     """Used as a wrapper around JSON data to disambugate None as a JSON value
-    (``null``) from None as an absense of value.
+    (``null``) from None as an absense of value. Its :attr:`datum` attribute
+    will hold the actual JSON value.
+
+    For example, an HTTP request body may be empty in which case your function
+    may return ``None`` or it may be "null", in which case the function can
+    return a :class:`Box` instance with ``None`` inside.
     """
     def __init__(self, datum):
         self.datum = datum

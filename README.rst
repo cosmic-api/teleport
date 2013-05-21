@@ -4,6 +4,8 @@ Teleport.py
 
 The canonical implementation of Teleport, a cross-language extendable serialization system.
 
+Check out the `spec <http://www.cosmic-api.com/docs/teleport/spec/>`_ and the `documentation <http://www.cosmic-api.com/docs/teleport/python/>`_.
+
 License
 -------
 

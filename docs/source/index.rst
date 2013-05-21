@@ -3,6 +3,12 @@ Teleport
 
 .. currentmodule:: teleport
 
+Installation:
+
+.. code:: bash
+
+    pip install teleport
+
 A *serializer* is a class that provides a :meth:`serialize` and a
 :meth:`deserialize` method. Teleport provides 9 basic serializers and lets you
 define your own.

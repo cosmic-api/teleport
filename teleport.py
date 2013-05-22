@@ -15,6 +15,7 @@ class TypeMap(object):
     First, let's create a type by defining a serializer::
 
         class Suit(object):
+            match_type = "suit"
 
             def deserialize(self, datum):
                 if datum not in ["hearts", "spades", "clubs", "diamonds"]:
@@ -48,6 +49,16 @@ class TypeMap(object):
     point of your program. If your program is a WSGI server, use the
     :meth:`middleware` method to set the mapping for the entire
     application.
+
+    If you are planning to serialize schemas containing custom types, Teleport
+    will use the :attr:`match_type` attribute::
+
+        >>> Schema().serialize(Suit())
+        {'type': 'suit'}
+
+    When you deserialize it (whether it is done by the same program or by a
+    different program entirely), you need to ensure it will have access to
+    the custom types that you defined.
     """
 
     def __getitem__(self, name):
@@ -306,10 +317,10 @@ class Array(object):
 
 
 class Struct(object):
-    """*fields* must be a list of dicts, where each dict has two items: *name*
-    (string), *schema* (serializer) and *required* (boolean). For each pair,
-    *schema* is used to serialize and deserialize a dictionary value matched
-    by the key *name*.
+    """*fields* must be a list of dicts, where each dict has three items:
+    *name* (string), *schema* (serializer) and *required* (boolean). For each
+    pair, *schema* is used to serialize and deserialize a dictionary value
+    matched by the key *name*.
     """
     match_type = "struct"
 

@@ -3,15 +3,15 @@ Teleport
 
 .. currentmodule:: teleport
 
-Installation:
+To install, run:
 
 .. code:: bash
 
     pip install teleport
 
 A *serializer* is a class that provides a :meth:`serialize` and a
-:meth:`deserialize` method. Teleport provides 9 basic serializers and lets you
-define your own.
+:meth:`deserialize` method. At the moment, Teleport provides 9 basic
+serializers.
 
 The output of the :meth:`serialize` method and the input of the
 :meth:`deserialize` method is in the format of the :mod:`json` module from the
@@ -29,10 +29,9 @@ As you can see, the :class:`Integer` serializer doesn't do much. Why do we even
 have it as a class? Because it can be used as a parameter for more complex
 serializers, such as the :class:`Array`::
 
-    >>> array_of_integers = Array(Integer())
-    >>> array_of_integers.deserialize([1, 2, 3, 4, 5])
+    >>> Array(Integer()).deserialize([1, 2, 3, 4, 5])
     [1, 2, 3, 4, 5]
-    >>> array_of_integers.deserialize([1, 2, 3, 4, 5.1])
+    >>> Array(Integer()).deserialize([1, 2, 3, 4, 5.1])
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
       File "teleport.py", line 175, in deserialize
@@ -41,11 +40,11 @@ serializers, such as the :class:`Array`::
         raise ValidationError("Invalid integer", datum)
     teleport.ValidationError: Item at [4] Invalid integer: 5.1
 
-``array_of_integers`` is an interesting object. It may be useful to send it
+``Array(Integer())`` is an interesting object. It may be useful to send it
 over the wire, and with Teleport it is actually very easy to do. Teleport provides
 a special serializer :class:`Schema` for serializing other serializers::
 
-    >>> Schema().serialize(array_of_integers)
+    >>> Schema().serialize(Array(Integer()))
     {'type': 'array', 'items': {'type': 'integer'}}
 
 The client that receives this JSON object can then deserialize it::
@@ -53,13 +52,21 @@ The client that receives this JSON object can then deserialize it::
     >>> Schema().deserialize({'type': 'array', 'items': {'type': 'integer'}})
     <teleport.Array object at 0xb7189d6c>
 
+Pretty cool, huh? But actually, :class:`Schema` isn't all *that* special. You
+can use it just like any other serializer. For instance, here is an array of
+schemas::
+
+    >>> array_of_schemas = Array(Schema())
+    >>> array_of_schemas.serialize([Integer(), Boolean(), Float()])
+    [{'type': 'integer'}, {'type': 'boolean'}, {'type': 'float'}]
+
 Another complex serializer is the :class:`Struct`. It is used for dicts with
 non-arbitrary keys::
 
     >>> from teleport import Struct, required, optional
     >>> s = Struct([
     ...     required("name", String()),
-    ...     optional("scores", array_of_integers)
+    ...     optional("scores", Array(Integer()))
     ... ])
     >>> s.deserialize({"name": "Bob"})
     {"name": u"Bob"}

@@ -1,11 +1,10 @@
-import json
 import base64
 from werkzeug.local import LocalStack
 
 
 class TypeMap(object):
     """Teleport is made extendable by allowing the application to define a
-    custom mapping of type names (strings such as ``"integer"``) to serializer
+    custom mapping of type names (strings such as ``"Integer"``) to serializer
     classes. I could have defined a global mapping object for all applications
     to share, like Python's own :keyword:`sys.modules`, but this would
     prohibit multiple Teleport extentions to operate in clean isolation.
@@ -144,7 +143,7 @@ class UnknownTypeValidationError(ValidationError):
 
 
 class Integer(object):
-    match_type = "integer"
+    match_type = "Integer"
 
     def deserialize(self, datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
@@ -155,7 +154,7 @@ class Integer(object):
             return datum
         if type(datum) == float and datum.is_integer():
             return int(datum)
-        raise ValidationError("Invalid integer", datum)
+        raise ValidationError("Invalid Integer", datum)
 
     def serialize(self, datum):
         return datum
@@ -163,7 +162,7 @@ class Integer(object):
 
 
 class Float(object):
-    match_type = "float"
+    match_type = "Float"
 
     def deserialize(self, datum):
         """If *datum* is a float, return it; if it is an integer, cast it to a
@@ -173,7 +172,7 @@ class Float(object):
             return datum
         if type(datum) == int:
             return float(datum)
-        raise ValidationError("Invalid float", datum)
+        raise ValidationError("Invalid Float", datum)
 
     def serialize(self, datum):
         return datum
@@ -181,7 +180,7 @@ class Float(object):
 
 
 class String(object):
-    match_type = "string"
+    match_type = "String"
 
     def deserialize(self, datum):
         """If *datum* is of unicode type, return it. If it is a string, decode
@@ -197,7 +196,7 @@ class String(object):
                 return datum.decode('utf_8')
             except UnicodeDecodeError as inst:
                 raise UnicodeDecodeValidationError(unicode(inst))
-        raise ValidationError("Invalid string", datum)
+        raise ValidationError("Invalid String", datum)
 
     def serialize(self, datum):
         return datum
@@ -205,7 +204,7 @@ class String(object):
 
 
 class Binary(object):
-    match_type = "binary"
+    match_type = "Binary"
 
     def deserialize(self, datum):
         """If *datum* is a base64-encoded string, decode and return it. If not
@@ -216,7 +215,7 @@ class Binary(object):
                 return base64.b64decode(datum)
             except TypeError:
                 raise ValidationError("Invalid base64 encoding", datum)
-        raise ValidationError("Invalid binary data", datum)
+        raise ValidationError("Invalid Binary data", datum)
 
     def serialize(self, datum):
         return base64.b64encode(datum)
@@ -224,7 +223,7 @@ class Binary(object):
 
 
 class Boolean(object):
-    match_type = "boolean"
+    match_type = "Boolean"
 
     def deserialize(self, datum):
         """If *datum* is a boolean, return it. Otherwise, raise a
@@ -232,7 +231,7 @@ class Boolean(object):
         """
         if type(datum) == bool:
             return datum
-        raise ValidationError("Invalid boolean", datum)
+        raise ValidationError("Invalid Boolean", datum)
 
     def serialize(cls, datum):
         return datum
@@ -254,7 +253,7 @@ class Box(object):
 
 
 class JSON(object):
-    match_type = "json"
+    match_type = "JSON"
 
     def deserialize(self, datum):
         """Return the JSON value wrapped in a :class:`Box`.
@@ -270,7 +269,7 @@ class Array(object):
     """The argument *items* is a serializer that defines the type of each item
     in the array.
     """
-    match_type = "array"
+    match_type = "Array"
 
     def __init__(self, items):
         self.items = items        
@@ -290,7 +289,7 @@ class Array(object):
                     e.stack.append(i)
                     raise
             return ret
-        raise ValidationError("Invalid array", datum)
+        raise ValidationError("Invalid Array", datum)
 
     def serialize(self, datum):
         """Serialize each item in the *datum* iterable using *items*. Return
@@ -306,7 +305,7 @@ class Array(object):
         ])
 
     def serialize_self(self):
-        s = {"type": "array"}
+        s = {"type": "Array"}
         s.update(Array.get_params().serialize({"items": self.items}))
         return s
 
@@ -338,7 +337,7 @@ class Map(object):
                     e.stack.append(i)
                     raise
             return ret
-        raise ValidationError("Invalid map", datum)
+        raise ValidationError("Invalid Map", datum)
 
     def serialize(self, datum):
         return [self.items.serialize(item) for item in datum]
@@ -364,11 +363,11 @@ class Map(object):
 
 class Struct(object):
     """*fields* must be a list of dicts, where each dict has three items:
-    *name* (string), *schema* (serializer) and *required* (boolean). For each
+    *name* (String), *schema* (serializer) and *required* (Boolean). For each
     pair, *schema* is used to serialize and deserialize a dictionary value
     matched by the key *name*.
     """
-    match_type = "struct"
+    match_type = "Struct"
 
     def __init__(self, fields):
         self.fields = fields
@@ -408,7 +407,7 @@ class Struct(object):
                         raise
             return ret
         else:
-            raise ValidationError("Invalid struct", datum)
+            raise ValidationError("Invalid Struct", datum)
 
     def serialize(self, datum):
         ret = {}
@@ -431,7 +430,7 @@ class Struct(object):
         ])
 
     def serialize_self(self):
-        s = {"type": "struct"}
+        s = {"type": "Struct"}
         s.update(Struct.get_params().serialize({"fields": self.fields}))
         return s
 
@@ -447,7 +446,7 @@ class Struct(object):
 
 
 class Schema(object):
-    match_type = "schema"
+    match_type = "Schema"
 
     def serialize(self, datum):
         """If the serializer passed in as *datum* has a :meth:`serialize_self`
@@ -475,7 +474,7 @@ class Schema(object):
         """
         # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():
-            raise ValidationError("Invalid schema", datum)
+            raise ValidationError("Invalid Schema", datum)
 
         t = datum["type"]
 
@@ -496,14 +495,14 @@ class Schema(object):
 
 
 BUILTIN_TYPES = {
-    "integer": Integer,
-    "float": Float,
-    "string": String,
-    "binary": Binary,
-    "boolean": Boolean,
-    "schema": Schema,
-    "json": JSON,
-    "array": Array,
-    "map": Map,
-    "struct": Struct
+    "Integer": Integer,
+    "Float": Float,
+    "String": String,
+    "Binary": Binary,
+    "Boolean": Boolean,
+    "Schema": Schema,
+    "JSON": JSON,
+    "Array": Array,
+    "Map": Map,
+    "Struct": Struct
 }

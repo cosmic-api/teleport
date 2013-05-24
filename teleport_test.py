@@ -5,24 +5,24 @@ from copy import deepcopy
 from teleport import *
 
 array_schema = {
-    "type": u"array",
+    "type": u"Array",
     "items": {
-        "type": u"boolean"
+        "type": u"Boolean"
     }
 }
 struct_schema = {
-    "type": u"struct",
+    "type": u"Struct",
     "fields": [
-        required(u"foo", {"type": u"boolean"}),
-        optional(u"bar", {"type": u"integer"})
+        required(u"foo", {"type": u"Boolean"}),
+        optional(u"bar", {"type": u"Integer"})
     ]
 }
 map_schema = {
-    "type": u"map",
-    "items": {"type": "boolean"}
+    "type": u"Map",
+    "items": {"type": "Boolean"}
 }
 deep_schema = {
-    "type": u"array",
+    "type": u"Array",
     "items": struct_schema
 }
 array_serializer = Schema().deserialize(array_schema)
@@ -38,13 +38,13 @@ class TestSchema(TestCase):
         self.assertEqual(deep_schema, Schema().serialize(deep_serializer))
 
     def test_schema_subclass_delegation(self):
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"integer"}), Integer))
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"float"}), Float))
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"boolean"}), Boolean))
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"string"}), String))
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"binary"}), Binary))
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"schema"}), Schema))
-        self.assertTrue(isinstance(Schema().deserialize({"type": u"json"}), JSON))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"Integer"}), Integer))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"Float"}), Float))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"Boolean"}), Boolean))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"String"}), String))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"Binary"}), Binary))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"Schema"}), Schema))
+        self.assertTrue(isinstance(Schema().deserialize({"type": u"JSON"}), JSON))
 
     def test_schema_extra_parts(self):
         # struct with items
@@ -65,7 +65,7 @@ class TestSchema(TestCase):
             Schema().deserialize(s)
 
     def test_schema_not_struct(self):
-        with self.assertRaisesRegexp(ValidationError, "Invalid schema: True"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Schema: True"):
             Schema().deserialize(True)
 
     def test_schema_unknown_type(self):
@@ -83,7 +83,7 @@ class TestFloat(TestCase):
     def test_deserialize(self):
         self.assertEqual(Float().deserialize(1), 1.0)
         self.assertEqual(Float().deserialize(1.0), 1.0)
-        with self.assertRaisesRegexp(ValidationError, "Invalid float"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Float"):
             Float().deserialize(True)
 
     def test_serialize(self):
@@ -95,7 +95,7 @@ class TestInteger(TestCase):
     def test_deserialize(self):
         self.assertEqual(Integer().deserialize(1), 1)
         self.assertEqual(Integer().deserialize(1.0), 1)
-        with self.assertRaisesRegexp(ValidationError, "Invalid integer"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Integer"):
             Integer().deserialize(1.1)
 
     def test_serialize(self):
@@ -106,7 +106,7 @@ class TestBoolean(TestCase):
 
     def test_deserialize(self):
         self.assertEqual(Boolean().deserialize(True), True)
-        with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
             Boolean().deserialize(0)
 
     def test_serialize(self):
@@ -120,7 +120,7 @@ class TestString(TestCase):
         self.assertEqual(String().deserialize("omg"), u"omg")
 
     def test_string_fail(self):
-        with self.assertRaisesRegexp(ValidationError, "Invalid string"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid String"):
             String().deserialize(0)
         with self.assertRaisesRegexp(UnicodeDecodeValidationError, "invalid start byte"):
             String().deserialize("\xff")
@@ -137,7 +137,7 @@ class TestBinary(TestCase):
         with self.assertRaisesRegexp(ValidationError, "Invalid base64"):
             # Will complain about incorrect padding
             Binary().deserialize("a")
-        with self.assertRaisesRegexp(ValidationError, "Invalid binary"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Binary"):
             Binary().deserialize(1)
 
     def test_serialize(self):
@@ -158,9 +158,9 @@ class TestArray(TestCase):
 
     def test_deserialize(self):
         self.assertEqual(array_serializer.deserialize([True, False]), [True, False])
-        with self.assertRaisesRegexp(ValidationError, "Invalid array"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Array"):
             array_serializer.deserialize(("no", "tuples",))
-        with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
             array_serializer.deserialize([True, False, 1])
 
 
@@ -173,7 +173,7 @@ class TestMap(TestCase):
             u"groovy": True
         }
         self.assertEqual(map_serializer.deserialize(m), m)
-        with self.assertRaisesRegexp(ValidationError, "Invalid map"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Map"):
             map_serializer.deserialize([True, False])
         with self.assertRaisesRegexp(ValidationError, "must be unicode"):
             map_serializer.deserialize({"nope": False})
@@ -188,7 +188,7 @@ class TestStruct(TestCase):
         self.assertEqual(res, {"foo": True})
 
     def test_deserialize_fail(self):
-        with self.assertRaisesRegexp(ValidationError, "Invalid struct"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Struct"):
             struct_serializer.deserialize([])
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
             struct_serializer.deserialize({"foo": True, "barr": 2.0})
@@ -200,7 +200,7 @@ class Suit(object):
 
     def deserialize(self, datum):
         if datum not in ["hearts", "spades", "clubs", "diamonds"]:
-            raise ValidationError("Invalid suit", datum)
+            raise ValidationError("Invalid Suit", datum)
         return datum
 
     def serialize(self, datum):
@@ -212,7 +212,7 @@ class TestSuit(TestCase):
     def test_deserialize(self):
         suits = ["hearts", "clubs", "clubs"]
         self.assertEqual(Array(Suit()).deserialize(suits), suits)
-        with self.assertRaisesRegexp(ValidationError, "Invalid suit"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Suit"):
             suits = ["hearts", "clubs", "clubz"]
             self.assertEqual(Array(Suit()).deserialize(suits), suits)
 
@@ -220,7 +220,7 @@ class TestSuit(TestCase):
 class AllSuits(TypeMap):
 
     def __getitem__(self, name):
-        if name == "array":
+        if name == "Array":
             return Array
         elif name == "suit":
             return Suit
@@ -237,17 +237,17 @@ class TestTypeMap(TestCase):
                 "type": "suit"
             }).__class__, Suit)
             self.assertEqual(Schema().deserialize({
-                "type": "array",
+                "type": "Array",
                 "items": {"type": "suit"}
             }).__class__, Array)
 
     def test_custom_type_map_fail(self):
 
-        Schema().deserialize({"type": "integer"})
+        Schema().deserialize({"type": "Integer"})
 
         with self.assertRaises(UnknownTypeValidationError):
             with AllSuits():
-                Schema().deserialize({"type": "integer"})
+                Schema().deserialize({"type": "Integer"})
 
     def test_wsgi_middleware(self):
         # Inspired by https://github.com/mitsuhiko/werkzeug/blob/master/werkzeug/testapp.py

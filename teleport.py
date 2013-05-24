@@ -372,57 +372,6 @@ class Map(object):
 
 
 
-class OrderedMap(object):
-    """The argument *items* is a serializer that defines the type of each item
-    in the map.
-    """
-    match_type = "OrderedMap"
-
-    def __init__(self, items):
-        self.items = items
-
-    def get_schema(self):
-        return Struct({
-            "map": {
-                u"map": required(Map(self.items)),
-                u"order": required(Array(String()))
-            },
-            "order": [u"map", u"order"]
-        })
-
-    def deserialize(self, datum):
-        d = self.get_schema().deserialize(datum)
-        order = d["order"]
-        keys = d["map"].keys()
-        if len(order) != len(keys) or set(order) != set(keys):
-            raise ValidationError("Invalid OrderedMap", datum)
-        return d
-
-    def serialize(self, datum):
-        return self.get_schema().serialize(datum)
-
-    @classmethod
-    def get_params(cls):
-        return Struct({
-            "map": {
-                u"type": required(String()),
-                u"items": required(Schema())
-            },
-            "order": [u"type", u"items"]
-        })
-
-    def serialize_self(self):
-        s = {"type": "OrderedMap"}
-        s.update(OrderedMap.get_params().serialize({"items": self.items}))
-        return s
-
-    @classmethod
-    def deserialize_self(cls, datum):
-        opts = OrderedMap.get_params().deserialize(datum)
-        return OrderedMap(opts["items"])
-
-
-
 class Struct(object):
     """*fields* must be a list of dicts, where each dict has three items:
     *name* (String), *schema* (serializer) and *required* (Boolean). For each
@@ -433,7 +382,6 @@ class Struct(object):
 
     def __init__(self, fields):
         self.fields = fields
-        self.map = fields["map"]
 
     def deserialize(self, datum):
         """If *datum* is a dict, deserialize it against *fields* and return
@@ -450,7 +398,7 @@ class Struct(object):
             ret = {}
             required = {}
             optional = {}
-            for name, field in self.map.items():
+            for name, field in self.fields['map'].items():
                 if field["required"] == True:
                     required[name] = field["schema"]
                 else:
@@ -474,7 +422,7 @@ class Struct(object):
 
     def serialize(self, datum):
         ret = {}
-        for name, field in self.map.items():
+        for name, field in self.fields['map'].items():
             schema = field['schema']
             if name in datum.keys() and datum[name] != None:
                 ret[name] = schema.serialize(datum[name])
@@ -505,6 +453,53 @@ class Struct(object):
     def deserialize_self(cls, datum):
         opts = Struct.get_params().deserialize(datum)
         return Struct(opts["fields"])
+
+
+
+
+class OrderedMap(Struct):
+    """The argument *items* is a serializer that defines the type of each item
+    in the map.
+    """
+    match_type = "OrderedMap"
+
+    def __init__(self, items):
+        self.fields = {
+            "map": {
+                u"map": required(Map(items)),
+                u"order": required(Array(String()))
+            },
+            "order": [u"map", u"order"]
+        }
+
+    def deserialize(self, datum):
+        d = super(OrderedMap, self).deserialize(datum)
+        order = d["order"]
+        keys = d["map"].keys()
+        if len(order) != len(keys) or set(order) != set(keys):
+            raise ValidationError("Invalid OrderedMap", datum)
+        return d
+
+    @classmethod
+    def get_params(cls):
+        return Struct({
+            "map": {
+                u"type": required(String()),
+                u"items": required(Schema())
+            },
+            "order": [u"type", u"items"]
+        })
+
+    def serialize_self(self):
+        s = {"type": "OrderedMap"}
+        s.update(OrderedMap.get_params().serialize({"items": self.items}))
+        return s
+
+    @classmethod
+    def deserialize_self(cls, datum):
+        opts = OrderedMap.get_params().deserialize(datum)
+        return OrderedMap(opts["items"])
+
 
 
 

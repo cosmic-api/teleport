@@ -266,6 +266,22 @@ class JSON(object):
         return datum.datum
 
 
+class SerializerWithSchema(object):
+
+    @classmethod
+    def get_schema(cls):
+        return Schema()
+
+    def deserialize(self, datum):
+        return cls(cls.get_param_schema().deserialize(datum))
+
+    def serialize(self):
+        return {
+            "type": self.match_type,
+            "param": self.get_param_schema().serialize(self.param)
+        }
+
+
 
 class Array(object):
     """The argument *param* is a serializer that defines the type of each item
@@ -300,24 +316,9 @@ class Array(object):
         return [self.param.serialize(item) for item in datum]
 
     @classmethod
-    def get_params(cls):
-        return Struct({
-            "map": {
-                u"type": required(String()),
-                u"param": required(Schema())
-            },
-            "order": [u"type", u"param"]
-        })
+    def get_param_schema(cls):
+        return Schema()
 
-    def serialize_self(self):
-        s = {"type": "Array"}
-        s.update(Array.get_params().serialize({"param": self.param}))
-        return s
-
-    @classmethod
-    def deserialize_self(cls, datum):
-        opts = Array.get_params().deserialize(datum)
-        return Array(opts["param"])
 
 
 
@@ -351,24 +352,9 @@ class Map(object):
         return ret
 
     @classmethod
-    def get_params(cls):
-        return Struct({
-            "map": {
-                u"type": required(String()),
-                u"param": required(Schema())
-            },
-            "order": [u"type", u"param"]
-        })
+    def get_param_schema(cls):
+        return Schema()
 
-    def serialize_self(self):
-        s = {"type": "Map"}
-        s.update(Map.get_params().serialize({"param": self.param}))
-        return s
-
-    @classmethod
-    def deserialize_self(cls, datum):
-        opts = Map.get_params().deserialize(datum)
-        return Map(opts["param"])
 
 
 
@@ -429,31 +415,14 @@ class Struct(object):
         return ret
 
     @classmethod
-    def get_params(cls):
-        return Struct({
+    def get_param_schema(cls):
+        return OrderedMap(Struct({
             "map": {
-                u"type": required(String()),
-                u"param": required(OrderedMap(Struct({
-                    "map": {
-                        u"schema": required(Schema()),
-                        u"required": required(Boolean())
-                    },
-                    "order": [u"schema", u"boolean"]
-                })))
+                u"schema": required(Schema()),
+                u"required": required(Boolean())
             },
-            "order": [u"type", u"param"]
-        })
-
-    def serialize_self(self):
-        s = {"type": "Struct"}
-        s.update(Struct.get_params().serialize({"param": self.param}))
-        return s
-
-    @classmethod
-    def deserialize_self(cls, datum):
-        opts = Struct.get_params().deserialize(datum)
-        return Struct(opts["param"])
-
+            "order": [u"schema", u"boolean"]
+        }))
 
 
 
@@ -481,25 +450,8 @@ class OrderedMap(Struct):
         return d
 
     @classmethod
-    def get_params(cls):
-        return Struct({
-            "map": {
-                u"type": required(String()),
-                u"param": required(Schema())
-            },
-            "order": [u"type", u"param"]
-        })
-
-    def serialize_self(self):
-        s = {"type": "OrderedMap"}
-        s.update(OrderedMap.get_params().serialize({"param": self.items}))
-        return s
-
-    @classmethod
-    def deserialize_self(cls, datum):
-        opts = OrderedMap.get_params().deserialize(datum)
-        return OrderedMap(opts["param"])
-
+    def get_param_schema(cls):
+        return Schema()
 
 
 
@@ -511,8 +463,11 @@ class Schema(object):
         method, use it. Otherwise, return a simple schema by finding the type
         in the serializer's :attr:`match_type` attribute.
         """
-        if hasattr(datum, "serialize_self"):
-            return datum.serialize_self()
+        if hasattr(datum, "get_param_schema"):
+            return {
+                "type": datum.match_type,
+                "param": datum.get_param_schema().serialize(datum.param)
+            }
         else:
             return {"type": datum.match_type}
 
@@ -546,10 +501,11 @@ class Schema(object):
             raise UnknownTypeValidationError("Unknown type", t)
 
         # Deserialize or instantiate
-        if hasattr(serializer, "deserialize_self"):
-            return serializer.deserialize_self(datum)
+        if hasattr(serializer, "get_param_schema"):
+            return serializer(serializer.get_param_schema().deserialize(datum["param"]))
         else:
             return serializer()
+
 
 
 BUILTIN_TYPES = {

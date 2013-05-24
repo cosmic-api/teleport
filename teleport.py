@@ -311,9 +311,54 @@ class Array(object):
         return s
 
     @classmethod
-    def deserialize_self(self, datum):
+    def deserialize_self(cls, datum):
         opts = Array.get_params().deserialize(datum)
         return Array(opts["items"])
+
+
+
+class Map(object):
+    """The argument *items* is a serializer that defines the type of each item
+    in the map.
+    """
+    match_type = "map"
+
+    def __init__(self, items):
+        self.items = items        
+
+    def deserialize(self, datum):
+        if type(datum) == dict:
+            ret = {}
+            for key, val in datum.items():
+                if type(key) != unicode:
+                    raise ValidationError("Map key must be unicode", key)
+                try:
+                    ret[key] = self.items.deserialize(val)
+                except ValidationError as e:
+                    e.stack.append(i)
+                    raise
+            return ret
+        raise ValidationError("Invalid map", datum)
+
+    def serialize(self, datum):
+        return [self.items.serialize(item) for item in datum]
+
+    @classmethod
+    def get_params(cls):
+        return Struct([
+            required("type", String()),
+            required("items", Schema())
+        ])
+
+    def serialize_self(self):
+        s = {"type": "map"}
+        s.update(Map.get_params().serialize({"items": self.items}))
+        return s
+
+    @classmethod
+    def deserialize_self(cls, datum):
+        opts = Map.get_params().deserialize(datum)
+        return Map(opts["items"])
 
 
 
@@ -459,5 +504,6 @@ BUILTIN_TYPES = {
     "schema": Schema,
     "json": JSON,
     "array": Array,
+    "map": Map,
     "struct": Struct
 }

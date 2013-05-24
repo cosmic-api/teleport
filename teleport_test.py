@@ -17,6 +17,10 @@ struct_schema = {
         optional(u"bar", {"type": u"integer"})
     ]
 }
+map_schema = {
+    "type": u"map",
+    "items": {"type": "boolean"}
+}
 deep_schema = {
     "type": u"array",
     "items": struct_schema
@@ -24,6 +28,7 @@ deep_schema = {
 array_serializer = Schema().deserialize(array_schema)
 struct_serializer = Schema().deserialize(struct_schema)
 deep_serializer = Schema().deserialize(deep_schema)
+map_serializer = Schema().deserialize(map_schema)
 
 class TestSchema(TestCase):
 
@@ -157,6 +162,21 @@ class TestArray(TestCase):
             array_serializer.deserialize(("no", "tuples",))
         with self.assertRaisesRegexp(ValidationError, "Invalid boolean"):
             array_serializer.deserialize([True, False, 1])
+
+
+class TestMap(TestCase):
+
+    def test_deserialize(self):
+        m = {
+            u"cool": True,
+            u"hip": False,
+            u"groovy": True
+        }
+        self.assertEqual(map_serializer.deserialize(m), m)
+        with self.assertRaisesRegexp(ValidationError, "Invalid map"):
+            map_serializer.deserialize([True, False])
+        with self.assertRaisesRegexp(ValidationError, "must be unicode"):
+            map_serializer.deserialize({"nope": False})
 
 
 class TestStruct(TestCase):

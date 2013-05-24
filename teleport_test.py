@@ -6,13 +6,13 @@ from teleport import *
 
 array_schema = {
     "type": u"Array",
-    "items": {
+    "param": {
         "type": u"Boolean"
     }
 }
 struct_schema = {
     "type": u"Struct",
-    "fields": {
+    "param": {
         "map": {
             u"foo": required({"type": u"Boolean"}),
             u"bar": optional({"type": u"Integer"})
@@ -22,15 +22,15 @@ struct_schema = {
 }
 map_schema = {
     "type": u"Map",
-    "items": {"type": "Boolean"}
+    "param": {"type": "Boolean"}
 }
 ordered_map_schema = {
     "type": u"OrderedMap",
-    "items": {"type": "Boolean"}
+    "param": {"type": "Boolean"}
 }
 deep_schema = {
     "type": u"Array",
-    "items": struct_schema
+    "param": struct_schema
 }
 array_serializer = Schema().deserialize(array_schema)
 struct_serializer = Schema().deserialize(struct_schema)
@@ -54,21 +54,9 @@ class TestSchema(TestCase):
         self.assertTrue(isinstance(Schema().deserialize({"type": u"Schema"}), Schema))
         self.assertTrue(isinstance(Schema().deserialize({"type": u"JSON"}), JSON))
 
-    def test_schema_extra_parts(self):
-        # struct with items
-        s = deepcopy(array_schema)
-        s["fields"] = struct_schema["fields"]
-        with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
-            Schema().deserialize(s)
-        # array with fields
-        s = deepcopy(struct_schema)
-        s["items"] = array_schema["items"]
-        with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
-            Schema().deserialize(s)
-
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
-        s["fields"]["order"].append("blah")
+        s["param"]["order"].append("blah")
         with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
             Schema().deserialize(s)
 
@@ -270,7 +258,7 @@ class TestTypeMap(TestCase):
             }).__class__, Suit)
             self.assertEqual(Schema().deserialize({
                 "type": "Array",
-                "items": {"type": "suit"}
+                "param": {"type": "suit"}
             }).__class__, Array)
 
     def test_custom_type_map_fail(self):

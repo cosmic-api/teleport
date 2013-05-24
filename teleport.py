@@ -268,17 +268,17 @@ class JSON(object):
 
 
 class Array(object):
-    """The argument *items* is a serializer that defines the type of each item
+    """The argument *param* is a serializer that defines the type of each item
     in the array.
     """
     match_type = "Array"
 
-    def __init__(self, items):
-        self.items = items        
+    def __init__(self, param):
+        self.param = param
 
     def deserialize(self, datum):
         """If *datum* is a list, construct a new list by putting each element
-        of *datum* through a serializer provided as *items*. This serializer
+        of *datum* through a serializer provided as *param*. This serializer
         may raise a :exc:`ValidationError`. If *datum* is not a
         list, :exc:`ValidationError` will also be raised.
         """
@@ -286,7 +286,7 @@ class Array(object):
             ret = []
             for i, item in enumerate(datum):
                 try:
-                    ret.append(self.items.deserialize(item))
+                    ret.append(self.param.deserialize(item))
                 except ValidationError as e:
                     e.stack.append(i)
                     raise
@@ -294,41 +294,41 @@ class Array(object):
         raise ValidationError("Invalid Array", datum)
 
     def serialize(self, datum):
-        """Serialize each item in the *datum* iterable using *items*. Return
+        """Serialize each item in the *datum* iterable using *param*. Return
         the resulting values in a list.
         """
-        return [self.items.serialize(item) for item in datum]
+        return [self.param.serialize(item) for item in datum]
 
     @classmethod
     def get_params(cls):
         return Struct({
             "map": {
                 u"type": required(String()),
-                u"items": required(Schema())
+                u"param": required(Schema())
             },
-            "order": [u"type", u"items"]
+            "order": [u"type", u"param"]
         })
 
     def serialize_self(self):
         s = {"type": "Array"}
-        s.update(Array.get_params().serialize({"items": self.items}))
+        s.update(Array.get_params().serialize({"param": self.param}))
         return s
 
     @classmethod
     def deserialize_self(cls, datum):
         opts = Array.get_params().deserialize(datum)
-        return Array(opts["items"])
+        return Array(opts["param"])
 
 
 
 class Map(object):
-    """The argument *items* is a serializer that defines the type of each item
+    """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
     match_type = "map"
 
-    def __init__(self, items):
-        self.items = items        
+    def __init__(self, param):
+        self.param = param
 
     def deserialize(self, datum):
         if type(datum) == dict:
@@ -337,7 +337,7 @@ class Map(object):
                 if type(key) != unicode:
                     raise ValidationError("Map key must be unicode", key)
                 try:
-                    ret[key] = self.items.deserialize(val)
+                    ret[key] = self.param.deserialize(val)
                 except ValidationError as e:
                     e.stack.append(i)
                     raise
@@ -347,7 +347,7 @@ class Map(object):
     def serialize(self, datum):
         ret = {}
         for key, val in datum.items():
-            ret[key] = self.items.serialize(val)
+            ret[key] = self.param.serialize(val)
         return ret
 
     @classmethod
@@ -355,42 +355,42 @@ class Map(object):
         return Struct({
             "map": {
                 u"type": required(String()),
-                u"items": required(Schema())
+                u"param": required(Schema())
             },
-            "order": [u"type", u"items"]
+            "order": [u"type", u"param"]
         })
 
     def serialize_self(self):
         s = {"type": "Map"}
-        s.update(Map.get_params().serialize({"items": self.items}))
+        s.update(Map.get_params().serialize({"param": self.param}))
         return s
 
     @classmethod
     def deserialize_self(cls, datum):
         opts = Map.get_params().deserialize(datum)
-        return Map(opts["items"])
+        return Map(opts["param"])
 
 
 
 class Struct(object):
-    """*fields* must be a list of dicts, where each dict has three items:
+    """*param* must be a list of dicts, where each dict has three items:
     *name* (String), *schema* (serializer) and *required* (Boolean). For each
     pair, *schema* is used to serialize and deserialize a dictionary value
     matched by the key *name*.
     """
     match_type = "Struct"
 
-    def __init__(self, fields):
-        self.fields = fields
+    def __init__(self, param):
+        self.param = param
 
     def deserialize(self, datum):
-        """If *datum* is a dict, deserialize it against *fields* and return
+        """If *datum* is a dict, deserialize it against *param* and return
         the resulting dict. Otherwise raise a :exc:`ValidationError`.
 
         A :exc:`ValidationError` will be raised if:
 
         1. *datum* is missing a required field
-        2. *datum* has a field not declared in *fields*.
+        2. *datum* has a field not declared in *param*.
         3. One of the values of *datum* does not pass validation as defined
            by the *schema* of the corresponding field.
         """
@@ -398,7 +398,7 @@ class Struct(object):
             ret = {}
             required = {}
             optional = {}
-            for name, field in self.fields['map'].items():
+            for name, field in self.param['map'].items():
                 if field["required"] == True:
                     required[name] = field["schema"]
                 else:
@@ -422,7 +422,7 @@ class Struct(object):
 
     def serialize(self, datum):
         ret = {}
-        for name, field in self.fields['map'].items():
+        for name, field in self.param['map'].items():
             schema = field['schema']
             if name in datum.keys() and datum[name] != None:
                 ret[name] = schema.serialize(datum[name])
@@ -433,7 +433,7 @@ class Struct(object):
         return Struct({
             "map": {
                 u"type": required(String()),
-                u"fields": required(OrderedMap(Struct({
+                u"param": required(OrderedMap(Struct({
                     "map": {
                         u"schema": required(Schema()),
                         u"required": required(Boolean())
@@ -441,32 +441,32 @@ class Struct(object):
                     "order": [u"schema", u"boolean"]
                 })))
             },
-            "order": [u"type", u"fields"]
+            "order": [u"type", u"param"]
         })
 
     def serialize_self(self):
         s = {"type": "Struct"}
-        s.update(Struct.get_params().serialize({"fields": self.fields}))
+        s.update(Struct.get_params().serialize({"param": self.param}))
         return s
 
     @classmethod
     def deserialize_self(cls, datum):
         opts = Struct.get_params().deserialize(datum)
-        return Struct(opts["fields"])
+        return Struct(opts["param"])
 
 
 
 
 class OrderedMap(Struct):
-    """The argument *items* is a serializer that defines the type of each item
+    """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
     match_type = "OrderedMap"
 
-    def __init__(self, items):
-        self.fields = {
+    def __init__(self, param):
+        self.param = {
             "map": {
-                u"map": required(Map(items)),
+                u"map": required(Map(param)),
                 u"order": required(Array(String()))
             },
             "order": [u"map", u"order"]
@@ -485,20 +485,20 @@ class OrderedMap(Struct):
         return Struct({
             "map": {
                 u"type": required(String()),
-                u"items": required(Schema())
+                u"param": required(Schema())
             },
-            "order": [u"type", u"items"]
+            "order": [u"type", u"param"]
         })
 
     def serialize_self(self):
         s = {"type": "OrderedMap"}
-        s.update(OrderedMap.get_params().serialize({"items": self.items}))
+        s.update(OrderedMap.get_params().serialize({"param": self.items}))
         return s
 
     @classmethod
     def deserialize_self(cls, datum):
         opts = OrderedMap.get_params().deserialize(datum)
-        return OrderedMap(opts["items"])
+        return OrderedMap(opts["param"])
 
 
 

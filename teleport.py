@@ -94,7 +94,8 @@ class TypeMap(object):
 
 
 _ctx_stack = LocalStack()
-_ctx_stack.push(TypeMap())
+# If no TypeMap is found on the stack, use the global object
+_global_map = TypeMap()
 
 # Some syntax sugar
 def required(name, schema):
@@ -435,7 +436,10 @@ class Schema(object):
 
         # Try to get the serializer class from the current TypeMap
         try:
-            serializer = _ctx_stack.top[t]
+            if _ctx_stack.top != None:
+                serializer = _ctx_stack.top[t]
+            else:
+                serializer = _global_map[t]
         except KeyError:
             raise UnknownTypeValidationError("Unknown type", t)
 

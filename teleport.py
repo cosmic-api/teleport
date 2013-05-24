@@ -266,22 +266,6 @@ class JSON(object):
         return datum.datum
 
 
-class SerializerWithSchema(object):
-
-    @classmethod
-    def get_schema(cls):
-        return Schema()
-
-    def deserialize(self, datum):
-        return cls(cls.get_param_schema().deserialize(datum))
-
-    def serialize(self):
-        return {
-            "type": self.match_type,
-            "param": self.get_param_schema().serialize(self.param)
-        }
-
-
 
 class Array(object):
     """The argument *param* is a serializer that defines the type of each item
@@ -321,12 +305,11 @@ class Array(object):
 
 
 
-
 class Map(object):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
-    match_type = "map"
+    match_type = "Map"
 
     def __init__(self, param):
         self.param = param
@@ -354,7 +337,6 @@ class Map(object):
     @classmethod
     def get_param_schema(cls):
         return Schema()
-
 
 
 
@@ -502,7 +484,8 @@ class Schema(object):
 
         # Deserialize or instantiate
         if hasattr(serializer, "get_param_schema"):
-            return serializer(serializer.get_param_schema().deserialize(datum["param"]))
+            param = serializer.get_param_schema().deserialize(datum["param"])
+            return serializer(param)
         else:
             return serializer()
 

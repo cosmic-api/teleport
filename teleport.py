@@ -99,11 +99,11 @@ _ctx_stack = LocalStack()
 _global_map = TypeMap()
 
 # Some syntax sugar
-def required(name, schema):
-    return {"name": name, "schema": schema, "required": True}
+def required(schema):
+    return {"schema": schema, "required": True}
 
-def optional(name, schema):
-    return {"name": name, "schema": schema, "required": False}
+def optional(schema):
+    return {"schema": schema, "required": False}
 
 
 class ValidationError(Exception):
@@ -301,10 +301,13 @@ class Array(object):
 
     @classmethod
     def get_params(cls):
-        return Struct([
-            required("type", String()),
-            required("items", Schema())
-        ])
+        return Struct({
+            "map": {
+                u"type": required(String()),
+                u"items": required(Schema())
+            },
+            "order": [u"type", u"items"]
+        })
 
     def serialize_self(self):
         s = {"type": "Array"}
@@ -349,10 +352,13 @@ class Map(object):
 
     @classmethod
     def get_params(cls):
-        return Struct([
-            required("type", String()),
-            required("items", Schema())
-        ])
+        return Struct({
+            "map": {
+                u"type": required(String()),
+                u"items": required(Schema())
+            },
+            "order": [u"type", u"items"]
+        })
 
     def serialize_self(self):
         s = {"type": "Map"}
@@ -376,10 +382,13 @@ class OrderedMap(object):
         self.items = items
 
     def get_schema(self):
-        return Struct([
-            required("map", Map(self.items)),
-            required("order", Array(String()))
-        ])
+        return Struct({
+            "map": {
+                u"map": required(Map(self.items)),
+                u"order": required(Array(String()))
+            },
+            "order": [u"map", u"order"]
+        })
 
     def deserialize(self, datum):
         d = self.get_schema().deserialize(datum)
@@ -394,10 +403,13 @@ class OrderedMap(object):
 
     @classmethod
     def get_params(cls):
-        return Struct([
-            required("type", String()),
-            required("items", Schema())
-        ])
+        return Struct({
+            "map": {
+                u"type": required(String()),
+                u"items": required(Schema())
+            },
+            "order": [u"type", u"items"]
+        })
 
     def serialize_self(self):
         s = {"type": "OrderedMap"}
@@ -421,6 +433,7 @@ class Struct(object):
 
     def __init__(self, fields):
         self.fields = fields
+        self.map = fields["map"]
 
     def deserialize(self, datum):
         """If *datum* is a dict, deserialize it against *fields* and return
@@ -437,11 +450,11 @@ class Struct(object):
             ret = {}
             required = {}
             optional = {}
-            for field in self.fields:
+            for name, field in self.map.items():
                 if field["required"] == True:
-                    required[field["name"]] = field["schema"]
+                    required[name] = field["schema"]
                 else:
-                    optional[field["name"]] = field["schema"]
+                    optional[name] = field["schema"]
             missing = set(required.keys()) - set(datum.keys())
             if missing:
                 raise ValidationError("Missing fields", list(missing))
@@ -461,8 +474,7 @@ class Struct(object):
 
     def serialize(self, datum):
         ret = {}
-        for field in self.fields:
-            name = field['name']
+        for name, field in self.map.items():
             schema = field['schema']
             if name in datum.keys() and datum[name] != None:
                 ret[name] = schema.serialize(datum[name])
@@ -470,14 +482,19 @@ class Struct(object):
 
     @classmethod
     def get_params(cls):
-        return Struct([
-            required("type", String()),
-            required("fields", Array(Struct([
-                required("name", String()),
-                required("schema", Schema()),
-                required("required", Boolean())
-            ])))
-        ])
+        return Struct({
+            "map": {
+                u"type": required(String()),
+                u"fields": required(OrderedMap(Struct({
+                    "map": {
+                        u"schema": required(Schema()),
+                        u"required": required(Boolean())
+                    },
+                    "order": [u"schema", u"boolean"]
+                })))
+            },
+            "order": [u"type", u"fields"]
+        })
 
     def serialize_self(self):
         s = {"type": "Struct"}
@@ -487,10 +504,6 @@ class Struct(object):
     @classmethod
     def deserialize_self(cls, datum):
         opts = Struct.get_params().deserialize(datum)
-        # Additional validation to check for duplicate fields
-        fields = [field["name"] for field in opts["fields"]]
-        if len(fields) > len(set(fields)):
-            raise ValidationError("Duplicate fields")
         return Struct(opts["fields"])
 
 

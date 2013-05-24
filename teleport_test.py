@@ -12,10 +12,13 @@ array_schema = {
 }
 struct_schema = {
     "type": u"Struct",
-    "fields": [
-        required(u"foo", {"type": u"Boolean"}),
-        optional(u"bar", {"type": u"Integer"})
-    ]
+    "fields": {
+        "map": {
+            u"foo": required({"type": u"Boolean"}),
+            u"bar": optional({"type": u"Integer"})
+        },
+        "order": [u"foo", u"bar"]
+    }
 }
 map_schema = {
     "type": u"Map",
@@ -65,8 +68,8 @@ class TestSchema(TestCase):
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
-        s["fields"][1]["name"] = u"foo"
-        with self.assertRaisesRegexp(ValidationError, "Duplicate fields"):
+        s["fields"]["order"].append("blah")
+        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
             Schema().deserialize(s)
 
     def test_schema_not_struct(self):

@@ -1,4 +1,6 @@
 import base64
+from collections import OrderedDict
+
 from werkzeug.local import LocalStack
 
 
@@ -340,7 +342,10 @@ class Map(object):
         raise ValidationError("Invalid Map", datum)
 
     def serialize(self, datum):
-        return [self.items.serialize(item) for item in datum]
+        ret = {}
+        for key, val in datum.items():
+            ret[key] = self.items.serialize(val)
+        return ret
 
     @classmethod
     def get_params(cls):
@@ -350,7 +355,7 @@ class Map(object):
         ])
 
     def serialize_self(self):
-        s = {"type": "map"}
+        s = {"type": "Map"}
         s.update(Map.get_params().serialize({"items": self.items}))
         return s
 
@@ -358,6 +363,51 @@ class Map(object):
     def deserialize_self(cls, datum):
         opts = Map.get_params().deserialize(datum)
         return Map(opts["items"])
+
+
+
+class OrderedMap(object):
+    """The argument *items* is a serializer that defines the type of each item
+    in the map.
+    """
+    match_type = "OrderedMap"
+
+    def __init__(self, items):
+        self.items = items
+
+    def get_schema(self):
+        return Struct([
+            required("map", Map(self.items)),
+            required("order", Array(String()))
+        ])
+
+    def deserialize(self, datum):
+        d = self.get_schema().deserialize(datum)
+        order = d["order"]
+        keys = d["map"].keys()
+        if len(order) != len(keys) or set(order) != set(keys):
+            raise ValidationError("Invalid OrderedMap", datum)
+        return d
+
+    def serialize(self, datum):
+        return self.get_schema().serialize(datum)
+
+    @classmethod
+    def get_params(cls):
+        return Struct([
+            required("type", String()),
+            required("items", Schema())
+        ])
+
+    def serialize_self(self):
+        s = {"type": "OrderedMap"}
+        s.update(OrderedMap.get_params().serialize({"items": self.items}))
+        return s
+
+    @classmethod
+    def deserialize_self(cls, datum):
+        opts = OrderedMap.get_params().deserialize(datum)
+        return OrderedMap(opts["items"])
 
 
 
@@ -504,5 +554,6 @@ BUILTIN_TYPES = {
     "JSON": JSON,
     "Array": Array,
     "Map": Map,
+    "OrderedMap": OrderedMap,
     "Struct": Struct
 }

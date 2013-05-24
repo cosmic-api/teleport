@@ -21,6 +21,10 @@ map_schema = {
     "type": u"Map",
     "items": {"type": "Boolean"}
 }
+ordered_map_schema = {
+    "type": u"OrderedMap",
+    "items": {"type": "Boolean"}
+}
 deep_schema = {
     "type": u"Array",
     "items": struct_schema
@@ -29,6 +33,7 @@ array_serializer = Schema().deserialize(array_schema)
 struct_serializer = Schema().deserialize(struct_schema)
 deep_serializer = Schema().deserialize(deep_schema)
 map_serializer = Schema().deserialize(map_schema)
+ordered_map_serializer = Schema().deserialize(ordered_map_schema)
 
 class TestSchema(TestCase):
 
@@ -166,17 +171,41 @@ class TestArray(TestCase):
 
 class TestMap(TestCase):
 
-    def test_deserialize(self):
+    def test_deserialize_and_serialize(self):
         m = {
             u"cool": True,
             u"hip": False,
             u"groovy": True
         }
         self.assertEqual(map_serializer.deserialize(m), m)
+        self.assertEqual(map_serializer.serialize(m), m)
         with self.assertRaisesRegexp(ValidationError, "Invalid Map"):
             map_serializer.deserialize([True, False])
         with self.assertRaisesRegexp(ValidationError, "must be unicode"):
             map_serializer.deserialize({"nope": False})
+
+
+class TestOrderedMap(TestCase):
+
+    def test_deserialize_and_serialize(self):
+        m = {
+            "map": {
+                u"cool": True,
+                u"hip": False,
+                u"groovy": True
+            },
+            "order": [u"cool", u"groovy", u"hip"]
+        }
+        self.assertEqual(ordered_map_serializer.deserialize(m), m)
+        self.assertEqual(ordered_map_serializer.serialize(m), m)
+        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
+            m2 = deepcopy(m)
+            m2["order"].append(u"cool")
+            ordered_map_serializer.deserialize(m2)
+        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
+            m2 = deepcopy(m)
+            m2["order"] = [u"cool", u"groovy", u"kewl"]
+            ordered_map_serializer.deserialize(m2)
 
 
 class TestStruct(TestCase):

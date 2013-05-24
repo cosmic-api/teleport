@@ -241,9 +241,9 @@ class AllSuits(TypeMap):
 
     def __getitem__(self, name):
         if name == "Array":
-            return Array
+            return BUILTIN_TYPES["Array"]
         elif name == "suit":
-            return Suit
+            return (Suit, None,)
         else:
             raise KeyError()
 

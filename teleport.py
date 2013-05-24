@@ -98,6 +98,13 @@ _ctx_stack = LocalStack()
 # If no TypeMap is found on the stack, use the global object
 _global_map = TypeMap()
 
+def _get_current_map():
+    if _ctx_stack.top != None:
+        return _ctx_stack.top
+    else:
+        return _global_map
+
+
 # Some syntax sugar
 def required(schema):
     return {"schema": schema, "required": True}
@@ -299,10 +306,6 @@ class Array(object):
         """
         return [self.param.serialize(item) for item in datum]
 
-    @classmethod
-    def get_param_schema(cls):
-        return Schema()
-
 
 
 class Map(object):
@@ -333,10 +336,6 @@ class Map(object):
         for key, val in datum.items():
             ret[key] = self.param.serialize(val)
         return ret
-
-    @classmethod
-    def get_param_schema(cls):
-        return Schema()
 
 
 
@@ -396,16 +395,6 @@ class Struct(object):
                 ret[name] = schema.serialize(datum[name])
         return ret
 
-    @classmethod
-    def get_param_schema(cls):
-        return OrderedMap(Struct({
-            "map": {
-                u"schema": required(Schema()),
-                u"required": required(Boolean())
-            },
-            "order": [u"schema", u"boolean"]
-        }))
-
 
 
 class OrderedMap(Struct):
@@ -431,10 +420,6 @@ class OrderedMap(Struct):
             raise ValidationError("Invalid OrderedMap", datum)
         return d
 
-    @classmethod
-    def get_param_schema(cls):
-        return Schema()
-
 
 
 class Schema(object):
@@ -445,10 +430,11 @@ class Schema(object):
         method, use it. Otherwise, return a simple schema by finding the type
         in the serializer's :attr:`match_type` attribute.
         """
-        if hasattr(datum, "get_param_schema"):
+        param_schema = _get_current_map()[datum.match_type][1]
+        if param_schema != None:
             return {
                 "type": datum.match_type,
-                "param": datum.get_param_schema().serialize(datum.param)
+                "param": param_schema.serialize(datum.param)
             }
         else:
             return {"type": datum.match_type}
@@ -475,16 +461,13 @@ class Schema(object):
 
         # Try to get the serializer class from the current TypeMap
         try:
-            if _ctx_stack.top != None:
-                serializer = _ctx_stack.top[t]
-            else:
-                serializer = _global_map[t]
+            serializer, param_schema = _get_current_map()[t]
         except KeyError:
             raise UnknownTypeValidationError("Unknown type", t)
 
         # Deserialize or instantiate
-        if hasattr(serializer, "get_param_schema"):
-            param = serializer.get_param_schema().deserialize(datum["param"])
+        if param_schema != None:
+            param = param_schema.deserialize(datum["param"])
             return serializer(param)
         else:
             return serializer()
@@ -492,15 +475,21 @@ class Schema(object):
 
 
 BUILTIN_TYPES = {
-    "Integer": Integer,
-    "Float": Float,
-    "String": String,
-    "Binary": Binary,
-    "Boolean": Boolean,
-    "Schema": Schema,
-    "JSON": JSON,
-    "Array": Array,
-    "Map": Map,
-    "OrderedMap": OrderedMap,
-    "Struct": Struct
+    "Integer": (Integer, None),
+    "Float": (Float, None),
+    "String": (String, None),
+    "Binary": (Binary, None),
+    "Boolean": (Boolean, None),
+    "Schema": (Schema, None),
+    "JSON": (JSON, None),
+    "Array": (Array, Schema()),
+    "Map": (Map, Schema()),
+    "OrderedMap": (OrderedMap, Schema()),
+    "Struct": (Struct, OrderedMap(Struct({
+        "map": {
+            u"schema": required(Schema()),
+            u"required": required(Boolean())
+        },
+        "order": [u"schema", u"boolean"]
+    })),)
 }

@@ -346,7 +346,7 @@ class Struct(object):
             ret = {}
             required = {}
             optional = {}
-            for name, field in self.param['map'].items():
+            for name, field in self.param.items():
                 if field["required"] == True:
                     required[name] = field["schema"]
                 else:
@@ -370,7 +370,7 @@ class Struct(object):
 
     def to_json(self, datum):
         ret = {}
-        for name, field in self.param['map'].items():
+        for name, field in self.param.items():
             schema = field['schema']
             if name in datum.keys() and datum[name] != None:
                 ret[name] = schema.to_json(datum[name])
@@ -433,13 +433,11 @@ class OrderedMap(object):
     match_type = "OrderedMap"
 
     def __init__(self, param):
-        self.schema = Struct({
-            "map": {
-                u"map": required(Map(param)),
-                u"order": required(Array(String))
-            },
-            "order": [u"map", u"order"]
-        })
+        self.param = param
+        self.schema = Struct(OrderedDict([
+            (u"map", required(Map(param)),),
+            (u"order", required(Array(String)),)
+        ]))
 
     def from_json(self, datum):
         d = self.schema.from_json(datum)
@@ -447,9 +445,18 @@ class OrderedMap(object):
         keys = d["map"].keys()
         if len(order) != len(keys) or set(order) != set(keys):
             raise ValidationError("Invalid OrderedMap", datum)
-        return d
+        # Turn into OrderedDict instance
+        ret = OrderedDict()
+        for key in order:
+            ret[key] = d["map"][key]
+        return ret
 
     def to_json(self, datum):
+        # Turn back into struct
+        datum = {
+            "map": dict(datum.items()),
+            "order": datum.keys()
+        }
         return self.schema.to_json(datum)
 
 
@@ -511,11 +518,8 @@ BUILTIN_TYPES = {
     "Array": (Array, Schema),
     "Map": (Map, Schema),
     "OrderedMap": (OrderedMap, Schema),
-    "Struct": (Struct, OrderedMap(Struct({
-        "map": {
-            u"schema": required(Schema),
-            u"required": required(Boolean)
-        },
-        "order": [u"schema", u"boolean"]
-    })),)
+    "Struct": (Struct, OrderedMap(Struct(OrderedDict([
+        (u"schema", required(Schema),),
+        (u"required", required(Boolean),)
+    ]))))
 }

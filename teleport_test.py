@@ -187,8 +187,13 @@ class TestOrderedMap(TestCase):
             },
             "order": [u"cool", u"groovy", u"hip"]
         }
-        self.assertEqual(ordered_map_serializer.from_json(m), m)
-        self.assertEqual(ordered_map_serializer.to_json(m), m)
+        md = OrderedDict([
+            (u"cool", True,),
+            (u"groovy", True,),
+            (u"hip", False,)
+        ])
+        self.assertEqual(ordered_map_serializer.from_json(m), md)
+        self.assertEqual(ordered_map_serializer.to_json(md), m)
         with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
             m2 = deepcopy(m)
             m2["order"].append(u"cool")

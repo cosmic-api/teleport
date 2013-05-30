@@ -344,10 +344,13 @@ class Array(ParametrizedPrimitive):
 
 
 class Struct(ParametrizedPrimitive):
-    """*param* must be a list of dicts, where each dict has three items:
-    *name* (String), *schema* (serializer) and *required* (Boolean). For each
-    pair, *schema* is used to serialize and deserialize a dictionary value
-    matched by the key *name*.
+    """*param* must be an :class:`OrderedDict`, where the keys are field
+    names, and values are dicts with two items: *schema* (serializer) and
+    *required* (Boolean). For each pair, *schema* is used to serialize and
+    deserialize a dict value matched by the corresponding key.
+
+    For convenience, :class:`Struct` can be instantiated with a list of tuples
+    like the constructor of :class:`OrderedDict`.
     """
 
     def __init__(self, param):
@@ -408,6 +411,10 @@ class Map(ParametrizedPrimitive):
     """
 
     def from_json(self, datum):
+        """If *datum* is a dict, deserialize it, otherwise raise a
+        :exc:`ValidationError`. The keys of the dict must be unicode, and the
+        values will be deserialized using *param*.
+        """
         if type(datum) == dict:
             ret = {}
             for key, val in datum.items():
@@ -432,6 +439,16 @@ class Map(ParametrizedPrimitive):
 class OrderedMap(ParametrizedWrapper):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
+
+    Internal schema::
+
+        Struct([
+            required(u"map", Map(param)),
+            required(u"order", Array(String))
+        ])
+
+    The order of the items in *map* is not preserved by JSON, hence the
+    existence of *order*, an array of keys in *map*.
     """
 
     def __init__(self, param):
@@ -442,6 +459,9 @@ class OrderedMap(ParametrizedWrapper):
         ])
 
     def inflate(self, datum):
+        """:exc:`ValidationError` is raised if *order* does not correspond to
+        the keys in *map*. The native form is Python's :class:`OrderedDict`.
+        """
         order = datum["order"]
         keys = datum["map"].keys()
         if len(order) != len(keys) or set(order) != set(keys):

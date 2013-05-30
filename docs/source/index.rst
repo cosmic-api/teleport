@@ -150,6 +150,9 @@ When the native form of the data type is a class instance,
                 "level": player.level
             }
 
+Before integrating Teleport, :class:`Player` was just a class in your
+application, but now you can use it to build schemas like ``Array(Player)``.
+
 Custom Types With Parameters
 ----------------------------
 

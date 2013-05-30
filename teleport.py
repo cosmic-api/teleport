@@ -151,6 +151,47 @@ class UnknownTypeValidationError(ValidationError):
     pass
 
 
+
+class ParametrizedWrapper(object):
+
+    def from_json(self, datum):
+        datum = self.schema.from_json(datum)
+        return self.inflate(datum)
+
+    def to_json(self, datum):
+        datum = self.deflate(datum)
+        return self.schema.to_json(datum)
+
+    def inflate(self, datum):
+        return datum
+
+    def deflate(self, datum):
+        return datum
+
+
+
+class BasicWrapper(object):
+
+    @classmethod
+    def from_json(cls, datum):
+        datum = cls.schema.from_json(datum)
+        return cls.inflate(datum)
+
+    @classmethod
+    def to_json(cls, datum):
+        datum = cls.deflate(datum)
+        return cls.schema.to_json(datum)
+
+    @classmethod
+    def inflate(cls, datum):
+        return datum
+
+    @classmethod
+    def deflate(cls, datum):
+        return datum
+
+
+
 class Integer(object):
     match_type = "Integer"
 
@@ -411,24 +452,7 @@ class Map(object):
 
 
 
-class Model(object):
-
-    def from_json(self, datum):
-        datum = self.schema.from_json(datum)
-        return self.inflate(datum)
-
-    def to_json(self, datum):
-        datum = self.schema.to_json(datum)
-        return self.deflate(datum)
-
-    def inflate(self, datum):
-        return datum
-
-    def deflate(self, datum):
-        return datum
-
-
-class OrderedMap(object):
+class OrderedMap(ParametrizedWrapper):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
@@ -441,25 +465,22 @@ class OrderedMap(object):
             required(u"order", Array(String))
         ])
 
-    def from_json(self, datum):
-        d = self.schema.from_json(datum)
-        order = d["order"]
-        keys = d["map"].keys()
+    def inflate(self, datum):
+        order = datum["order"]
+        keys = datum["map"].keys()
         if len(order) != len(keys) or set(order) != set(keys):
             raise ValidationError("Invalid OrderedMap", datum)
         # Turn into OrderedDict instance
         ret = OrderedDict()
         for key in order:
-            ret[key] = d["map"][key]
+            ret[key] = datum["map"][key]
         return ret
 
-    def to_json(self, datum):
-        # Turn back into struct
-        datum = {
+    def deflate(self, datum):
+        return {
             "map": dict(datum.items()),
             "order": datum.keys()
         }
-        return self.schema.to_json(datum)
 
 
 

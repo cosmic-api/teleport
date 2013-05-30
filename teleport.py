@@ -13,35 +13,22 @@ class TypeMap(object):
     Global state is evil, and Teleport successfully avoids it using Werkzeug's
     brilliant `Context Locals <http://werkzeug.pocoo.org/docs/local/>`_.
 
-    First, let's create a type by defining a serializer::
-
-        class Suit(object):
-            type_name = "suit"
-
-            def from_json(self, datum):
-                if datum not in ["hearts", "spades", "clubs", "diamonds"]:
-                    raise ValidationError("Invalid suit", datum)
-                return datum
-
-            def to_json(self, datum):
-                return datum
-
     To extend Teleport with your custom type, subclass :class:`TypeMap`::
 
-        class PokerTypeMap(TypeMap):
+        class ExtendedTypeMap(TypeMap):
 
             def __getitem__(self, name):
-                if name == "suit":
-                    return Suit
+                if name == "YesNoMaybe":
+                    return (YesNoMaybe, None,)
                 else:
                     return BUILTIN_TYPES[name]
 
-    :class:`PokerTypeMap` is an extention of Teleport, to enable it within
+    :class:`ExtendedTypeMap` is an extention of Teleport, to enable it within
     a specific code block, use Python's :keyword:`with` statement::
 
         # Only built-in types accessible here
-        with PokerTypeMap():
-            # Built-in types as well as "suit" are accessible
+        with ExtendedTypeMap():
+            # Built-in types as well as "YesNoMaybe" are accessible
             with TypeMap():
                 # Only built-in types here
                 pass
@@ -52,10 +39,11 @@ class TypeMap(object):
     application.
 
     If you are planning to serialize schemas containing custom types, Teleport
-    will use the :attr:`type_name` attribute::
+    will get the type name from the serializer class (it can also be overridden
+    with the :attr:`type_name` attribute)::
 
-        >>> Schema.to_json(Suit())
-        {'type': 'suit'}
+        >>> Schema.to_json(YesNoMaybe)
+        {'type': 'YesNoMaybe'}
 
     When you deserialize it (whether it is done by the same program or by a
     different program entirely), you need to ensure it will have access to
@@ -70,7 +58,7 @@ class TypeMap(object):
 
             app = Flask(__name__)
 
-            app.wsgi_app = PokerTypeMap().middleware(app.wsgi_app)
+            app.wsgi_app = ExtendedTypeMap().middleware(app.wsgi_app)
             app.run()
 
         In `Django <https://www.djangoproject.com/>`_ (see the
@@ -78,7 +66,7 @@ class TypeMap(object):
 
             from django.core.wsgi import get_wsgi_application
             application = get_wsgi_application()
-            application = PokerTypeMap().middleware(application)
+            application = ExtendedTypeMap().middleware(application)
 
         """
         def wrapped(environ, start_response):

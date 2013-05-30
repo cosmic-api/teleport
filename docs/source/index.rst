@@ -88,32 +88,84 @@ To create a custom type, define a serializer class::
 
     class YesNoMaybe(object):
 
-        def from_json(self, datum):
+        @staticmethod
+        def from_json(datum):
             if datum not in [True, False, None]:
                 raise ValidationError("Invalid YesNoMaybe", datum)
             return datum
 
-        def to_json(self, datum):
+        @staticmethod
+        def to_json(datum):
             return datum
 
-.. autoclass:: TypeMap
+:class:`YesNoMaybe` is a *primitive serializer* as it defines functions to
+convert data directly to and from JSON. Another option is a *wrapper
+serializer*, which relies on an internal serializer for dealing with JSON and
+builds on top of it by defining :meth:`hydrate` and :meth:`dehydrate`
+methods.
 
-   .. automethod:: middleware
+The :meth:`hydrate` method may be used to perform additional validation that
+the internal serializer doesn't take care of::
+
+    class Suit(BasicWrapper):
+        schema = String
+
+        @staticmethod
+        def hydrate(datum):
+            if datum not in ["hearts", "spades", "clubs", "diamonds"]:
+                raise ValidationError("Invalid Suit", datum)
+            return datum
+
+Note that the :class:`BasicWrapper` mixin defines the :meth:`to_json` and
+:meth:`from_json` functions for you::
+
+    >>> Suit.from_json("hearts")
+    "hearts"
+    >>> Suit.from_json("heart")
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "teleport.py", line 406, in from_json
+        ret[field] = schema.from_json(datum[field])
+      File "teleport.py", line 349, in from_json
+        ret.append(self.param.from_json(item))
+    teleport.ValidationError: Invalid Suit: "heart"
+
+When the native form of the data type is a class instance,
+:class:`BasicWrapper` can be used to teach the class to serialize itself::
+
+    class Player(BasicWrapper):
+        schema = Struct([
+            required("name", String),
+            required("level", Integer)
+        ])
+
+        @staticmethod
+        def hydrate(datum):
+            return Player(**datum)
+
+        @staticmethod
+        def dehydrate(player):
+            return {
+                "name": player.name,
+                "level": player.level
+            }
 
 Custom Types With Parameters
 ----------------------------
 
-The JSON form of a simple type such as integer or suit contains nothing but
-the type name::
+Both primitive and wrapper types can also be parametrized, which means that their
+serializers will have to be instantiated with parameters and that their JSON form
+will have an additional attribute *param*.
 
-    >>> Schema.to_json(Integer)
-    {'type': 'Integer'}
-    >>> Schema.to_json(Suit)
-    {'type': 'Suit'}
+Take a look at the source code of :class:`Array` for an example of a primitive
+parametrized type, and :class:`OrderedMap` for an example of a wrapper
+parametrized type.
 
-But if you look at the JSON form of an array type, you can see that it has an
-attribute *param*. It is quite easy to create custom types with parameters,
-take a look at the source code of :class:`Array` for a simple example.
+Informing Teleport Of Your Custom Types
+---------------------------------------
+
+.. autoclass:: TypeMap
+   :members:
 
 Built-In Serializers
 --------------------

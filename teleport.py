@@ -106,11 +106,11 @@ def _get_current_map():
 
 
 # Some syntax sugar
-def required(schema):
-    return {"schema": schema, "required": True}
+def required(name, schema):
+    return (name, {"schema": schema, "required": True},)
 
-def optional(schema):
-    return {"schema": schema, "required": False}
+def optional(name, schema):
+    return (name, {"schema": schema, "required": False},)
 
 
 class ValidationError(Exception):
@@ -329,6 +329,8 @@ class Struct(object):
     match_type = "Struct"
 
     def __init__(self, param):
+        if type(param) == list:
+            param = OrderedDict(param)
         self.param = param
 
     def from_json(self, datum):
@@ -434,10 +436,10 @@ class OrderedMap(object):
 
     def __init__(self, param):
         self.param = param
-        self.schema = Struct(OrderedDict([
-            (u"map", required(Map(param)),),
-            (u"order", required(Array(String)),)
-        ]))
+        self.schema = Struct([
+            required(u"map", Map(param)),
+            required(u"order", Array(String))
+        ])
 
     def from_json(self, datum):
         d = self.schema.from_json(datum)
@@ -518,8 +520,8 @@ BUILTIN_TYPES = {
     "Array": (Array, Schema),
     "Map": (Map, Schema),
     "OrderedMap": (OrderedMap, Schema),
-    "Struct": (Struct, OrderedMap(Struct(OrderedDict([
-        (u"schema", required(Schema),),
-        (u"required", required(Boolean),)
-    ]))))
+    "Struct": (Struct, OrderedMap(Struct([
+        required(u"schema", Schema),
+        required(u"required", Boolean)
+    ])))
 }

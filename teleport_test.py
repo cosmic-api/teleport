@@ -14,8 +14,14 @@ struct_schema = {
     "type": u"Struct",
     "param": {
         "map": {
-            u"foo": required({"type": u"Boolean"}),
-            u"bar": optional({"type": u"Integer"})
+            u"foo": {
+                "required": True,
+                "schema": {"type": u"Boolean"}
+            },
+            u"bar": {
+                "required": False,
+                "schema": {"type": u"Integer"}
+            }
         },
         "order": [u"foo", u"bar"]
     }

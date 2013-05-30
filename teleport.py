@@ -152,24 +152,6 @@ class UnknownTypeValidationError(ValidationError):
 
 
 
-class ParametrizedWrapper(object):
-
-    def from_json(self, datum):
-        datum = self.schema.from_json(datum)
-        return self.inflate(datum)
-
-    def to_json(self, datum):
-        datum = self.deflate(datum)
-        return self.schema.to_json(datum)
-
-    def inflate(self, datum): # pragma: no cover
-        return datum
-
-    def deflate(self, datum): # pragma: no cover
-        return datum
-
-
-
 class BasicWrapper(object):
 
     @classmethod
@@ -192,7 +174,44 @@ class BasicWrapper(object):
 
 
 
-class Integer(object):
+class ParametrizedWrapper(object):
+
+    def from_json(self, datum):
+        datum = self.schema.from_json(datum)
+        return self.inflate(datum)
+
+    def to_json(self, datum):
+        datum = self.deflate(datum)
+        return self.schema.to_json(datum)
+
+    def inflate(self, datum): # pragma: no cover
+        return datum
+
+    def deflate(self, datum): # pragma: no cover
+        return datum
+
+
+
+class BasicPrimitive(object):
+
+    @staticmethod
+    def from_json(datum): # pragma: no cover
+        return datum
+
+    @staticmethod
+    def to_json(datum): # pragma: no cover
+        return datum
+
+
+
+class ParametrizedPrimitive(object):
+
+    def __init__(self, param):
+        self.param = param
+
+
+
+class Integer(BasicPrimitive):
     match_type = "Integer"
 
     @staticmethod
@@ -207,13 +226,9 @@ class Integer(object):
             return int(datum)
         raise ValidationError("Invalid Integer", datum)
 
-    @staticmethod
-    def to_json(datum):
-        return datum
 
 
-
-class Float(object):
+class Float(BasicPrimitive):
     match_type = "Float"
 
     @staticmethod
@@ -227,13 +242,9 @@ class Float(object):
             return float(datum)
         raise ValidationError("Invalid Float", datum)
 
-    @staticmethod
-    def to_json(datum):
-        return datum
 
 
-
-class String(object):
+class String(BasicPrimitive):
     match_type = "String"
 
     @staticmethod
@@ -253,13 +264,9 @@ class String(object):
                 raise UnicodeDecodeValidationError(unicode(inst))
         raise ValidationError("Invalid String", datum)
 
-    @staticmethod
-    def to_json(datum):
-        return datum
 
 
-
-class Binary(object):
+class Binary(BasicPrimitive):
     match_type = "Binary"
 
     @staticmethod
@@ -276,11 +283,12 @@ class Binary(object):
 
     @staticmethod
     def to_json(datum):
+        "Encode *datum* using base64."
         return base64.b64encode(datum)
 
 
 
-class Boolean(object):
+class Boolean(BasicPrimitive):
     match_type = "Boolean"
 
     @staticmethod
@@ -292,14 +300,10 @@ class Boolean(object):
             return datum
         raise ValidationError("Invalid Boolean", datum)
 
-    @staticmethod
-    def to_json(datum):
-        return datum
-
 
 
 class Box(object):
-    """Used as a wrapper around JSON data to disambugate None as a JSON value
+    """Used as a wrapper around JSON data to disambiguate None as a JSON value
     (``null``) from None as an absense of value. Its :attr:`datum` attribute
     will hold the actual JSON value.
 
@@ -312,7 +316,7 @@ class Box(object):
 
 
 
-class JSON(object):
+class JSON(BasicPrimitive):
     match_type = "JSON"
 
     @staticmethod
@@ -327,14 +331,11 @@ class JSON(object):
 
 
 
-class Array(object):
+class Array(ParametrizedPrimitive):
     """The argument *param* is a serializer that defines the type of each item
     in the array.
     """
     match_type = "Array"
-
-    def __init__(self, param):
-        self.param = param
 
     def from_json(self, datum):
         """If *datum* is a list, construct a new list by putting each element
@@ -361,7 +362,7 @@ class Array(object):
 
 
 
-class Struct(object):
+class Struct(ParametrizedPrimitive):
     """*param* must be a list of dicts, where each dict has three items:
     *name* (String), *schema* (serializer) and *required* (Boolean). For each
     pair, *schema* is used to serialize and deserialize a dictionary value
@@ -421,14 +422,11 @@ class Struct(object):
 
 
 
-class Map(object):
+class Map(ParametrizedPrimitive):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
     match_type = "Map"
-
-    def __init__(self, param):
-        self.param = param
 
     def from_json(self, datum):
         if type(datum) == dict:
@@ -484,7 +482,7 @@ class OrderedMap(ParametrizedWrapper):
 
 
 
-class Schema(object):
+class Schema(BasicPrimitive):
     match_type = "Schema"
 
     @staticmethod

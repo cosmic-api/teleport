@@ -20,14 +20,14 @@ Teleport is:
 * Portable and extendable
 * Open Source (`MIT license <http://opensource.org/licenses/MIT>`_)
 
-Teleport is not a serialization *layer*. It provides 9 built-in data types to
+Teleport is not a serialization *layer*. It provides 11 built-in data types to
 get you started, however, using Teleport for a non-trivial project means
-defining data types of your own. In object-oriented languages, this involves
-augmenting your classes to make them serializable.
+defining data types of your own. In object-oriented languages, this often
+involves augmenting your classes to make them serializable.
 
 Once registered with Teleport, a custom data type will become a first-class
-citizen of your application. Defining an array of widgets is just as easy as
-defining an array of integers, provided that you made the Widget class
+citizen of the serialization system. Defining an array of widgets is just as
+easy as defining an array of integers, provided that you made the Widget class
 serializable.
 
 Such definitions (like "array of widgets") are also serializable. This feature
@@ -89,10 +89,11 @@ Principles
         *JSON form* of one particular type of data. As far as Teleport is
         concerned, a serializer is a data type definition.
 
-        Serializers may take parameters. For example, an array serializer
-        needs to know what type of items the array is expected to contain.
-        It's these kinds of serializers that allow building deeply nested
-        schemas for describing rich internet data.
+        Serializers may be *basic* (no parameters) or *parametrized*. For
+        example, an array serializer needs to know what type of items the
+        array is expected to contain. It's these kinds of serializers that
+        allow building deeply nested schemas for describing rich internet
+        data.
 
     Native form
 
@@ -125,7 +126,7 @@ Principles
 Built-In Types
 --------------
 
-Teleport provides 9 built-in types. Each implementation must provide 9
+Teleport provides 11 built-in types. Each implementation must provide 11
 corresponding serializers.
 
 The native form of the built-in types is implementation-dependent and will be
@@ -133,38 +134,50 @@ defined in language-specific documentation. The serialized form and the
 validation logic, however, is identical across all implementations. Below is a
 list of all built-in models and their validation logic.
 
-``integer``
+``Integer``
     Must be expressed as a JSON number. If the number has a decimal, the
     fractional part must be 0.
 
-``float``
+``Float``
     Must be expressed as a JSON number. Implementations should support double-precision.
 
-``string``
+``String``
     Must be expressed as a JSON string. Encoding must be UTF-8. Unicode errors
     must be dealt with strictly by throwing a validation error.
 
-``boolean``
+``Boolean``
     Must be expressed as a JSON boolean.
 
-``binary``
+``Binary``
     Must be expressed as a JSON string containing Base64 encoded binary data.
     Base64 errors must result in a validation error.
 
-``json``
+``JSON``
     Can be any JSON value. No validation is performed during deserialization.
     Depending on the implementation, it may be useful to wrap the JSON in a
     different object, so that a ``null`` JSON value won't cause ambiguity.
 
-``array`` (parametrized by *items*)
+``Array`` (parametrized by *items*)
     Must be expressed as a JSON array. The implementation must deserialize
-    each of its items against the *items* serializer. If an item
-    deserialization fails with a validation error, the array deserialization
-    must fail likewise. The native form of an array must be an ordered
-    sequence of native values, in the same order as they appear in the JSON
-    form. If the array was empty, an empty sequence must be returned.
+    each of its items using the *items* serializer. If an item deserialization
+    fails with a validation error, the array deserialization must fail
+    likewise. The native form of an array must be an ordered sequence of
+    native values, in the same order as they appear in the JSON form. If the
+    array was empty, an empty sequence must be returned.
 
-``struct`` (parametrized by *fields*)
+``Map`` (parametrized by *items*)
+    Must be expressed as a JSON object. The implementation must deserialize
+    each value against the *items* schema. The native form must be a mapping
+    type.
+
+``OrderedMap`` (parametrized by *items*)
+    Must be expressed as a JSON object with two keys: *map* and *order*. The
+    former is a ``Map``, the latter is an array of strings representing the
+    order of the keys in the map. If the implementation language has an 
+    ordered mapping type, it should be used, otherwise, a sequence of pairs
+    will do.
+
+``Struct`` (parametrized by *fields*)
     Must be expressed as a JSON object. If the object has a key that is
     different from every field name in *fields*, a validation error must be
     thrown. For every key-value pair in the object, the value must be
@@ -174,13 +187,11 @@ list of all built-in models and their validation logic.
     cause the struct to throw a validation error when the corresponding value
     is missing from the data being validated.
 
-    Note that fields are ordered.
-
     The native form of the object must be a associative array containing all
     key-value pairs from the original object with native values replacing the
     JSON values.
 
-``schema``
+``Schema``
     See the following section.
 
 
@@ -194,71 +205,42 @@ Schemas
         The JSON form of a :term:`serializer`.
 
 A schema is always a JSON object, it must always have a *type* property.
-All built-in types except for ``array`` and ``struct`` contain no other
-properties.
+Parametrized types will also have *param* property. This property needs to
+be serialized and deserialized along with the rest of the schema, so it
+is useful to define it with a Teleport schema of its own.
 
-An ``array`` schema must contain a property *items*, whose value must be a
-schema that describes every item in the array.
+``Array``, ``Map`` and ``OrderedMap`` are parametrized simply by::
 
-A ``struct`` schema must contain a property *fields*, which must be an array
-of field objects. Each field object must contain 3 properties: *name*,
-*schema* and *required*. *Name* must be a string, there cannot be two field
-objects in a ``struct`` schema with the same name. *Schema* must be a schema
-that describes the value matched by the *name*. *Required* must be a boolean
-that specifies whether omitting the item will cause a validation error or not.
+    Schema
 
-To validate ``[{"name": "Rose"}, {"name": "Lily"}]``, you could use the
-following schema:
+A ``Struct`` schema's *param* is of the following type::
 
-.. code:: json
+    OrderedMap(Struct([
+        required("schema", Schema),
+        required("required", Boolean)
+    ]))
 
-    {
-        "type": "array",
-        "items": {
-            "type": "struct",
-            "fields": [
-                {
-                    "name": "name",
-                    "schema": {"type": "string"},
-                    "required": true
-                }
-            ]
-        }
-    }
-
-Implementation Notes
---------------------
-
-How to validate schema parameters is up to the implementation. However, it
-should be noted that these parameters can be described as Teleport schemas
-themselves. For example, *fields* can be described as follows:
+To validate ``[{"name": "Rose", "age": 1}, {"name": "Lily"}]``, you could use the following schema:
 
 .. code:: json
 
     {
-        "type": "array",
-        "items": {
-            "type": "struct",
-            "fields": [
-                {
-                    "name": "name",
-                    "schema": {"type": "string"},
-                    "required": true
+        "type": "Array",
+        "param": {
+            "type": "Struct",
+            "param": {
+                "map": {
+                    "name": {
+                        "required": true,
+                        "schema": {"type": "String"}
+                    },
+                    "age": {
+                        "required": false,
+                        "schema": {"type": "Integer"}
+                    }
                 },
-                {
-                    "name": "schema",
-                    "schema": {"type": "schema"},
-                    "required": true
-                },
-                {
-                    "name": "required",
-                    "schema": {"type": "boolean"},
-                    "required": true
-                }
-            ]
+                "order": ["name", "age"]
+            }
         }
     }
-
-Note that after using the above schema the implementation still needs to make
-sure there are no duplicate names.
 

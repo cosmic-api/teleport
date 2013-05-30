@@ -162,10 +162,10 @@ class ParametrizedWrapper(object):
         datum = self.deflate(datum)
         return self.schema.to_json(datum)
 
-    def inflate(self, datum):
+    def inflate(self, datum): # pragma: no cover
         return datum
 
-    def deflate(self, datum):
+    def deflate(self, datum): # pragma: no cover
         return datum
 
 
@@ -183,11 +183,11 @@ class BasicWrapper(object):
         return cls.schema.to_json(datum)
 
     @classmethod
-    def inflate(cls, datum):
+    def inflate(cls, datum): # pragma: no cover
         return datum
 
     @classmethod
-    def deflate(cls, datum):
+    def deflate(cls, datum): # pragma: no cover
         return datum
 
 
@@ -439,7 +439,7 @@ class Map(object):
                 try:
                     ret[key] = self.param.from_json(val)
                 except ValidationError as e:
-                    e.stack.append(i)
+                    e.stack.append(key)
                     raise
             return ret
         raise ValidationError("Invalid Map", datum)

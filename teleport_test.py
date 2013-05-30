@@ -50,6 +50,11 @@ class TestSchema(TestCase):
         self.assertEqual(array_schema, Schema.to_json(array_serializer))
         self.assertEqual(struct_schema, Schema.to_json(struct_serializer))
         self.assertEqual(deep_schema, Schema.to_json(deep_serializer))
+        struct_s = Struct([
+            required(u"foo", Boolean),
+            optional(u"bar", Integer)
+        ])
+        self.assertEqual(Schema.to_json(struct_s), struct_schema)
 
     def test_schema_subclass_delegation(self):
         self.assertEqual(Schema.from_json({"type": u"Integer"}), Integer)
@@ -180,6 +185,8 @@ class TestMap(TestCase):
             map_serializer.from_json([True, False])
         with self.assertRaisesRegexp(ValidationError, "must be unicode"):
             map_serializer.from_json({"nope": False})
+        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
+            map_serializer.from_json({u"cool": 0})
 
 
 class TestOrderedMap(TestCase):
@@ -226,28 +233,37 @@ class TestStruct(TestCase):
         with self.assertRaisesRegexp(ValidationError, "Missing fields"):
             struct_serializer.from_json({"bar": 2})
 
+    def test_to_json(self):
+        res = struct_serializer.to_json({"foo": True})
+        self.assertEqual(res, {"foo": True})
+        res = struct_serializer.to_json({"foo": True, "bar": None})
+        self.assertEqual(res, {"foo": True})
 
-class Suit(object):
+
+class Suit(BasicWrapper):
+    schema = String
 
     @staticmethod
-    def from_json(datum):
+    def inflate(datum):
         if datum not in ["hearts", "spades", "clubs", "diamonds"]:
             raise ValidationError("Invalid Suit", datum)
         return datum
 
-    @staticmethod
-    def to_json(datum):
-        return datum
+class SuitArray(BasicWrapper):
+    schema = Array(Suit)
 
 
-class TestSuit(TestCase):
+class TestSuits(TestCase):
 
     def test_from_json(self):
         suits = ["hearts", "clubs", "clubs"]
-        self.assertEqual(Array(Suit).from_json(suits), suits)
+        self.assertEqual(SuitArray.from_json(suits), suits)
         with self.assertRaisesRegexp(ValidationError, "Invalid Suit"):
             suits = ["hearts", "clubs", "clubz"]
-            self.assertEqual(Array(Suit).from_json(suits), suits)
+            self.assertEqual(SuitArray.from_json(suits), suits)
+
+    def test_to_json(self):
+        self.assertEqual(Suit.to_json(u"hearts"), u"hearts")
 
 
 class AllSuits(TypeMap):

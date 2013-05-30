@@ -16,7 +16,7 @@ class TypeMap(object):
     First, let's create a type by defining a serializer::
 
         class Suit(object):
-            match_type = "suit"
+            type_name = "suit"
 
             def from_json(self, datum):
                 if datum not in ["hearts", "spades", "clubs", "diamonds"]:
@@ -52,7 +52,7 @@ class TypeMap(object):
     application.
 
     If you are planning to serialize schemas containing custom types, Teleport
-    will use the :attr:`match_type` attribute::
+    will use the :attr:`type_name` attribute::
 
         >>> Schema.to_json(Suit())
         {'type': 'suit'}
@@ -212,7 +212,6 @@ class ParametrizedPrimitive(object):
 
 
 class Integer(BasicPrimitive):
-    match_type = "Integer"
 
     @staticmethod
     def from_json(datum):
@@ -229,7 +228,6 @@ class Integer(BasicPrimitive):
 
 
 class Float(BasicPrimitive):
-    match_type = "Float"
 
     @staticmethod
     def from_json(datum):
@@ -245,7 +243,6 @@ class Float(BasicPrimitive):
 
 
 class String(BasicPrimitive):
-    match_type = "String"
 
     @staticmethod
     def from_json(datum):
@@ -267,7 +264,6 @@ class String(BasicPrimitive):
 
 
 class Binary(BasicPrimitive):
-    match_type = "Binary"
 
     @staticmethod
     def from_json(datum):
@@ -289,7 +285,6 @@ class Binary(BasicPrimitive):
 
 
 class Boolean(BasicPrimitive):
-    match_type = "Boolean"
 
     @staticmethod
     def from_json(datum):
@@ -317,7 +312,6 @@ class Box(object):
 
 
 class JSON(BasicPrimitive):
-    match_type = "JSON"
 
     @staticmethod
     def from_json(datum):
@@ -335,7 +329,6 @@ class Array(ParametrizedPrimitive):
     """The argument *param* is a serializer that defines the type of each item
     in the array.
     """
-    match_type = "Array"
 
     def from_json(self, datum):
         """If *datum* is a list, construct a new list by putting each element
@@ -368,7 +361,6 @@ class Struct(ParametrizedPrimitive):
     pair, *schema* is used to serialize and deserialize a dictionary value
     matched by the key *name*.
     """
-    match_type = "Struct"
 
     def __init__(self, param):
         if type(param) == list:
@@ -426,7 +418,6 @@ class Map(ParametrizedPrimitive):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
-    match_type = "Map"
 
     def from_json(self, datum):
         if type(datum) == dict:
@@ -454,7 +445,6 @@ class OrderedMap(ParametrizedWrapper):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
-    match_type = "OrderedMap"
 
     def __init__(self, param):
         self.param = param
@@ -483,22 +473,30 @@ class OrderedMap(ParametrizedWrapper):
 
 
 class Schema(BasicPrimitive):
-    match_type = "Schema"
 
     @staticmethod
     def to_json(datum):
         """If the serializer passed in as *datum* has a :meth:`serialize_self`
         method, use it. Otherwise, return a simple schema by finding the type
-        in the serializer's :attr:`match_type` attribute.
+        in the serializer's :attr:`type_name` attribute.
         """
-        param_schema = _get_current_map()[datum.match_type][1]
+        # Type name is declared explicitly
+        if hasattr(datum, "type_name"):
+            type_name = datum.type_name
+        # If datum is a class, use its name
+        elif datum.__class__ == type:
+            type_name = datum.__name__
+        # Otherwise assume it's an instance
+        else:
+            type_name = datum.__class__.__name__
+        param_schema = _get_current_map()[type_name][1]
         if param_schema != None:
             return {
-                "type": datum.match_type,
+                "type": type_name,
                 "param": param_schema.to_json(datum.param)
             }
         else:
-            return {"type": datum.match_type}
+            return {"type": type_name}
 
     @staticmethod
     def from_json(datum):

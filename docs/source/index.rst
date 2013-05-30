@@ -84,6 +84,18 @@ non-arbitrary keys::
 Creating Custom Types
 ---------------------
 
+To create a custom type, define a serializer class::
+
+    class YesNoMaybe(object):
+
+        def from_json(self, datum):
+            if datum not in [True, False, None]:
+                raise ValidationError("Invalid YesNoMaybe", datum)
+            return datum
+
+        def to_json(self, datum):
+            return datum
+
 .. autoclass:: TypeMap
 
    .. automethod:: middleware

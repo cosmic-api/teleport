@@ -18,12 +18,12 @@ class TypeMap(object):
         class Suit(object):
             match_type = "suit"
 
-            def deserialize(self, datum):
+            def from_json(self, datum):
                 if datum not in ["hearts", "spades", "clubs", "diamonds"]:
                     raise ValidationError("Invalid suit", datum)
                 return datum
 
-            def serialize(self, datum):
+            def to_json(self, datum):
                 return datum
 
     To extend Teleport with your custom type, subclass :class:`TypeMap`::
@@ -54,7 +54,7 @@ class TypeMap(object):
     If you are planning to serialize schemas containing custom types, Teleport
     will use the :attr:`match_type` attribute::
 
-        >>> Schema().serialize(Suit())
+        >>> Schema().to_json(Suit())
         {'type': 'suit'}
 
     When you deserialize it (whether it is done by the same program or by a
@@ -154,7 +154,7 @@ class UnknownTypeValidationError(ValidationError):
 class Integer(object):
     match_type = "Integer"
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
         its fractional part, return the integer part as an int. Otherwise,
         raise a :exc:`ValidationError`.
@@ -165,7 +165,7 @@ class Integer(object):
             return int(datum)
         raise ValidationError("Invalid Integer", datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         return datum
 
 
@@ -173,7 +173,7 @@ class Integer(object):
 class Float(object):
     match_type = "Float"
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is a float, return it; if it is an integer, cast it to a
         float and return it. Otherwise, raise a :exc:`ValidationError`.
         """
@@ -183,7 +183,7 @@ class Float(object):
             return float(datum)
         raise ValidationError("Invalid Float", datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         return datum
 
 
@@ -191,7 +191,7 @@ class Float(object):
 class String(object):
     match_type = "String"
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is of unicode type, return it. If it is a string, decode
         it as UTF-8 and return the result. Otherwise, raise a
         :exc:`ValidationError`. Unicode errors are dealt
@@ -207,7 +207,7 @@ class String(object):
                 raise UnicodeDecodeValidationError(unicode(inst))
         raise ValidationError("Invalid String", datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         return datum
 
 
@@ -215,7 +215,7 @@ class String(object):
 class Binary(object):
     match_type = "Binary"
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is a base64-encoded string, decode and return it. If not
         a string, or encoding is wrong, raise :exc:`ValidationError`.
         """
@@ -226,7 +226,7 @@ class Binary(object):
                 raise ValidationError("Invalid base64 encoding", datum)
         raise ValidationError("Invalid Binary data", datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         return base64.b64encode(datum)
 
 
@@ -234,7 +234,7 @@ class Binary(object):
 class Boolean(object):
     match_type = "Boolean"
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is a boolean, return it. Otherwise, raise a
         :exc:`ValidationError`.
         """
@@ -242,7 +242,7 @@ class Boolean(object):
             return datum
         raise ValidationError("Invalid Boolean", datum)
 
-    def serialize(cls, datum):
+    def to_json(cls, datum):
         return datum
 
 
@@ -264,12 +264,12 @@ class Box(object):
 class JSON(object):
     match_type = "JSON"
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """Return the JSON value wrapped in a :class:`Box`.
         """
         return Box(datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         return datum.datum
 
 
@@ -283,7 +283,7 @@ class Array(object):
     def __init__(self, param):
         self.param = param
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is a list, construct a new list by putting each element
         of *datum* through a serializer provided as *param*. This serializer
         may raise a :exc:`ValidationError`. If *datum* is not a
@@ -293,49 +293,18 @@ class Array(object):
             ret = []
             for i, item in enumerate(datum):
                 try:
-                    ret.append(self.param.deserialize(item))
+                    ret.append(self.param.from_json(item))
                 except ValidationError as e:
                     e.stack.append(i)
                     raise
             return ret
         raise ValidationError("Invalid Array", datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         """Serialize each item in the *datum* iterable using *param*. Return
         the resulting values in a list.
         """
-        return [self.param.serialize(item) for item in datum]
-
-
-
-class Map(object):
-    """The argument *param* is a serializer that defines the type of each item
-    in the map.
-    """
-    match_type = "Map"
-
-    def __init__(self, param):
-        self.param = param
-
-    def deserialize(self, datum):
-        if type(datum) == dict:
-            ret = {}
-            for key, val in datum.items():
-                if type(key) != unicode:
-                    raise ValidationError("Map key must be unicode", key)
-                try:
-                    ret[key] = self.param.deserialize(val)
-                except ValidationError as e:
-                    e.stack.append(i)
-                    raise
-            return ret
-        raise ValidationError("Invalid Map", datum)
-
-    def serialize(self, datum):
-        ret = {}
-        for key, val in datum.items():
-            ret[key] = self.param.serialize(val)
-        return ret
+        return [self.param.to_json(item) for item in datum]
 
 
 
@@ -350,7 +319,7 @@ class Struct(object):
     def __init__(self, param):
         self.param = param
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """If *datum* is a dict, deserialize it against *param* and return
         the resulting dict. Otherwise raise a :exc:`ValidationError`.
 
@@ -379,7 +348,7 @@ class Struct(object):
             for field, schema in optional.items() + required.items():
                 if field in datum.keys():
                     try:
-                        ret[field] = schema.deserialize(datum[field])
+                        ret[field] = schema.from_json(datum[field])
                     except ValidationError as e:
                         e.stack.append(field)
                         raise
@@ -387,45 +356,79 @@ class Struct(object):
         else:
             raise ValidationError("Invalid Struct", datum)
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         ret = {}
         for name, field in self.param['map'].items():
             schema = field['schema']
             if name in datum.keys() and datum[name] != None:
-                ret[name] = schema.serialize(datum[name])
+                ret[name] = schema.to_json(datum[name])
         return ret
 
 
 
-class OrderedMap(Struct):
+class Map(object):
+    """The argument *param* is a serializer that defines the type of each item
+    in the map.
+    """
+    match_type = "Map"
+
+    def __init__(self, param):
+        self.param = param
+
+    def from_json(self, datum):
+        if type(datum) == dict:
+            ret = {}
+            for key, val in datum.items():
+                if type(key) != unicode:
+                    raise ValidationError("Map key must be unicode", key)
+                try:
+                    ret[key] = self.param.from_json(val)
+                except ValidationError as e:
+                    e.stack.append(i)
+                    raise
+            return ret
+        raise ValidationError("Invalid Map", datum)
+
+    def to_json(self, datum):
+        ret = {}
+        for key, val in datum.items():
+            ret[key] = self.param.to_json(val)
+        return ret
+
+
+
+class OrderedMap(object):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
     match_type = "OrderedMap"
 
     def __init__(self, param):
-        self.param = {
+        self.schema = Struct({
             "map": {
                 u"map": required(Map(param)),
                 u"order": required(Array(String()))
             },
             "order": [u"map", u"order"]
-        }
+        })
 
-    def deserialize(self, datum):
-        d = super(OrderedMap, self).deserialize(datum)
+    def from_json(self, datum):
+        d = self.schema.from_json(datum)
         order = d["order"]
         keys = d["map"].keys()
         if len(order) != len(keys) or set(order) != set(keys):
             raise ValidationError("Invalid OrderedMap", datum)
         return d
 
+    def to_json(self, datum):
+        return self.schema.to_json(datum)
+
 
 
 class Schema(object):
     match_type = "Schema"
 
-    def serialize(self, datum):
+    def to_json(self, datum):
         """If the serializer passed in as *datum* has a :meth:`serialize_self`
         method, use it. Otherwise, return a simple schema by finding the type
         in the serializer's :attr:`match_type` attribute.
@@ -434,24 +437,16 @@ class Schema(object):
         if param_schema != None:
             return {
                 "type": datum.match_type,
-                "param": param_schema.serialize(datum.param)
+                "param": param_schema.to_json(datum.param)
             }
         else:
             return {"type": datum.match_type}
 
-    def deserialize(self, datum):
+    def from_json(self, datum):
         """Datum must be a dict with a key *type* that has a string value.
         This value will me passed into the :meth:`get` method of the current
         :class:`TypeMap` instance to get the matching serializer. If no serializer
         is found, :exc:`UnknownTypeValidationError` will be raised.
-
-        If this serializer defines a :meth:`deserialize_self` method, *datum*
-        will be passed into items
-
-        This function will use the serializer's :meth:`deserialize_self`
-        instantiation method if such exists (*datum* will be passed into it).
-        Otherwise, it will simply instantiate the serializer. Either way, the
-        instance is returned.
         """
         # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():
@@ -467,7 +462,7 @@ class Schema(object):
 
         # Deserialize or instantiate
         if param_schema != None:
-            param = param_schema.deserialize(datum["param"])
+            param = param_schema.from_json(datum["param"])
             return serializer(param)
         else:
             return serializer()

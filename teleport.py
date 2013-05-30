@@ -154,7 +154,8 @@ class UnknownTypeValidationError(ValidationError):
 class Integer(object):
     match_type = "Integer"
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
         its fractional part, return the integer part as an int. Otherwise,
         raise a :exc:`ValidationError`.
@@ -165,7 +166,8 @@ class Integer(object):
             return int(datum)
         raise ValidationError("Invalid Integer", datum)
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         return datum
 
 
@@ -173,7 +175,8 @@ class Integer(object):
 class Float(object):
     match_type = "Float"
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """If *datum* is a float, return it; if it is an integer, cast it to a
         float and return it. Otherwise, raise a :exc:`ValidationError`.
         """
@@ -183,7 +186,8 @@ class Float(object):
             return float(datum)
         raise ValidationError("Invalid Float", datum)
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         return datum
 
 
@@ -191,7 +195,8 @@ class Float(object):
 class String(object):
     match_type = "String"
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """If *datum* is of unicode type, return it. If it is a string, decode
         it as UTF-8 and return the result. Otherwise, raise a
         :exc:`ValidationError`. Unicode errors are dealt
@@ -207,7 +212,8 @@ class String(object):
                 raise UnicodeDecodeValidationError(unicode(inst))
         raise ValidationError("Invalid String", datum)
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         return datum
 
 
@@ -215,7 +221,8 @@ class String(object):
 class Binary(object):
     match_type = "Binary"
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """If *datum* is a base64-encoded string, decode and return it. If not
         a string, or encoding is wrong, raise :exc:`ValidationError`.
         """
@@ -226,7 +233,8 @@ class Binary(object):
                 raise ValidationError("Invalid base64 encoding", datum)
         raise ValidationError("Invalid Binary data", datum)
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         return base64.b64encode(datum)
 
 
@@ -234,7 +242,8 @@ class Binary(object):
 class Boolean(object):
     match_type = "Boolean"
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """If *datum* is a boolean, return it. Otherwise, raise a
         :exc:`ValidationError`.
         """
@@ -242,7 +251,8 @@ class Boolean(object):
             return datum
         raise ValidationError("Invalid Boolean", datum)
 
-    def to_json(cls, datum):
+    @staticmethod
+    def to_json(datum):
         return datum
 
 
@@ -264,12 +274,14 @@ class Box(object):
 class JSON(object):
     match_type = "JSON"
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """Return the JSON value wrapped in a :class:`Box`.
         """
         return Box(datum)
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         return datum.datum
 
 
@@ -397,6 +409,23 @@ class Map(object):
 
 
 
+class Model(object):
+
+    def from_json(self, datum):
+        datum = self.schema.from_json(datum)
+        return self.inflate(datum)
+
+    def to_json(self, datum):
+        datum = self.schema.to_json(datum)
+        return self.deflate(datum)
+
+    def inflate(self, datum):
+        return datum
+
+    def deflate(self, datum):
+        return datum
+
+
 class OrderedMap(object):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
@@ -428,7 +457,8 @@ class OrderedMap(object):
 class Schema(object):
     match_type = "Schema"
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         """If the serializer passed in as *datum* has a :meth:`serialize_self`
         method, use it. Otherwise, return a simple schema by finding the type
         in the serializer's :attr:`match_type` attribute.
@@ -442,7 +472,8 @@ class Schema(object):
         else:
             return {"type": datum.match_type}
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         """Datum must be a dict with a key *type* that has a string value.
         This value will me passed into the :meth:`get` method of the current
         :class:`TypeMap` instance to get the matching serializer. If no serializer
@@ -465,7 +496,7 @@ class Schema(object):
             param = param_schema.from_json(datum["param"])
             return serializer(param)
         else:
-            return serializer()
+            return serializer
 
 
 

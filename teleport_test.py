@@ -32,41 +32,41 @@ deep_schema = {
     "type": u"Array",
     "param": struct_schema
 }
-array_serializer = Schema().from_json(array_schema)
-struct_serializer = Schema().from_json(struct_schema)
-deep_serializer = Schema().from_json(deep_schema)
-map_serializer = Schema().from_json(map_schema)
-ordered_map_serializer = Schema().from_json(ordered_map_schema)
+array_serializer = Schema.from_json(array_schema)
+struct_serializer = Schema.from_json(struct_schema)
+deep_serializer = Schema.from_json(deep_schema)
+map_serializer = Schema.from_json(map_schema)
+ordered_map_serializer = Schema.from_json(ordered_map_schema)
 
 class TestSchema(TestCase):
 
     def test_to_json_schema(self):
-        self.assertEqual(array_schema, Schema().to_json(array_serializer))
-        self.assertEqual(struct_schema, Schema().to_json(struct_serializer))
-        self.assertEqual(deep_schema, Schema().to_json(deep_serializer))
+        self.assertEqual(array_schema, Schema.to_json(array_serializer))
+        self.assertEqual(struct_schema, Schema.to_json(struct_serializer))
+        self.assertEqual(deep_schema, Schema.to_json(deep_serializer))
 
     def test_schema_subclass_delegation(self):
-        self.assertTrue(isinstance(Schema().from_json({"type": u"Integer"}), Integer))
-        self.assertTrue(isinstance(Schema().from_json({"type": u"Float"}), Float))
-        self.assertTrue(isinstance(Schema().from_json({"type": u"Boolean"}), Boolean))
-        self.assertTrue(isinstance(Schema().from_json({"type": u"String"}), String))
-        self.assertTrue(isinstance(Schema().from_json({"type": u"Binary"}), Binary))
-        self.assertTrue(isinstance(Schema().from_json({"type": u"Schema"}), Schema))
-        self.assertTrue(isinstance(Schema().from_json({"type": u"JSON"}), JSON))
+        self.assertEqual(Schema.from_json({"type": u"Integer"}), Integer)
+        self.assertEqual(Schema.from_json({"type": u"Float"}), Float)
+        self.assertEqual(Schema.from_json({"type": u"Boolean"}), Boolean)
+        self.assertEqual(Schema.from_json({"type": u"String"}), String)
+        self.assertEqual(Schema.from_json({"type": u"Binary"}), Binary)
+        self.assertEqual(Schema.from_json({"type": u"Schema"}), Schema)
+        self.assertEqual(Schema.from_json({"type": u"JSON"}), JSON)
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
         s["param"]["order"].append("blah")
         with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
-            Schema().from_json(s)
+            Schema.from_json(s)
 
     def test_schema_not_struct(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid Schema: True"):
-            Schema().from_json(True)
+            Schema.from_json(True)
 
     def test_schema_unknown_type(self):
         with self.assertRaisesRegexp(ValidationError, "Unknown type"):
-            Schema().from_json({"type": "number"})
+            Schema.from_json({"type": "number"})
 
     def test_deep_schema_validation_stack(self):
         # Test Python representatioon
@@ -218,12 +218,14 @@ class TestStruct(TestCase):
 
 class Suit(object):
 
-    def from_json(self, datum):
+    @staticmethod
+    def from_json(datum):
         if datum not in ["hearts", "spades", "clubs", "diamonds"]:
             raise ValidationError("Invalid Suit", datum)
         return datum
 
-    def to_json(self, datum):
+    @staticmethod
+    def to_json(datum):
         return datum
 
 
@@ -231,10 +233,10 @@ class TestSuit(TestCase):
 
     def test_from_json(self):
         suits = ["hearts", "clubs", "clubs"]
-        self.assertEqual(Array(Suit()).from_json(suits), suits)
+        self.assertEqual(Array(Suit).from_json(suits), suits)
         with self.assertRaisesRegexp(ValidationError, "Invalid Suit"):
             suits = ["hearts", "clubs", "clubz"]
-            self.assertEqual(Array(Suit()).from_json(suits), suits)
+            self.assertEqual(Array(Suit).from_json(suits), suits)
 
 
 class AllSuits(TypeMap):
@@ -253,21 +255,21 @@ class TestTypeMap(TestCase):
     def test_custom_type_map_okay(self):
 
         with AllSuits():
-            self.assertEqual(Schema().from_json({
+            self.assertEqual(Schema.from_json({
                 "type": "suit"
-            }).__class__, Suit)
-            self.assertEqual(Schema().from_json({
+            }), Suit)
+            self.assertEqual(Schema.from_json({
                 "type": "Array",
                 "param": {"type": "suit"}
             }).__class__, Array)
 
     def test_custom_type_map_fail(self):
 
-        Schema().from_json({"type": "Integer"})
+        Schema.from_json({"type": "Integer"})
 
         with self.assertRaises(UnknownTypeValidationError):
             with AllSuits():
-                Schema().from_json({"type": "Integer"})
+                Schema.from_json({"type": "Integer"})
 
     def test_wsgi_middleware(self):
         # Inspired by https://github.com/mitsuhiko/werkzeug/blob/master/werkzeug/testapp.py
@@ -276,8 +278,8 @@ class TestTypeMap(TestCase):
 
         def test_app(environ, start_response):
             # Needs to access AllSuits
-            S = Schema().from_json({"type": "suit"})
-            response = BaseResponse(S.__class__.__name__, mimetype="text/plain")
+            S = Schema.from_json({"type": "suit"})
+            response = BaseResponse(S.__name__, mimetype="text/plain")
             return response(environ, start_response)
 
         test_app = AllSuits().middleware(test_app)

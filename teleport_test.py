@@ -77,77 +77,77 @@ class TestSchema(TestCase):
 class TestFloat(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(Float().from_json(1), 1.0)
-        self.assertEqual(Float().from_json(1.0), 1.0)
+        self.assertEqual(Float.from_json(1), 1.0)
+        self.assertEqual(Float.from_json(1.0), 1.0)
         with self.assertRaisesRegexp(ValidationError, "Invalid Float"):
-            Float().from_json(True)
+            Float.from_json(True)
 
     def test_to_json(self):
-        self.assertEqual(Float().to_json(1.1), 1.1)
+        self.assertEqual(Float.to_json(1.1), 1.1)
 
 
 class TestInteger(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(Integer().from_json(1), 1)
-        self.assertEqual(Integer().from_json(1.0), 1)
+        self.assertEqual(Integer.from_json(1), 1)
+        self.assertEqual(Integer.from_json(1.0), 1)
         with self.assertRaisesRegexp(ValidationError, "Invalid Integer"):
-            Integer().from_json(1.1)
+            Integer.from_json(1.1)
 
     def test_to_json(self):
-        self.assertEqual(Integer().to_json(1), 1)
+        self.assertEqual(Integer.to_json(1), 1)
 
 
 class TestBoolean(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(Boolean().from_json(True), True)
+        self.assertEqual(Boolean.from_json(True), True)
         with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
-            Boolean().from_json(0)
+            Boolean.from_json(0)
 
     def test_to_json(self):
-        self.assertEqual(Boolean().to_json(True), True)
+        self.assertEqual(Boolean.to_json(True), True)
 
 
 class TestString(TestCase):
 
     def test_string_okay(self):
-        self.assertEqual(String().from_json(u"omg"), u"omg")
-        self.assertEqual(String().from_json("omg"), u"omg")
+        self.assertEqual(String.from_json(u"omg"), u"omg")
+        self.assertEqual(String.from_json("omg"), u"omg")
 
     def test_string_fail(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid String"):
-            String().from_json(0)
+            String.from_json(0)
         with self.assertRaisesRegexp(UnicodeDecodeValidationError, "invalid start byte"):
-            String().from_json("\xff")
+            String.from_json("\xff")
 
     def test_to_json(self):
-        self.assertEqual(String().to_json(u"yo"), u"yo")
+        self.assertEqual(String.to_json(u"yo"), u"yo")
 
 
 class TestBinary(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(Binary().from_json('YWJj'), "abc")
-        self.assertEqual(Binary().from_json(u'YWJj'), "abc")
+        self.assertEqual(Binary.from_json('YWJj'), "abc")
+        self.assertEqual(Binary.from_json(u'YWJj'), "abc")
         with self.assertRaisesRegexp(ValidationError, "Invalid base64"):
             # Will complain about incorrect padding
-            Binary().from_json("a")
+            Binary.from_json("a")
         with self.assertRaisesRegexp(ValidationError, "Invalid Binary"):
-            Binary().from_json(1)
+            Binary.from_json(1)
 
     def test_to_json(self):
-        self.assertEqual(Binary().to_json("abc"), "YWJj")
+        self.assertEqual(Binary.to_json("abc"), "YWJj")
 
 
 class TestJSON(TestCase):
 
     def test_from_json(self):
-        self.assertTrue(isinstance(JSON().from_json("A string?"), Box))
-        self.assertEqual(JSON().from_json('ABC').datum, "ABC")
+        self.assertTrue(isinstance(JSON.from_json("A string?"), Box))
+        self.assertEqual(JSON.from_json('ABC').datum, "ABC")
 
     def test_to_json(self):
-        self.assertEqual(JSON().to_json(Box("abc")), "abc")
+        self.assertEqual(JSON.to_json(Box("abc")), "abc")
 
 
 class TestArray(TestCase):

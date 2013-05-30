@@ -54,7 +54,7 @@ class TypeMap(object):
     If you are planning to serialize schemas containing custom types, Teleport
     will use the :attr:`match_type` attribute::
 
-        >>> Schema().to_json(Suit())
+        >>> Schema.to_json(Suit())
         {'type': 'suit'}
 
     When you deserialize it (whether it is done by the same program or by a
@@ -436,7 +436,7 @@ class OrderedMap(object):
         self.schema = Struct({
             "map": {
                 u"map": required(Map(param)),
-                u"order": required(Array(String()))
+                u"order": required(Array(String))
             },
             "order": [u"map", u"order"]
         })
@@ -508,13 +508,13 @@ BUILTIN_TYPES = {
     "Boolean": (Boolean, None),
     "Schema": (Schema, None),
     "JSON": (JSON, None),
-    "Array": (Array, Schema()),
-    "Map": (Map, Schema()),
-    "OrderedMap": (OrderedMap, Schema()),
+    "Array": (Array, Schema),
+    "Map": (Map, Schema),
+    "OrderedMap": (OrderedMap, Schema),
     "Struct": (Struct, OrderedMap(Struct({
         "map": {
-            u"schema": required(Schema()),
-            u"required": required(Boolean())
+            u"schema": required(Schema),
+            u"required": required(Boolean)
         },
         "order": [u"schema", u"boolean"]
     })),)

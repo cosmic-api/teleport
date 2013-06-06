@@ -136,7 +136,8 @@ When the native form of the data type is a class instance,
     class Player(BasicWrapper):
         schema = Struct([
             required("name", String),
-            required("level", Integer)
+            # Note how struct fields can accept an optional doc parameter
+            required("level", Integer, "From zero (0) to hero (100)")
         ])
 
         @staticmethod

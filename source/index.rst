@@ -187,6 +187,9 @@ list of all built-in models and their validation logic.
     cause the struct to throw a validation error when the corresponding value
     is missing from the data being validated.
 
+    Each field may have a string attribute *doc*, containing the documentation
+    for the field.
+
     The native form of the object must be a associative array containing all
     key-value pairs from the original object with native values replacing the
     JSON values.

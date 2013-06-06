@@ -94,11 +94,11 @@ def _get_current_map():
 
 
 # Some syntax sugar
-def required(name, schema):
-    return (name, {"schema": schema, "required": True},)
+def required(name, schema, doc=None):
+    return (name, {"schema": schema, "required": True, "doc": doc})
 
-def optional(name, schema):
-    return (name, {"schema": schema, "required": False},)
+def optional(name, schema, doc=None):
+    return (name, {"schema": schema, "required": False, "doc": doc})
 
 
 class ValidationError(Exception):
@@ -547,6 +547,7 @@ BUILTIN_TYPES = {
     "OrderedMap": (OrderedMap, Schema),
     "Struct": (Struct, OrderedMap(Struct([
         required(u"schema", Schema),
-        required(u"required", Boolean)
+        required(u"required", Boolean),
+        optional(u"doc", String)
     ])))
 }

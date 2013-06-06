@@ -16,7 +16,8 @@ struct_schema = {
         "map": {
             u"foo": {
                 "required": True,
-                "schema": {"type": u"Boolean"}
+                "schema": {"type": u"Boolean"},
+                "doc": u"Never gonna give you up"
             },
             u"bar": {
                 "required": False,
@@ -51,7 +52,7 @@ class TestSchema(TestCase):
         self.assertEqual(struct_schema, Schema.to_json(struct_serializer))
         self.assertEqual(deep_schema, Schema.to_json(deep_serializer))
         struct_s = Struct([
-            required(u"foo", Boolean),
+            required(u"foo", Boolean, u"Never gonna give you up"),
             optional(u"bar", Integer)
         ])
         self.assertEqual(Schema.to_json(struct_s), struct_schema)

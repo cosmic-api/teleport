@@ -244,7 +244,7 @@ class Suit(BasicWrapper):
     schema = String
 
     @staticmethod
-    def inflate(datum):
+    def assemble(datum):
         if datum not in ["hearts", "spades", "clubs", "diamonds"]:
             raise ValidationError("Invalid Suit", datum)
         return datum

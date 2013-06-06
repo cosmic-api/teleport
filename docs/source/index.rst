@@ -101,17 +101,17 @@ To create a custom type, define a serializer class::
 :class:`YesNoMaybe` is a *primitive serializer* as it defines functions to
 convert data directly to and from JSON. Another option is a *wrapper
 serializer*, which relies on an internal serializer for dealing with JSON and
-builds on top of it by defining :meth:`inflate` and :meth:`deflate`
+builds on top of it by defining :meth:`assemble` and :meth:`disassemble`
 methods.
 
-The :meth:`inflate` method may be used to perform additional validation that
+The :meth:`assemble` method may be used to perform additional validation that
 the internal serializer doesn't take care of::
 
     class Suit(BasicWrapper):
         schema = String
 
         @staticmethod
-        def inflate(datum):
+        def assemble(datum):
             if datum not in ["hearts", "spades", "clubs", "diamonds"]:
                 raise ValidationError("Invalid Suit", datum)
             return datum
@@ -140,11 +140,11 @@ When the native form of the data type is a class instance,
         ])
 
         @staticmethod
-        def inflate(datum):
+        def assemble(datum):
             return Player(**datum)
 
         @staticmethod
-        def deflate(player):
+        def disassemble(player):
             return {
                 "name": player.name,
                 "level": player.level

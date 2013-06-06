@@ -145,19 +145,19 @@ class BasicWrapper(object):
     @classmethod
     def from_json(cls, datum):
         datum = cls.schema.from_json(datum)
-        return cls.inflate(datum)
+        return cls.assemble(datum)
 
     @classmethod
     def to_json(cls, datum):
-        datum = cls.deflate(datum)
+        datum = cls.disassemble(datum)
         return cls.schema.to_json(datum)
 
     @classmethod
-    def inflate(cls, datum): # pragma: no cover
+    def assemble(cls, datum): # pragma: no cover
         return datum
 
     @classmethod
-    def deflate(cls, datum): # pragma: no cover
+    def disassemble(cls, datum): # pragma: no cover
         return datum
 
 
@@ -166,16 +166,16 @@ class ParametrizedWrapper(object):
 
     def from_json(self, datum):
         datum = self.schema.from_json(datum)
-        return self.inflate(datum)
+        return self.assemble(datum)
 
     def to_json(self, datum):
-        datum = self.deflate(datum)
+        datum = self.disassemble(datum)
         return self.schema.to_json(datum)
 
-    def inflate(self, datum): # pragma: no cover
+    def assemble(self, datum): # pragma: no cover
         return datum
 
-    def deflate(self, datum): # pragma: no cover
+    def disassemble(self, datum): # pragma: no cover
         return datum
 
 
@@ -458,7 +458,7 @@ class OrderedMap(ParametrizedWrapper):
             required(u"order", Array(String))
         ])
 
-    def inflate(self, datum):
+    def assemble(self, datum):
         """:exc:`ValidationError` is raised if *order* does not correspond to
         the keys in *map*. The native form is Python's :class:`OrderedDict`.
         """
@@ -472,7 +472,7 @@ class OrderedMap(ParametrizedWrapper):
             ret[key] = datum["map"][key]
         return ret
 
-    def deflate(self, datum):
+    def disassemble(self, datum):
         return {
             "map": dict(datum.items()),
             "order": datum.keys()

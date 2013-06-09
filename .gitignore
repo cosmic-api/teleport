@@ -1,5 +1,5 @@
 *.py[co]
-.pip-cache
+/.pip-cache
 
 # Vim swap files
 *.swp

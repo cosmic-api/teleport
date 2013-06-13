@@ -85,6 +85,19 @@ class TestSchema(TestCase):
         with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
             deep_serializer.from_json([{"foo": True, "bar": False}])
 
+    def test_unexpected_param(self):
+        s = deepcopy(array_schema)
+        s["type"] = "Integer"
+        with self.assertRaisesRegexp(ValidationError, "Unexpected param"):
+            Schema.from_json(s)
+
+    def test_missing_param(self):
+        s = deepcopy(struct_schema)
+        del s["param"]
+        with self.assertRaisesRegexp(ValidationError, "Missing param"):
+            Schema.from_json(s)
+
+
 
 class TestFloat(TestCase):
 

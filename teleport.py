@@ -525,6 +525,12 @@ class Schema(BasicPrimitive):
         except KeyError:
             raise UnknownTypeValidationError("Unknown type", t)
 
+        if param_schema and "param" not in datum:
+            raise ValidationError("Missing param for %s schema" % t)
+
+        if not param_schema and "param" in datum:
+            raise ValidationError("Unexpected param for %s schema" % t)
+
         # Deserialize or instantiate
         if param_schema != None:
             param = param_schema.from_json(datum["param"])

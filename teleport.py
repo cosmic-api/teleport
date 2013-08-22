@@ -484,9 +484,8 @@ class Schema(BasicPrimitive):
 
     @staticmethod
     def to_json(datum):
-        """If the serializer passed in as *datum* has a :meth:`serialize_self`
-        method, use it. Otherwise, return a simple schema by finding the type
-        in the serializer's :attr:`type_name` attribute.
+        """Find the serializer in the current :class:`TypeMap` based on the
+        class name, or :attr:`type_name` attribute, if such exists.
         """
         # Type name is declared explicitly
         if hasattr(datum, "type_name"):
@@ -509,9 +508,10 @@ class Schema(BasicPrimitive):
     @staticmethod
     def from_json(datum):
         """Datum must be a dict with a key *type* that has a string value.
-        This value will me passed into the :meth:`get` method of the current
-        :class:`TypeMap` instance to get the matching serializer. If no serializer
-        is found, :exc:`UnknownTypeValidationError` will be raised.
+        This value will me passed into the :meth:`__getitem__` method of the
+        current :class:`TypeMap` instance to get the matching serializer. If
+        no serializer is found, :exc:`UnknownTypeValidationError` will be
+        raised.
         """
         # Peek into dict struct to get the type
         if type(datum) != dict or "type" not in datum.keys():

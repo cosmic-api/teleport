@@ -254,6 +254,7 @@ class TestStruct(TestCase):
         self.assertEqual(res, {"foo": True})
 
 
+
 class Suit(BasicWrapper):
     schema = String
 
@@ -280,53 +281,27 @@ class TestSuits(TestCase):
         self.assertEqual(Suit.to_json(u"hearts"), u"hearts")
 
 
-class AllSuits(TypeMap):
-
-    def __getitem__(self, name):
-        if name == "Array":
-            return BUILTIN_TYPES["Array"]
-        elif name == "suit":
-            return (Suit, None,)
-        else:
-            raise KeyError()
-
+suit_types = standard_types({"Suit": Suit}, include=["Array", "Schema"])
 
 class TestTypeMap(TestCase):
 
     def test_custom_type_map_okay(self):
 
-        with AllSuits():
-            self.assertEqual(Schema.from_json({
-                "type": "suit"
-            }), Suit)
-            self.assertEqual(Schema.from_json({
-                "type": "Array",
-                "param": {"type": "suit"}
-            }).__class__, Array)
+        Schema = suit_types["Schema"]
+        Array = suit_types["Array"]
+
+        self.assertEqual(Schema.from_json({
+            "type": "Suit"
+        }), Suit)
+        self.assertEqual(Schema.from_json({
+            "type": "Array",
+            "param": {"type": "Suit"}
+        }).__class__, Array)
 
     def test_custom_type_map_fail(self):
 
-        Schema.from_json({"type": "Integer"})
-
+        Schema = suit_types["Schema"]
         with self.assertRaises(UnknownTypeValidationError):
-            with AllSuits():
-                Schema.from_json({"type": "Integer"})
+            Schema.from_json({"type": "Integer"})
 
-    def test_wsgi_middleware(self):
-        # Inspired by https://github.com/mitsuhiko/werkzeug/blob/master/werkzeug/testapp.py
-        from werkzeug.wrappers import BaseResponse
-        from werkzeug.test import Client
-
-        def test_app(environ, start_response):
-            # Needs to access AllSuits
-            S = Schema.from_json({"type": "suit"})
-            response = BaseResponse(S.__name__, mimetype="text/plain")
-            return response(environ, start_response)
-
-        test_app = AllSuits().middleware(test_app)
-
-        c = Client(test_app, BaseResponse)
-        resp = c.get('/')
-
-        self.assertEqual(resp.data, "Suit")
 

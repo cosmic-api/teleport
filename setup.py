@@ -13,8 +13,6 @@ setup(
     license = "MIT",
     author = "8313547 Canada Inc.",
     author_email = "alexei.boronine@gmail.com",
-    install_requires=[
-      "Werkzeug >= 0.8.3"
-    ],
+    install_requires=[],
     long_description = long_description
 )

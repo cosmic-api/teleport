@@ -126,7 +126,7 @@ class Box(object):
 
 
 
-def standard_types(type_map, include=None):
+def standard_types(type_getter=None, include=None):
 
     class Schema(BasicPrimitive):
 
@@ -170,7 +170,10 @@ def standard_types(type_map, include=None):
             try:
                 serializer = BUILTIN_TYPES.get(t, None)
                 if serializer is None:
-                    serializer = type_map[t]
+                    if type_getter is not None:
+                        serializer = type_getter(t)
+                    else:
+                        raise KeyError()
             except KeyError:
                 raise UnknownTypeValidationError("Unknown type", t)
 
@@ -476,6 +479,4 @@ def standard_types(type_map, include=None):
 
     return BUILTIN_TYPES
 
-
-globals().update(standard_types({}))
-
+globals().update(standard_types())

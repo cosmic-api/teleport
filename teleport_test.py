@@ -280,8 +280,12 @@ class TestSuits(TestCase):
     def test_to_json(self):
         self.assertEqual(Suit.to_json(u"hearts"), u"hearts")
 
+def getter(name):
+    if name == "Suit":
+        return Suit
+    raise KeyError()
 
-suit_types = standard_types({"Suit": Suit}, include=["Array", "Schema"])
+suit_types = standard_types(getter, include=["Array", "Schema"])
 
 class TestTypeMap(TestCase):
 

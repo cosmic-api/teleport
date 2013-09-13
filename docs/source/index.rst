@@ -165,30 +165,22 @@ Take a look at the source code of :class:`Array` for an example of a primitive
 parametrized type, and :class:`OrderedMap` for an example of a wrapper
 parametrized type.
 
-Informing Teleport Of Your Custom Types
----------------------------------------
+Extending Teleport
+------------------
 
-.. autoclass:: TypeMap
-   :members:
+The types we created above will mostly work, however, if you expect to deserialize
+their schema from JSON, you will be faced with an error::
+
+    >>> Schema.from_json({"type": "Player"})
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "teleport.py", line 178, in from_json
+        raise UnknownTypeValidationError("Unknown type", t)
+    teleport.UnknownTypeValidationError: Unknown type: 'Player'
+
 
 Built-In Serializers
 --------------------
-
-.. data:: BUILTIN_TYPES
-
-   A dictionary mapping type names to serializer classes. By default, contains
-   the following members: 
-   ``"Integer"`` (:class:`Integer`),
-   ``"Float"`` (:class:`Float`),
-   ``"Boolean"`` (:class:`Boolean`),
-   ``"String"`` (:class:`String`),
-   ``"Binary"`` (:class:`Binary`),
-   ``"JSON"`` (:class:`JSON`),
-   ``"Array"`` (:class:`Array`),
-   ``"Map"`` (:class:`Map`),
-   ``"OrderedMap"`` (:class:`OrderedMap`),
-   ``"Struct"`` (:class:`Struct`) and
-   ``"Schema"`` (:class:`Schema`).
 
 .. autoclass:: Integer
    :members:

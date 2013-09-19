@@ -203,7 +203,7 @@ say :mod:`cards.types`.
                 raise ValidationError("Invalid Suit", datum)
             return datum
 
-    globals().extend(standard_types(getter))
+    globals().update(standard_types(getter))
 
 :func:`~teleport.standard_types` will inject your custom models into Teleport
 via the *getter* parameter. The return value is a dict of freshly recreated 

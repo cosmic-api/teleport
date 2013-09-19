@@ -9,17 +9,23 @@ To install, run:
 
     pip install teleport
 
-A *serializer* is an object that provides a :meth:`to_json` and a
-:meth:`from_json` method. At the moment, Teleport provides 11 built-in
-serializers.
+Teleport's primary object is the *serializer*. A serializer corresponds to a
+certain data type and lets the user convert values of this type between their
+two representations: the *JSON form* and the *native form*. In order to do
+this, a serializer must provide a :meth:`to_json` and a :meth:`from_json`
+method.
 
-The output of the :meth:`to_json` method and the input of the
-:meth:`from_json` method is in the format of the :mod:`json` module from the
-Python standard library. This is the *JSON form* of the data. The *native
-form* can be as rich as you want, although for most of the built-in types
-it will be the same as the JSON form.
+The *JSON form* represents a valid JSON string, however, for convenience, our
+implementation uses an intermediate format, namely the format expectd by
+:meth:`json.dumps` from the Python standard library. It is limited to
+dictionaries, lists, numbers, booleans, strings and ``None``.
 
-Here is a basic serializer::
+Internally, your application will use the *native form*. It can be as rich as
+you want, however, for the most basic types, it happens to be the same as the
+JSON form. Even when there is nothing to convert, the serializer is useful
+as a way of validating input.
+
+Here is a simple serializer::
 
     >>> from teleport import *
     >>> Integer.from_json(1)
@@ -137,7 +143,7 @@ When the native form of the data type is a class instance,
         schema = Struct([
             required("name", String),
             # Note how struct fields can accept an optional doc parameter
-            required("level", Integer, "From zero (0) to hero (100)")
+            required("level", Integer, "0-100")
         ])
 
         @staticmethod
@@ -150,9 +156,6 @@ When the native form of the data type is a class instance,
                 "name": player.name,
                 "level": player.level
             }
-
-Before integrating Teleport, :class:`Player` was just a class in your
-application, but now you can use it to build schemas like ``Array(Player)``.
 
 Custom Types With Parameters
 ----------------------------
@@ -178,6 +181,43 @@ their schema from JSON, you will be faced with an error::
         raise UnknownTypeValidationError("Unknown type", t)
     teleport.UnknownTypeValidationError: Unknown type: 'Player'
 
+In order for :class:`Schema` to become aware of your custom types, you need to
+extend Teleport. To do so, create an empty module in your Python application,
+say :mod:`cards.teleport`.
+
+.. code:: python
+
+    from teleport import standard_types
+
+    def getter(name):
+        if name == "Suit":
+            return Suit
+        raise KeyError()
+
+    class Suit(BasicWrapper):
+        schema = String
+
+        @staticmethod
+        def assemble(datum):
+            if datum not in ["hearts", "spades", "clubs", "diamonds"]:
+                raise ValidationError("Invalid Suit", datum)
+            return datum
+
+    globals().extend(standard_types(getter))
+
+:func:`~teleport.standard_types` will inject your custom models into Teleport
+via the *getter* parameter. The return value is a dict of freshly recreated 
+Teleport serializers. Now, instead of doing::
+
+    from teleport import *
+
+you do::
+
+    from cards.teleport import *
+
+Note that by default, Teleport will use the class name as the name of the
+serializer. To override that behavior, give the class a :attr:`type_name`
+attribute.
 
 Built-In Serializers
 --------------------

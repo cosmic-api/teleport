@@ -183,7 +183,7 @@ their schema from JSON, you will be faced with an error::
 
 In order for :class:`Schema` to become aware of your custom types, you need to
 extend Teleport. To do so, create an empty module in your Python application,
-say :mod:`cards.teleport`.
+say :mod:`cards.types`.
 
 .. code:: python
 
@@ -213,7 +213,7 @@ Teleport serializers. Now, instead of doing::
 
 you do::
 
-    from cards.teleport import *
+    from cards.types import *
 
 Note that by default, Teleport will use the class name as the name of the
 serializer. To override that behavior, give the class a :attr:`type_name`

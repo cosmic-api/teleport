@@ -1,4 +1,5 @@
 import base64
+import isodate
 from collections import OrderedDict
 
 
@@ -278,6 +279,26 @@ def standard_types(type_getter=None, include=None):
 
 
 
+    class DateTime(BasicWrapper):
+        schema = String
+
+        @classmethod
+        def assemble(cls, datum):
+            """"Parse *datum* as an ISO 8601-encoded time and return a
+            :class:`datetime` object. If the string is invalid, raise a
+            :exc:`ValidationError`.
+            """
+            try:
+                return isodate.parse_datetime(datum)
+            except (ValueError, isodate.isoerror.ISO8601Error) as e:
+                raise ValidationError(e.args[0], datum)
+
+        @classmethod
+        def disassemble(cls, datum):
+            return unicode(datum.isoformat())
+
+
+
     class JSON(BasicPrimitive):
 
         @staticmethod
@@ -470,7 +491,7 @@ def standard_types(type_getter=None, include=None):
     if include is None:
         include = [
             'Binary', 'Struct', 'Map', 'Float', 'JSON', 'Boolean',
-            'Integer', 'Array', 'Schema', 'OrderedMap', 'String'
+            'Integer', 'Array', 'Schema', 'OrderedMap', 'String', 'DateTime'
         ]
 
     BUILTIN_TYPES = {}

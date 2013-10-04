@@ -1,6 +1,7 @@
 from unittest2 import TestCase
 
 from copy import deepcopy
+from datetime import datetime
 
 from teleport import *
 
@@ -62,6 +63,7 @@ class TestSchema(TestCase):
         self.assertEqual(Schema.from_json({"type": u"Float"}), Float)
         self.assertEqual(Schema.from_json({"type": u"Boolean"}), Boolean)
         self.assertEqual(Schema.from_json({"type": u"String"}), String)
+        self.assertEqual(Schema.from_json({"type": u"DateTime"}), DateTime)
         self.assertEqual(Schema.from_json({"type": u"Binary"}), Binary)
         self.assertEqual(Schema.from_json({"type": u"Schema"}), Schema)
         self.assertEqual(Schema.from_json({"type": u"JSON"}), JSON)
@@ -173,6 +175,19 @@ class TestJSON(TestCase):
 
     def test_to_json(self):
         self.assertEqual(JSON.to_json(Box("abc")), "abc")
+
+
+class TestDateTime(TestCase):
+
+    def test_from_json(self):
+        self.assertTrue(isinstance(DateTime.from_json('2013-10-04T13:05:25.354952'), datetime))
+        self.assertEqual(DateTime.from_json('2013-10-04T13:05:25.354952'), datetime(2013, 10, 4, 13, 5, 25, 354952))
+        # Separator must be T!
+        with self.assertRaises(ValidationError):
+            DateTime.from_json('2013-10-04 13:05:25.354952')
+
+    def test_to_json(self):
+        self.assertEqual(DateTime.to_json(datetime(2013, 10, 4, 13, 5, 25, 354952)), '2013-10-04T13:05:25.354952')
 
 
 class TestArray(TestCase):

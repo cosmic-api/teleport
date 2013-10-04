@@ -13,6 +13,8 @@ setup(
     license = "MIT",
     author = "8313547 Canada Inc.",
     author_email = "alexei.boronine@gmail.com",
-    install_requires=[],
+    install_requires=[
+        "isodate>=0.4.9",
+    ],
     long_description = long_description
 )

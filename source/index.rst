@@ -20,7 +20,7 @@ Teleport is:
 * Portable and extendable
 * Open Source (`MIT license <http://opensource.org/licenses/MIT>`_)
 
-Teleport is not a serialization *layer*. It provides 11 built-in data types to
+Teleport is not a serialization *layer*. It provides 12 built-in data types to
 get you started, however, using Teleport for a non-trivial project means
 defining data types of your own. In object-oriented languages, this often
 involves augmenting your classes to make them serializable.
@@ -126,7 +126,7 @@ Principles
 Built-In Types
 --------------
 
-Teleport provides 11 built-in types. Each implementation must provide 11
+Teleport provides 12 built-in types. Each implementation must provide 11
 corresponding serializers.
 
 The native form of the built-in types is implementation-dependent and will be
@@ -156,6 +156,11 @@ list of all built-in models and their validation logic.
     Can be any JSON value. No validation is performed during deserialization.
     Depending on the implementation, it may be useful to wrap the JSON in a
     different object, so that a ``null`` JSON value won't cause ambiguity.
+
+``DateTime``
+    Must be expressed as an
+    `ISO 8601 <http://en.wikipedia.org/wiki/ISO_8601>`_-encoded JSON string.
+    If encoding is incorrect, a validation error must be thrown.
 
 ``Array`` (parametrized by *items*)
     Must be expressed as a JSON array. The implementation must deserialize

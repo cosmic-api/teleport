@@ -246,6 +246,16 @@ def standard_types(type_getter=None, include=None):
 
 
     class Binary(BasicPrimitive):
+        """This type may be useful when you wish to send a binary file. The
+        byte string will be base64-encoded for safety.
+
+            >>> b = open('pixel.png', 'rb').read()
+            >>> Binary.to_json(b)
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAsTAAALE
+            wEAmpwYAAAAB3RJTUUH3QoSBggTmj6VgAAAABl0RVh0Q29tbWVudABDcmVhdGVkIHd
+            pdGggR0lNUFeBDhcAAAAMSURBVAjXY/j//z8ABf4C/tzMWecAAAAASUVORK5CYII='
+
+        """
 
         @staticmethod
         def from_json(datum):
@@ -280,11 +290,17 @@ def standard_types(type_getter=None, include=None):
 
 
     class DateTime(BasicWrapper):
+        """Wraps the :class:`String` type.
+
+                >>> DateTime.to_json(datetime.now())
+                u'2013-10-18T01:58:24.904349'
+
+        """
         schema = String
 
         @classmethod
         def assemble(cls, datum):
-            """"Parse *datum* as an ISO 8601-encoded time and return a
+            """Parse *datum* as an ISO 8601-encoded time and return a
             :class:`datetime` object. If the string is invalid, raise a
             :exc:`ValidationError`.
             """
@@ -295,6 +311,8 @@ def standard_types(type_getter=None, include=None):
 
         @classmethod
         def disassemble(cls, datum):
+            """Given a datetime object, return an ISO 8601-encoded string.
+            """
             return unicode(datum.isoformat())
 
 

@@ -237,6 +237,10 @@ Built-In Serializers
 .. autoclass:: Binary
    :members:
 
+.. autoclass:: DateTime
+   :show-inheritance:
+   :members:
+
 .. autoclass:: JSON
    :members:
 

@@ -114,7 +114,7 @@ class ParametrizedPrimitive(object):
 
 class Box(object):
     """Used as a wrapper around JSON data to disambiguate None as a JSON value
-    (``null``) from None as an absense of value. Its :attr:`datum` attribute
+    (``null``) from None as an absence of value. Its :attr:`datum` attribute
     will hold the actual JSON value.
 
     For example, an HTTP request body may be empty in which case your function
@@ -336,6 +336,11 @@ def standard_types(type_getter=None, include=None):
 
 
     class JSON(BasicPrimitive):
+        """This type may be used as a kind of wildcard that will accept any
+        JSON value and return it untouched. Presumably you still want to
+        interpret the meaning of this arbitrary JSON data, you just don't want
+        to do it through Teleport.
+        """
 
         @staticmethod
         def from_json(datum):

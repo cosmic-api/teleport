@@ -128,13 +128,25 @@ class Box(object):
 
 
 def standard_types(type_getter=None, include=None):
+    """
+    :param type_getter: A function that, given a custom type name, returns the
+        corresponding serializer.
+    :param include: A list of names of the built-in serializers that you want to
+        be included in your custom Teleport module.
+
+    :returns: A dict, mapping class names to classes.
+    """
 
     class Schema(BasicPrimitive):
 
         @staticmethod
         def to_json(datum):
-            """Find the serializer in the current :class:`TypeMap` based on the
-            class name, or :attr:`type_name` attribute, if such exists.
+            """If given a serializer representing a simple type, return a JSON
+            object with a single attribute *type*, if a parametrized one, also
+            include an attribute *param*.
+
+            By default *type* is the class name of the serializer, but it can
+            be overridden by the serializer's :data:`type_name` property.
             """
             # Type name is declared explicitly
             if hasattr(datum, "type_name"):
@@ -155,10 +167,16 @@ def standard_types(type_getter=None, include=None):
 
         @staticmethod
         def from_json(datum):
-            """Datum must be a dict with a key *type* that has a string value.
-            This value will me passed into the :meth:`__getitem__` method of the
-            current :class:`TypeMap` instance to get the matching serializer. If
-            no serializer is found, :exc:`UnknownTypeValidationError` will be
+            """Expects a JSON object with a *type* attribute and an optional
+            *param* attribute. Uses *type* to find the serializer. If the type
+            is simple, returns the serializer, if parametrized, deserializes
+            *param* and uses it to instatiate the serializer class before
+            returning it.
+
+            After looking in the built-in types, this method will attempt to
+            find the serializer via *type_getter*, an argument of
+            :func:`standard_types`. See :ref:`extending-teleport`. If no
+            serializer is found, :exc:`UnknownTypeValidationError` will be
             raised.
             """
             # Peek into dict struct to get the type

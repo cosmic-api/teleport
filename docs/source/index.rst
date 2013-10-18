@@ -168,6 +168,8 @@ Take a look at the source code of :class:`Array` for an example of a primitive
 parametrized type, and :class:`OrderedMap` for an example of a wrapper
 parametrized type.
 
+.. _extending-teleport:
+
 Extending Teleport
 ------------------
 
@@ -181,9 +183,15 @@ their schema from JSON, you will be faced with an error::
         raise UnknownTypeValidationError("Unknown type", t)
     teleport.UnknownTypeValidationError: Unknown type: 'Player'
 
-In order for :class:`Schema` to become aware of your custom types, you need to
-extend Teleport. To do so, create an empty module in your Python application,
-say :mod:`cards.types`.
+The :class:`Schema` class that you imported from the :mod:`teleport` module
+will never be aware of the custom types you've created. In order to extend
+Teleport, you need to recreate all the built-in types (including
+:class:`Schema`) in a separate module. This sounds like a complicated task,
+but :func:`standard_types` makes it very easy. 
+
+.. autofunction:: standard_types
+
+Create an empty module in your Python application, say :mod:`myapp.types`.
 
 .. code:: python
 
@@ -213,11 +221,12 @@ Teleport serializers. Now, instead of doing::
 
 you do::
 
-    from cards.types import *
+    from myapp.types import *
 
 Note that by default, Teleport will use the class name as the name of the
-serializer. To override that behavior, give the class a :attr:`type_name`
-attribute.
+serializer. If your new type's class name is different from its actual type
+name, let Teleport know by setting the :attr:`type_name` property on the
+class.
 
 Built-In Serializers
 --------------------
@@ -270,5 +279,7 @@ Exceptions
    :members:
 
 .. autoclass:: UnicodeDecodeValidationError
+   :show-inheritance:
 
 .. autoclass:: UnknownTypeValidationError
+   :show-inheritance:

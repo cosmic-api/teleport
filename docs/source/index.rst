@@ -16,7 +16,7 @@ this, a serializer must provide a :meth:`to_json` and a :meth:`from_json`
 method.
 
 The *JSON form* represents a valid JSON string, however, for convenience, our
-implementation uses an intermediate format, namely the format expectd by
+implementation uses an intermediate format, namely the format expected by
 :meth:`json.dumps` from the Python standard library. It is limited to
 dictionaries, lists, numbers, booleans, strings and ``None``.
 

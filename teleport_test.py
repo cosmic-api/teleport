@@ -87,6 +87,16 @@ class TestSchema(TestCase):
         with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
             deep_serializer.from_json([{"foo": True, "bar": False}])
 
+    def test_wrapper_schema_validation_error(self):
+        s = OrderedMap(Array(Integer))
+        with self.assertRaisesRegexp(ValidationError, "\[u'foo'\]\[1\]"):
+            s.from_json({
+                u"map": {
+                    u"foo": [1, 2.1]
+                },
+                u"order": [u"foo"]
+            })
+
     def test_unexpected_param(self):
         s = deepcopy(array_schema)
         s["type"] = "Integer"

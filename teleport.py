@@ -126,8 +126,10 @@ class Box(object):
         self.datum = datum
 
     def __hash__(self):
-        # Sometimes you want to put arbitrary JSON into a set
         return hash(json.dumps(self.datum))
+
+    def __eq__(self, datum):
+        return self.datum == datum
 
 
 

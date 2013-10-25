@@ -13,7 +13,7 @@ def optional(name, schema, doc=None):
 
 
 class ValidationError(Exception):
-    """Raised during desearialization. Stores the location of the error in the
+    """Raised during deserialization. Stores the location of the error in the
     JSON document relative to its root.
 
     First argument is the error message, second optional argument is the
@@ -460,6 +460,18 @@ def standard_types(type_getter=None, include=None):
                 "order": datum.keys()
             }
 
+    class Enum(ParametrizedWrapper):
+        schema = String
+        param_schema = Array(String)
+
+        def __init__(self, param):
+            self.param = param
+
+        @classmethod
+        def assemble(cls, datum):
+            if datum not in cls.param:
+                raise ValidationError("Illegal value for Enum", datum)
+            return datum
 
 
     class Struct(ParametrizedPrimitive):

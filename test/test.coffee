@@ -8,13 +8,14 @@ describe 'Teleport auto-test', ->
     {schema, fail, pass} = test
 
     s = t.Schema.fromJson schema
+    _s = JSON.stringify schema
     for p in pass
-      console.log "P", JSON.stringify(schema), JSON.stringify p
-      it 'should pass', ->
+      _p = JSON.stringify p
+      it "should pass #{_s} #{_p}", ->
         s.fromJson p
     for f in fail
-      console.log "F", JSON.stringify(schema), JSON.stringify f
-      it 'should fail', ->
+      _f = JSON.stringify f
+      it "should fail #{_s} #{_p}", ->
       assert.throws ->
         s.fromJson f
 

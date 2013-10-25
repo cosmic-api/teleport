@@ -8,21 +8,19 @@ BasicPrimitive =
 
 Schema = _.extend {}, BasicPrimitive, {
   fromJson: (datum) ->
-    if datum.type == "Float"
-      return Float
-    else if datum.type == "Integer"
-      return Integer
-    else if datum.type == "Schema"
-      return Schema
+    schema = root[datum.type]
+    if schema != undefined
+      if schema.param_schema != undefined
+        param = schema.param_schema.fromJson datum.param
+        return new schema(param)
+      else
+        return schema
+    throw new Error()
 }
 
 
 Integer = _.extend {}, BasicPrimitive, {
   fromJson: (datum) ->
-    """If *datum* is an integer, return it; if it is a float with a 0 for
-    its fractional part, return the integer part as an int. Otherwise,
-    raise a :exc:`ValidationError`.
-    """
     if _.isNumber(datum) and datum % 1 == 0
       return datum
     throw new Error()
@@ -31,20 +29,44 @@ Integer = _.extend {}, BasicPrimitive, {
 
 Float  = _.extend {}, BasicPrimitive, {
   fromJson: (datum) ->
-    """If *datum* is an integer, return it; if it is a float with a 0 for
-    its fractional part, return the integer part as an int. Otherwise,
-    raise a :exc:`ValidationError`.
-    """
     if _.isNumber(datum)
       return datum
     throw new Error()
 }
 
 
+Boolean = _.extend {}, BasicPrimitive, {
+  fromJson: (datum) ->
+    if _.isBoolean(datum)
+      return datum
+    throw new Error()
+}
+
+
+String = _.extend {}, BasicPrimitive, {
+  fromJson: (datum) ->
+    if _.isString(datum)
+      return datum
+    throw new Error()
+}
+
+class Array
+  constructor: (@param) ->
+  fromJson: (datum) ->
+    if _.isArray(datum)
+      return (@param.fromJson(item) for item in datum)
+    throw new Error()
+  toJson: (datum) ->
+    return @param.toJson(item) for item in datum
+Array.param_schema = Schema
+
 root =
   Schema: Schema
   Integer: Integer
   Float: Float
+  Boolean: Boolean
+  String: String
+  Array: Array
 
 
 # If no framework is available, just export to the global object (window.HUSL

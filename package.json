@@ -13,6 +13,7 @@
   "devDependencies": {
     "coffee-script": "*",
     "uglify-js": "*",
+    "underscore": "*",
     "mocha": "*",
     "stylus": "*"
   },

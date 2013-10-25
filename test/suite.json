@@ -1,0 +1,1 @@
+[{"fail": [true, false, null, ""], "pass": [1, 1.0, 1.1], "schema": {"type": "Float"}}, {"fail": [1.1, true, false, null, "", [1]], "pass": [1, 1.0], "schema": {"type": "Integer"}}]

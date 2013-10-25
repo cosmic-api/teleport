@@ -1,0 +1,22 @@
+{
+  "name": "teleport",
+  "description": "JavaScript implementation of Teleport",
+  "keywords": ["serialization", "validation", "documentation", "types"],
+  "version": "0.0.1",
+  "author": "Alexei Boronine <alexei.boronine@gmail.com>",
+  "main": "teleport.js",
+  "files": ["teleport.js"],
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/cosmic-api/teleport.js.git"
+  },
+  "devDependencies": {
+    "coffee-script": "*",
+    "uglify-js": "*",
+    "mocha": "*",
+    "stylus": "*"
+  },
+  "scripts": {
+    "test": "mocha --compilers coffee:coffee-script"
+  }
+}

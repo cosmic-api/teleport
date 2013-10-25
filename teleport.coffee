@@ -5,6 +5,7 @@ BasicPrimitive =
   toJson: (datum) ->
     return datum
 
+
 class ParametrizedPrimitive
   constructor: (@param) ->
 
@@ -76,7 +77,6 @@ Array = (param) ->
 Array.param_schema = Schema
 
 
-
 Map = (param) ->
   return {
     fromJson: (datum) ->
@@ -93,6 +93,17 @@ Map = (param) ->
       return ret
   }
 Map.param_schema = Schema
+
+
+Struct = (param) ->
+  fromJson: (datum) ->
+    if _.isObject datum
+      ret = {}
+      for key, value of param.map
+        ret[key] = value.schema.fromJson datum[key]
+      return ret
+    throw new Error()
+Struct.param_schema = {fromJson: (p) -> p}
 
 
 

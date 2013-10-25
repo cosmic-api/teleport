@@ -4,7 +4,9 @@ branch = True
 
 [report]
 include =
-    teleport.py
+    teleport/*
+omit =
+    teleport/testsuite/*
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Have to re-enable the standard pragma

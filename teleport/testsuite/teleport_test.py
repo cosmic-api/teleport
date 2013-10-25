@@ -1,4 +1,4 @@
-from unittest2 import TestCase
+from unittest2 import TestCase, TestSuite
 
 from copy import deepcopy
 from datetime import datetime
@@ -333,4 +333,7 @@ class TestTypeMap(TestCase):
         with self.assertRaises(UnknownTypeValidationError):
             Schema.from_json({"type": "Integer"})
 
+
+def suite():
+    s = TestSuite()
 

@@ -5,6 +5,9 @@ BasicPrimitive =
   toJson: (datum) ->
     return datum
 
+class ParametrizedPrimitive
+  constructor: (@param) ->
+
 
 Schema = _.extend {}, BasicPrimitive, {
   fromJson: (datum) ->
@@ -50,8 +53,7 @@ String = _.extend {}, BasicPrimitive, {
     throw new Error()
 }
 
-class Array
-  constructor: (@param) ->
+class Array extends ParametrizedPrimitive
   fromJson: (datum) ->
     if _.isArray(datum)
       return (@param.fromJson(item) for item in datum)
@@ -60,6 +62,22 @@ class Array
     return @param.toJson(item) for item in datum
 Array.param_schema = Schema
 
+
+class Map extends ParametrizedPrimitive
+  fromJson: (datum) ->
+    if _.isObject datum
+      ret = {}
+      for key, value of datum
+        ret[key] = @param.fromJson value
+      return ret
+    throw new Error()
+  toJson: (datum) ->
+    ret = {}
+    for key, value of datum
+      ret[key] = @param.toJson value
+    return ret
+Map.param_schema = Schema
+
 root =
   Schema: Schema
   Integer: Integer
@@ -67,6 +85,7 @@ root =
   Boolean: Boolean
   String: String
   Array: Array
+  Map: Map
 
 
 # If no framework is available, just export to the global object (window.HUSL

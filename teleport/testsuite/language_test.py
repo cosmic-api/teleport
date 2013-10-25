@@ -32,34 +32,53 @@ def t(schema, all=None, passing=None, failing=None):
         "fail": failing
     }
 
+struct_schema = Struct([
+    required("a", Integer),
+    optional("b", Integer)
+])
+
 def make_json_suite():
     tests = [
-        t(Integer,
+        t(  
+            schema=Integer,
             all=primitives,
             passing=[Box(-1), Box(1), Box(1.0)]),
-        t(Boolean,
+        t(
+            schema=Boolean,
             all=primitives,
             passing=[Box(True), Box(False)]),
-        t(String,
+        t(
+            schema=String,
             all=primitives,
             passing=[Box("")]),
-        t(Float,
+        t(
+            schema=Float,
             all=primitives,
             passing=[Box(-1), Box(1), Box(1.0), Box(1.1)]),
-        t(DateTime,
+        t(
+            schema=DateTime,
             failing=primitives + [Box("2013-10-04 13:05:25.354952")], # Needs a T
             passing=[Box("2013-10-04T13:05:25.354952")]),
-        t(Array(Integer),
+        t(
+            schema=Array(Integer),
             passing=[Box([]), Box([1]), Box([1.0])],
             failing=set(primitives + [Box([1.1])]) - set([Box([])])),
-        t(Map(Integer),
+        t(
+            schema=Map(Integer),
             passing=[Box({}), Box({"a": 1}), Box({"a": 1.0})],
             failing=set(primitives) - set([Box({})])),
+        t(
+            schema=Struct([
+                required("a", Integer),
+                optional("b", Integer)
+            ]),
+            passing=[Box({"a": 1, "b": 2}), Box({"a": 1}), Box({"a": 1.0})],
+            failing=set(primitives) | set([Box({"a": 1.1}), Box({"b": 1})])),
+        t(
+            schema=Binary,
+            passing=[Box('YWJj')],
+            failing=set(primitives + [Box('a')]) - set([Box("")])),
     ]
-    # Binary
-    # Array
-    # Struct
-    # Map
     # OrderedMap
     return tests
 

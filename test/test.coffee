@@ -2,7 +2,7 @@ assert = require 'assert'
 t = require '../teleport.coffee'
 tests = require './suite.json'
 
-skip = ["DateTime"]
+skip = [""]
 
 describe 'Teleport auto-test', ->
 

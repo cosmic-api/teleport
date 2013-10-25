@@ -53,6 +53,17 @@ String = _.extend {}, BasicPrimitive, {
     throw new Error()
 }
 
+
+DateTime = _.extend {}, BasicPrimitive, {
+  fromJson: (datum) ->
+    if _.isString(datum)
+      return new Date Date.parse datum
+    throw new Error()
+  toJson: (datum) ->
+    datum.toJSON()
+}
+
+
 Array = (param) ->
   return {
     fromJson: (datum) ->
@@ -90,6 +101,7 @@ root =
   Integer: Integer
   Float: Float
   Boolean: Boolean
+  DateTime: DateTime
   String: String
   Array: Array
   Map: Map

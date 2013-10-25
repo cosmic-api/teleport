@@ -32,10 +32,6 @@ def t(schema, all=None, passing=None, failing=None):
         "fail": failing
     }
 
-struct_schema = Struct([
-    required("a", Integer),
-    optional("b", Integer)
-])
 
 def make_json_suite():
     tests = [
@@ -78,8 +74,40 @@ def make_json_suite():
             schema=Binary,
             passing=[Box('YWJj')],
             failing=set(primitives + [Box('a')]) - set([Box("")])),
+        t(
+            schema=JSON,
+            passing=primitives,
+            failing=[]),
+        t(
+            schema=Schema,
+            passing=map(Box, Array(Schema).to_json([
+                String, Boolean, Integer, Float, Binary,
+                DateTime, JSON, Schema,
+                Array(Integer),
+                Struct([required('a', Integer)]),
+                Map(Integer),
+                OrderedMap(Integer),
+            ])),
+            failing=primitives + [
+                Box({"type": "string"}), # case-sensitive
+                Box({"type": "XXX"}), # unknown type
+                Box({"type": "String", "param": True}), # unexpected param
+                Box({"type": "Array"}), # missing param
+            ]),
+        t(
+            schema=OrderedMap(Integer),
+            passing=[
+                Box({"map": {}, "order": []}),
+                Box({"map": {"a": 1, "b": 2}, "order": ["a", "b"]}),
+            ],
+            failing=primitives + [
+                Box({"map": {"a": 1, "b": 2}, "order": ["a"]}),
+                Box({"map": {"a": 1, "b": 2}, "order": ["a", "b", "b"]}),
+                Box({"map": {"a": 1, "b": 2}}),
+                Box({"order": ["a", "b", "b"]}),
+                Box({"map": {"a": 1, "b": 2}, "what": 3, "order": ["a", "b", "b"]}),
+            ]),
     ]
-    # OrderedMap
     return tests
 
 def make_pass(schema, datum):

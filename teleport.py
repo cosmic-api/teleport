@@ -1,3 +1,4 @@
+import json
 import base64
 import isodate
 from collections import OrderedDict
@@ -123,6 +124,10 @@ class Box(object):
     """
     def __init__(self, datum):
         self.datum = datum
+
+    def __hash__(self):
+        # Sometimes you want to put arbitrary JSON into a set
+        return hash(json.dumps(self.datum))
 
 
 

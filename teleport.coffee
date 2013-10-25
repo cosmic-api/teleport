@@ -15,7 +15,7 @@ Schema = _.extend {}, BasicPrimitive, {
     if schema != undefined
       if schema.param_schema != undefined
         param = schema.param_schema.fromJson datum.param
-        return new schema(param)
+        return schema(param)
       else
         return schema
     throw new Error()
@@ -53,30 +53,37 @@ String = _.extend {}, BasicPrimitive, {
     throw new Error()
 }
 
-class Array extends ParametrizedPrimitive
-  fromJson: (datum) ->
-    if _.isArray(datum)
-      return (@param.fromJson(item) for item in datum)
-    throw new Error()
-  toJson: (datum) ->
-    return @param.toJson(item) for item in datum
+Array = (param) ->
+  return {
+    fromJson: (datum) ->
+      if _.isArray(datum)
+        return (@param.fromJson(item) for item in datum)
+      throw new Error()
+    toJson: (datum) ->
+      return @param.toJson(item) for item in datum
+  }
 Array.param_schema = Schema
 
 
-class Map extends ParametrizedPrimitive
-  fromJson: (datum) ->
-    if _.isObject datum
+
+Map = (param) ->
+  return {
+    fromJson: (datum) ->
+      if _.isObject datum
+        ret = {}
+        for key, value of datum
+          ret[key] = param.fromJson value
+        return ret
+      throw new Error()
+    toJson: (datum) ->
       ret = {}
       for key, value of datum
-        ret[key] = @param.fromJson value
+        ret[key] = param.toJson value
       return ret
-    throw new Error()
-  toJson: (datum) ->
-    ret = {}
-    for key, value of datum
-      ret[key] = @param.toJson value
-    return ret
+  }
 Map.param_schema = Schema
+
+
 
 root =
   Schema: Schema

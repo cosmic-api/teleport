@@ -1,15 +1,6 @@
 _ = require 'underscore'
 
 
-BasicPrimitive =
-  toJson: (datum) ->
-    return datum
-
-
-class ParametrizedPrimitive
-  constructor: (@param) ->
-
-
 Schema = {
   toJson: (datum) -> datum
   fromJson: (datum) ->
@@ -20,7 +11,7 @@ Schema = {
         return schema(param)
       else
         return schema
-    throw new Error()
+    throw new Error("Unknown type: #{datum.type}")
 }
 
 
@@ -29,7 +20,7 @@ Integer = {
   fromJson: (datum) ->
     if _.isNumber(datum) and datum % 1 == 0
       return datum
-    throw new Error(datum)
+    throw new Error("Invalid Integer: #{datum}")
 }
 
 
@@ -38,7 +29,7 @@ Float = {
   fromJson: (datum) ->
     if _.isNumber(datum)
       return datum
-    throw new Error()
+    throw new Error("Invalid Float")
 }
 
 
@@ -47,7 +38,7 @@ Boolean = {
   fromJson: (datum) ->
     if _.isBoolean(datum)
       return datum
-    throw new Error()
+    throw new Error("Invalid Boolean")
 }
 
 
@@ -56,7 +47,7 @@ String = {
   fromJson: (datum) ->
     if _.isString(datum)
       return datum
-    throw new Error()
+    throw new Error("Invalid String")
 }
 
 
@@ -64,7 +55,7 @@ DateTime = {
   fromJson: (datum) ->
     if _.isString(datum)
       return new Date Date.parse datum
-    throw new Error()
+    throw new Error("Invalid DateTime")
   toJson: (datum) ->
     datum.toJSON()
 }
@@ -74,7 +65,7 @@ Binary = {
   fromJson: (datum) ->
     if _.isString(datum)
       return new Buffer(datum, 'base64').toString 'ascii'
-    throw new Error()
+    throw new Error("Invalid Binary")
   toJson: (datum) ->
     return new Buffer(datum).toString 'base64'
 }
@@ -150,17 +141,17 @@ Struct.param_schema = {
 
 
 root =
-  Schema: Schema
-  Integer: Integer
-  Float: Float
-  Boolean: Boolean
-  DateTime: DateTime
-  String: String
-  Array: Array
-  Map: Map
-  JSON: JSON
-  Binary: Binary
-  Struct: Struct
+  'Schema': Schema
+  'Integer': Integer
+  'Float': Float
+  'Boolean': Boolean
+  'DateTime': DateTime
+  'String': String
+  'Array': Array
+  'Map': Map
+  'JSON': JSON
+  'Binary': Binary
+  'Struct': Struct
 
 
 # If no framework is available, just export to the global object (window.HUSL

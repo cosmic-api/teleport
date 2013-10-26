@@ -1,26 +1,25 @@
+_ = require 'underscore'
 assert = require 'assert'
 t = require '../teleport.coffee'
 tests = require './suite.json'
 
-skip = ["OrderedMap", "JSON", "Schema"]
+skip = ["OrderedMap", "Struct", "JSON", "Schema", "Map", "Array", "DateTime", "Boolean", "Struct", "Integer"]
 
-describe 'Teleport auto-test', ->
 
-  for test in tests
-    {schema, fail, pass} = test
+for test in tests
+  {schema, fail, pass} = test
 
-    if schema.type in skip
-      continue
+  if schema.type in skip
+    continue
 
+  describe "#{JSON.stringify schema}", ->
     s = t.Schema.fromJson schema
-    _s = JSON.stringify schema
-    for p in pass
-      _p = JSON.stringify p
-      it "should pass #{_s} #{_p}", ->
-        s.fromJson p
-    for f in fail
-      _f = JSON.stringify f
-      it "should fail #{_s} #{_f}", ->
+    _.each pass, (p) ->
+      it "should pass #{JSON.stringify p}", ->
+        assert.doesNotThrow ->
+          s.fromJson p
+    _.each fail, (f) ->
+      it "should fail #{JSON.stringify f}", ->
         assert.throws ->
           s.fromJson f
 

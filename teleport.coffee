@@ -10,7 +10,8 @@ class ParametrizedPrimitive
   constructor: (@param) ->
 
 
-Schema = _.extend {}, BasicPrimitive, {
+Schema = {
+  toJson: (datum) -> datum
   fromJson: (datum) ->
     schema = root[datum.type]
     if schema != undefined
@@ -23,15 +24,17 @@ Schema = _.extend {}, BasicPrimitive, {
 }
 
 
-Integer = _.extend {}, BasicPrimitive, {
+Integer = {
+  toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isNumber(datum) and datum % 1 == 0
       return datum
-    throw new Error()
+    throw new Error(datum)
 }
 
 
-Float  = _.extend {}, BasicPrimitive, {
+Float = {
+  toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isNumber(datum)
       return datum
@@ -39,7 +42,8 @@ Float  = _.extend {}, BasicPrimitive, {
 }
 
 
-Boolean = _.extend {}, BasicPrimitive, {
+Boolean = {
+  toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isBoolean(datum)
       return datum
@@ -47,7 +51,8 @@ Boolean = _.extend {}, BasicPrimitive, {
 }
 
 
-String = _.extend {}, BasicPrimitive, {
+String = {
+  toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isString(datum)
       return datum
@@ -55,13 +60,29 @@ String = _.extend {}, BasicPrimitive, {
 }
 
 
-DateTime = _.extend {}, BasicPrimitive, {
+DateTime = {
   fromJson: (datum) ->
     if _.isString(datum)
       return new Date Date.parse datum
     throw new Error()
   toJson: (datum) ->
     datum.toJSON()
+}
+
+
+Binary = {
+  fromJson: (datum) ->
+    if _.isString(datum)
+      return new Buffer(datum, 'base64').toString 'ascii'
+    throw new Error()
+  toJson: (datum) ->
+    return new Buffer(datum).toString 'base64'
+}
+
+
+JSON = {
+  toJson: (datum) -> datum
+  fromJson: (datum) -> datum
 }
 
 
@@ -96,15 +117,36 @@ Map.param_schema = Schema
 
 
 Struct = (param) ->
-  fromJson: (datum) ->
-    if _.isObject datum
-      ret = {}
-      for key, value of param.map
-        ret[key] = value.schema.fromJson datum[key]
-      return ret
-    throw new Error()
-Struct.param_schema = {fromJson: (p) -> p}
-
+  return {
+    param: param
+    toJson: (datum) -> datum
+    fromJson: (datum) ->
+      if _.isObject datum
+        ret = {}
+        for key, value of datum
+          if key not in param.order
+            throw new Error "Unexpected key: #{key}"
+        for key, spec of param.map
+          if datum[key] != undefined
+            ret[key] = spec.schema.fromJson datum[key]
+          else if spec.required
+            throw new Error "Required key missing: #{key}"
+        return ret
+      throw new Error()
+  }
+Struct.param_schema = {
+  fromJson: (p) ->
+    m = {}
+    for k, v of p.map
+      m[k] = {
+        required: v.required
+        schema: Schema.fromJson v.schema
+      }
+    return {
+      order: p.order
+      map: m
+    }
+}
 
 
 root =
@@ -116,6 +158,9 @@ root =
   String: String
   Array: Array
   Map: Map
+  JSON: JSON
+  Binary: Binary
+  Struct: Struct
 
 
 # If no framework is available, just export to the global object (window.HUSL

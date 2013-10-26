@@ -2,7 +2,7 @@ assert = require 'assert'
 t = require '../teleport.coffee'
 tests = require './suite.json'
 
-skip = ["Struct", "OrderedMap", "Binary", "JSON", "Schema"]
+skip = ["OrderedMap", "JSON", "Schema"]
 
 describe 'Teleport auto-test', ->
 

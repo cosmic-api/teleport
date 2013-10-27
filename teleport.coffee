@@ -5,10 +5,13 @@ isObjectNotArray = (datum) ->
 
 wrap = (assembler) ->
   schema = assembler.wraps
-  _.extend {
+  
+  assembler = _.extend {
       assemble: (datum) -> datum
       disassemble: (datum) -> datum
-    }, assembler, {
+  }, assembler
+
+  _.extend {}, assembler, {
     toJson: (datum) ->
       schema.toJson assembler.disassemble datum
     fromJson: (datum) ->
@@ -171,30 +174,21 @@ Struct = (param) ->
 
 
 OrderedMap = (param) ->
-  return {
+  return wrap {
     typeName: 'OrderedMap'
     param: param
     paramSchema: OrderedMap.paramSchema
-    toJson: (datum) ->
-      m = {}
-      for key, value of datum.map
-        if value != undefined
-          m[key] = param.toJson value
-      return {
-        map: m
-        order: datum.order
-      }
-    fromJson: (datum) ->
-      datum = Struct({
+    wraps: Struct {
+      map:
         map:
-          map:
-            required: true
-            schema: Map(param)
-          order:
-            required: true
-            schema: Array(String)
-        order: ['map', 'order']
-      }).fromJson datum
+          required: true
+          schema: Map(param)
+        order:
+          required: true
+          schema: Array(String)
+      order: ['map', 'order']
+    }
+    assemble: (datum) ->
       k = _.keys datum.map
       o = datum.order
       if k.length == o.length == _.union(k, o).length

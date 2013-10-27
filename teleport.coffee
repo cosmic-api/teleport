@@ -1,5 +1,8 @@
 _ = require 'underscore'
 
+isObjectNotArray = (datum) ->
+  _.isObject(datum) and not _.isArray(datum)
+
 
 Schema = {
   toJson: (datum) -> datum
@@ -9,6 +12,8 @@ Schema = {
       if schema.param_schema != undefined
         param = schema.param_schema.fromJson datum.param
         return schema(param)
+      else if datum.param != undefined
+        throw new Error("Unexpected param")
       else
         return schema
     throw new Error("Unknown type: #{datum.type}")
@@ -54,7 +59,9 @@ String = {
 DateTime = {
   fromJson: (datum) ->
     if _.isString(datum)
-      return new Date Date.parse datum
+      parsed = Date.parse datum
+      if not _.isNaN parsed
+        return new Date parsed
     throw new Error("Invalid DateTime")
   toJson: (datum) ->
     datum.toJSON()
@@ -92,7 +99,7 @@ Array.param_schema = Schema
 Map = (param) ->
   return {
     fromJson: (datum) ->
-      if _.isObject datum
+      if isObjectNotArray datum
         ret = {}
         for key, value of datum
           ret[key] = param.fromJson value
@@ -112,7 +119,7 @@ Struct = (param) ->
     param: param
     toJson: (datum) -> datum
     fromJson: (datum) ->
-      if _.isObject datum
+      if isObjectNotArray datum
         ret = {}
         for key, value of datum
           if key not in param.order
@@ -125,19 +132,6 @@ Struct = (param) ->
         return ret
       throw new Error()
   }
-Struct.param_schema = {
-  fromJson: (p) ->
-    m = {}
-    for k, v of p.map
-      m[k] = {
-        required: v.required
-        schema: Schema.fromJson v.schema
-      }
-    return {
-      order: p.order
-      map: m
-    }
-}
 
 
 OrderedMap = (param) ->
@@ -162,6 +156,22 @@ OrderedMap = (param) ->
       throw new Error("Invalid OrderedMap #{k}, #{o}", k, o)
   }
 OrderedMap.param_schema = Schema
+
+
+Struct.param_schema = OrderedMap(Struct(
+  map:
+    required:
+      required: true
+      schema: Boolean
+    schema:
+      required: true
+      schema: Schema
+    doc:
+      required: false
+      schema: String
+  order:
+    ['required', 'schema', 'doc']
+))
 
 
 root =

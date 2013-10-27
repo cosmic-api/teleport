@@ -3,14 +3,8 @@ assert = require 'assert'
 t = require '../teleport.coffee'
 tests = require './suite.json'
 
-skip = ["OrderedMap", "Struct", "JSON", "Schema", "Map", "Array", "DateTime", "Boolean", "Struct", "Integer"]
-
-
 for test in tests
   {schema, fail, pass} = test
-
-  if schema.type in skip
-    continue
 
   describe "#{JSON.stringify schema}", ->
     s = t.Schema.fromJson schema

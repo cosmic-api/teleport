@@ -81,10 +81,10 @@ Array = (param) ->
   return {
     fromJson: (datum) ->
       if _.isArray(datum)
-        return (@param.fromJson(item) for item in datum)
+        return (param.fromJson(item) for item in datum)
       throw new Error()
     toJson: (datum) ->
-      return @param.toJson(item) for item in datum
+      return param.toJson(item) for item in datum
   }
 Array.param_schema = Schema
 
@@ -140,18 +140,43 @@ Struct.param_schema = {
 }
 
 
+OrderedMap = (param) ->
+  return {
+    param: param
+    toJson: (datum) -> datum
+    fromJson: (datum) ->
+      datum = Struct({
+        map:
+          map:
+            required: true
+            schema: Map(param)
+          order:
+            required: true
+            schema: Array(String)
+        order: ['map', 'order']
+      }).fromJson datum
+      k = _.keys datum.map
+      o = datum.order
+      if k.length == o.length == _.union(k, o).length
+        return datum
+      throw new Error("Invalid OrderedMap #{k}, #{o}", k, o)
+  }
+OrderedMap.param_schema = Schema
+
+
 root =
-  'Schema': Schema
-  'Integer': Integer
-  'Float': Float
-  'Boolean': Boolean
-  'DateTime': DateTime
-  'String': String
-  'Array': Array
-  'Map': Map
-  'JSON': JSON
-  'Binary': Binary
-  'Struct': Struct
+  Schema: Schema
+  Integer: Integer
+  Float: Float
+  Boolean: Boolean
+  DateTime: DateTime
+  String: String
+  Array: Array
+  Map: Map
+  JSON: JSON
+  Binary: Binary
+  Struct: Struct
+  OrderedMap: OrderedMap
 
 
 # If no framework is available, just export to the global object (window.HUSL

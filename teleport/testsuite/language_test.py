@@ -120,6 +120,14 @@ def make_pass(schema, datum):
             schema.from_json(datum)
     return T('test_passing')
 
+def make_reserialize(schema, datum):
+    class T(TestCase):
+        def test_reserialize(self):
+            self.assertEqual(
+                schema.to_json(schema.from_json(datum)),
+                datum)
+    return T('test_reserialize')
+
 def make_fail(schema, datum):
     class T(TestCase):
         def test_failing(self):
@@ -133,6 +141,7 @@ def suite():
         for p in test['pass']:
             datum = json.loads(json.dumps(p.datum))
             suite.addTest(make_pass(test['schema'], datum))
+            suite.addTest(make_reserialize(test['schema'], datum))
         for f in test['fail']:
             datum = json.loads(json.dumps(f.datum))
             suite.addTest(make_fail(test['schema'], datum))

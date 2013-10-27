@@ -5,7 +5,7 @@ isObjectNotArray = (datum) ->
 
 wrap = (assembler) ->
   schema = assembler.wraps
-  
+
   assembler = _.extend {
       assemble: (datum) -> datum
       disassemble: (datum) -> datum
@@ -18,216 +18,225 @@ wrap = (assembler) ->
       assembler.assemble schema.fromJson datum
   }
 
-Schema = {
-  typeName: 'Schema'
-  toJson: (datum) ->
-    ret = type: datum.typeName
-    if datum.paramSchema != undefined
-      ret.param = datum.paramSchema.toJson datum.param
-    return ret
-  fromJson: (datum) ->
-    schema = root[datum.type]
-    if schema != undefined
-      if schema.paramSchema != undefined
-        param = schema.paramSchema.fromJson datum.param
-        return schema(param)
-      else if datum.param != undefined
-        throw new Error("Unexpected param")
-      else
-        return schema
-    throw new Error("Unknown type: #{datum.type}")
-}
+makeTypes = (getter) ->
 
-
-Integer = {
-  typeName: 'Integer'
-  toJson: (datum) -> datum
-  fromJson: (datum) ->
-    if _.isNumber(datum) and datum % 1 == 0
-      return datum
-    throw new Error("Invalid Integer: #{datum}")
-}
-
-
-Float = {
-  typeName: 'Float'
-  toJson: (datum) -> datum
-  fromJson: (datum) ->
-    if _.isNumber(datum)
-      return datum
-    throw new Error("Invalid Float")
-}
-
-
-Boolean = {
-  typeName: 'Boolean'
-  toJson: (datum) -> datum
-  fromJson: (datum) ->
-    if _.isBoolean(datum)
-      return datum
-    throw new Error("Invalid Boolean")
-}
-
-
-String = {
-  typeName: 'String'
-  toJson: (datum) -> datum
-  fromJson: (datum) ->
-    if _.isString(datum)
-      return datum
-    throw new Error("Invalid String")
-}
-
-
-DateTime = wrap {
-  typeName: 'DateTime'
-  wraps: String
-  assemble: (datum) ->
-    parsed = Date.parse datum
-    if not _.isNaN parsed
-      return new Date parsed
-    throw new Error("Invalid DateTime")
-  disassemble: (datum) ->
-    datum.toJSON()
-}
-
-
-Binary = wrap {
-  typeName: 'Binary'
-  wraps: String
-  assemble: (datum) ->
-    return new Buffer(datum, 'base64').toString 'ascii'
-  disassemble: (datum) ->
-    return new Buffer(datum).toString 'base64'
-}
-
-
-JSON = {
-  typeName: 'JSON'
-  toJson: (datum) -> datum
-  fromJson: (datum) -> datum
-}
-
-
-Array = (param) ->
-  return {
-    typeName: 'Array'
-    param: param
-    paramSchema: Array.paramSchema
-    fromJson: (datum) ->
-      if _.isArray(datum)
-        return (param.fromJson(item) for item in datum)
-      throw new Error()
+  Schema = {
+    typeName: 'Schema'
     toJson: (datum) ->
-      return (param.toJson(item) for item in datum)
-  }
-Array.paramSchema = Schema
-
-
-Map = (param) ->
-  return {
-    typeName: 'Map'
-    param: param
-    paramSchema: Map.paramSchema
-    fromJson: (datum) ->
-      if isObjectNotArray datum
-        ret = {}
-        for key, value of datum
-          ret[key] = param.fromJson value
-        return ret
-      throw new Error()
-    toJson: (datum) ->
-      ret = {}
-      for key, value of datum
-        if value != undefined
-          ret[key] = param.toJson value
-      return ret
-  }
-Map.paramSchema = Schema
-
-
-Struct = (param) ->
-  return {
-    typeName: 'Struct'
-    param: param
-    paramSchema: Struct.paramSchema
-    toJson: (datum) ->
-      ret = {}
-      for key, value of datum
-        if value != undefined
-          ret[key] = param.map[key].schema.toJson value
+      ret = type: datum.typeName
+      if datum.paramSchema != undefined
+        ret.param = datum.paramSchema.toJson datum.param
       return ret
     fromJson: (datum) ->
-      if isObjectNotArray datum
-        ret = {}
-        for key, value of datum
-          if key not in param.order
-            throw new Error "Unexpected key: #{key}"
-        for key, spec of param.map
-          if datum[key] != undefined
-            ret[key] = spec.schema.fromJson datum[key]
-          else if spec.required
-            throw new Error "Required key missing: #{key}"
-        return ret
-      throw new Error()
+      schema = root[datum.type]
+      if schema == undefined
+        schema = getter(datum.type)
+      if schema != undefined
+        if schema.paramSchema != undefined
+          param = schema.paramSchema.fromJson datum.param
+          return schema(param)
+        else if datum.param != undefined
+          throw new Error("Unexpected param")
+        else
+          return schema
+      throw new Error("Unknown type: #{datum.type}")
   }
 
 
-OrderedMap = (param) ->
-  return wrap {
-    typeName: 'OrderedMap'
-    param: param
-    paramSchema: OrderedMap.paramSchema
-    wraps: Struct {
-      map:
-        map:
-          required: true
-          schema: Map(param)
-        order:
-          required: true
-          schema: Array(String)
-      order: ['map', 'order']
-    }
-    assemble: (datum) ->
-      k = _.keys datum.map
-      o = datum.order
-      if k.length == o.length == _.union(k, o).length
+  Integer = {
+    typeName: 'Integer'
+    toJson: (datum) -> datum
+    fromJson: (datum) ->
+      if _.isNumber(datum) and datum % 1 == 0
         return datum
-      throw new Error("Invalid OrderedMap #{k}, #{o}", k, o)
+      throw new Error("Invalid Integer: #{datum}")
   }
-OrderedMap.paramSchema = Schema
 
 
-Struct.paramSchema = OrderedMap(Struct(
-  map:
-    required:
-      required: true
-      schema: Boolean
-    schema:
-      required: true
-      schema: Schema
-    doc:
-      required: false
-      schema: String
-  order:
-    ['required', 'schema', 'doc']
-))
+  Float = {
+    typeName: 'Float'
+    toJson: (datum) -> datum
+    fromJson: (datum) ->
+      if _.isNumber(datum)
+        return datum
+      throw new Error("Invalid Float")
+  }
 
 
-root =
-  Schema: Schema
-  Integer: Integer
-  Float: Float
-  Boolean: Boolean
-  DateTime: DateTime
-  String: String
-  Array: Array
-  Map: Map
-  JSON: JSON
-  Binary: Binary
-  Struct: Struct
-  OrderedMap: OrderedMap
+  Boolean = {
+    typeName: 'Boolean'
+    toJson: (datum) -> datum
+    fromJson: (datum) ->
+      if _.isBoolean(datum)
+        return datum
+      throw new Error("Invalid Boolean")
+  }
 
+
+  String = {
+    typeName: 'String'
+    toJson: (datum) -> datum
+    fromJson: (datum) ->
+      if _.isString(datum)
+        return datum
+      throw new Error("Invalid String")
+  }
+
+
+  DateTime = wrap {
+    typeName: 'DateTime'
+    wraps: String
+    assemble: (datum) ->
+      parsed = Date.parse datum
+      if not _.isNaN parsed
+        return new Date parsed
+      throw new Error("Invalid DateTime")
+    disassemble: (datum) ->
+      datum.toJSON()
+  }
+
+
+  Binary = wrap {
+    typeName: 'Binary'
+    wraps: String
+    assemble: (datum) ->
+      return new Buffer(datum, 'base64').toString 'ascii'
+    disassemble: (datum) ->
+      return new Buffer(datum).toString 'base64'
+  }
+
+
+  JSON = {
+    typeName: 'JSON'
+    toJson: (datum) -> datum
+    fromJson: (datum) -> datum
+  }
+
+
+  Array = (param) ->
+    return {
+      typeName: 'Array'
+      param: param
+      paramSchema: Array.paramSchema
+      fromJson: (datum) ->
+        if _.isArray(datum)
+          return (param.fromJson(item) for item in datum)
+        throw new Error()
+      toJson: (datum) ->
+        return (param.toJson(item) for item in datum)
+    }
+  Array.paramSchema = Schema
+
+
+  Map = (param) ->
+    return {
+      typeName: 'Map'
+      param: param
+      paramSchema: Map.paramSchema
+      fromJson: (datum) ->
+        if isObjectNotArray datum
+          ret = {}
+          for key, value of datum
+            ret[key] = param.fromJson value
+          return ret
+        throw new Error()
+      toJson: (datum) ->
+        ret = {}
+        for key, value of datum
+          if value != undefined
+            ret[key] = param.toJson value
+        return ret
+    }
+  Map.paramSchema = Schema
+
+
+  Struct = (param) ->
+    return {
+      typeName: 'Struct'
+      param: param
+      paramSchema: Struct.paramSchema
+      toJson: (datum) ->
+        ret = {}
+        for key, value of datum
+          if value != undefined
+            ret[key] = param.map[key].schema.toJson value
+        return ret
+      fromJson: (datum) ->
+        if isObjectNotArray datum
+          ret = {}
+          for key, value of datum
+            if key not in param.order
+              throw new Error "Unexpected key: #{key}"
+          for key, spec of param.map
+            if datum[key] != undefined
+              ret[key] = spec.schema.fromJson datum[key]
+            else if spec.required
+              throw new Error "Required key missing: #{key}"
+          return ret
+        throw new Error()
+    }
+
+
+  OrderedMap = (param) ->
+    return wrap {
+      typeName: 'OrderedMap'
+      param: param
+      paramSchema: OrderedMap.paramSchema
+      wraps: Struct {
+        map:
+          map:
+            required: true
+            schema: Map(param)
+          order:
+            required: true
+            schema: Array(String)
+        order: ['map', 'order']
+      }
+      assemble: (datum) ->
+        k = _.keys datum.map
+        o = datum.order
+        if k.length == o.length == _.union(k, o).length
+          return datum
+        throw new Error("Invalid OrderedMap #{k}, #{o}", k, o)
+    }
+  OrderedMap.paramSchema = Schema
+
+
+  Struct.paramSchema = OrderedMap(Struct(
+    map:
+      required:
+        required: true
+        schema: Boolean
+      schema:
+        required: true
+        schema: Schema
+      doc:
+        required: false
+        schema: String
+    order:
+      ['required', 'schema', 'doc']
+  ))
+
+
+  root =
+    Schema: Schema
+    Integer: Integer
+    Float: Float
+    Boolean: Boolean
+    DateTime: DateTime
+    String: String
+    Array: Array
+    Map: Map
+    JSON: JSON
+    Binary: Binary
+    Struct: Struct
+    OrderedMap: OrderedMap
+
+  return root
+
+
+root = makeTypes(-> undefined)
+root.makeTypes = makeTypes
 
 # If no framework is available, just export to the global object (window.HUSL
 # in the browser)

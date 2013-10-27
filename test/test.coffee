@@ -54,3 +54,29 @@ describe "Test native form", ->
         b: 'eHl6'
       order: ['a', 'b']
     }
+
+describe "Test extending Teleport", ->
+  YesNoMaybe = {
+    typeName: 'YesNoMaybe'
+    fromJson: (datum) ->
+      if datum in [true, false, null]
+        return datum
+      throw Error("Invalid YesNoMaybe #{JSON.stringify datum}")
+    toJson: (datum) -> datum
+  }
+  t2 = t.makeTypes (name) ->
+    if name == "YesNoMaybe"
+      return YesNoMaybe
+  it 'Should work', ->
+    assert.equal YesNoMaybe, t2.Schema.fromJson {type: "YesNoMaybe"}
+    schema = t2.Schema.fromJson {
+      type: "Array",
+      param:
+        type: "YesNoMaybe"
+    }
+    assert.deepEqual [true, false, null], schema.fromJson [true, false, null]
+    assert.throws ->
+      schema.fromJson [true, false, ""]
+
+
+

@@ -71,6 +71,10 @@ def make_json_suite():
             passing=[Box({"a": 1, "b": 2}), Box({"a": 1}), Box({"a": 1.0})],
             failing=set(primitives) | set([Box({"a": 1.1}), Box({"b": 1})])),
         t(
+            schema=Struct([]),
+            passing=[Box({})],
+            failing=set(primitives) - set([Box({})])),
+        t(
             schema=Binary,
             passing=[Box('YWJj')],
             failing=set(primitives + [Box('a')]) - set([Box("")])),
@@ -136,4 +140,4 @@ def suite():
 
 if __name__ == "__main__":
     tests = make_json_suite()
-    print json.dumps(tests_schema.to_json(tests))
+    print json.dumps(tests_schema.to_json(tests), sort_keys=True)

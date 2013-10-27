@@ -3,6 +3,17 @@ _ = require 'underscore'
 isObjectNotArray = (datum) ->
   _.isObject(datum) and not _.isArray(datum)
 
+wrap = (assembler) ->
+  schema = assembler.wraps
+  _.extend {
+      assemble: (datum) -> datum
+      disassemble: (datum) -> datum
+    }, assembler, {
+    toJson: (datum) ->
+      schema.toJson assembler.disassemble datum
+    fromJson: (datum) ->
+      assembler.assemble schema.fromJson datum
+  }
 
 Schema = {
   typeName: 'Schema'
@@ -65,26 +76,25 @@ String = {
 }
 
 
-DateTime = {
+DateTime = wrap {
   typeName: 'DateTime'
-  fromJson: (datum) ->
-    if _.isString(datum)
-      parsed = Date.parse datum
-      if not _.isNaN parsed
-        return new Date parsed
+  wraps: String
+  assemble: (datum) ->
+    parsed = Date.parse datum
+    if not _.isNaN parsed
+      return new Date parsed
     throw new Error("Invalid DateTime")
-  toJson: (datum) ->
+  disassemble: (datum) ->
     datum.toJSON()
 }
 
 
-Binary = {
+Binary = wrap {
   typeName: 'Binary'
-  fromJson: (datum) ->
-    if _.isString(datum)
-      return new Buffer(datum, 'base64').toString 'ascii'
-    throw new Error("Invalid Binary")
-  toJson: (datum) ->
+  wraps: String
+  assemble: (datum) ->
+    return new Buffer(datum, 'base64').toString 'ascii'
+  disassemble: (datum) ->
     return new Buffer(datum).toString 'base64'
 }
 

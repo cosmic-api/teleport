@@ -12,6 +12,8 @@ for test in tests
       it "should pass #{JSON.stringify p}", ->
         assert.doesNotThrow ->
           s.fromJson p
+      it "should reserialize #{JSON.stringify p}", ->
+        assert.deepEqual p, s.toJson s.fromJson p
     _.each fail, (f) ->
       it "should fail #{JSON.stringify f}", ->
         assert.throws ->

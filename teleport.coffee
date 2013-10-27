@@ -5,12 +5,17 @@ isObjectNotArray = (datum) ->
 
 
 Schema = {
-  toJson: (datum) -> datum
+  typeName: 'Schema'
+  toJson: (datum) ->
+    ret = type: datum.typeName
+    if datum.paramSchema != undefined
+      ret.param = datum.paramSchema.toJson datum.param
+    return ret
   fromJson: (datum) ->
     schema = root[datum.type]
     if schema != undefined
-      if schema.param_schema != undefined
-        param = schema.param_schema.fromJson datum.param
+      if schema.paramSchema != undefined
+        param = schema.paramSchema.fromJson datum.param
         return schema(param)
       else if datum.param != undefined
         throw new Error("Unexpected param")
@@ -21,6 +26,7 @@ Schema = {
 
 
 Integer = {
+  typeName: 'Integer'
   toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isNumber(datum) and datum % 1 == 0
@@ -30,6 +36,7 @@ Integer = {
 
 
 Float = {
+  typeName: 'Float'
   toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isNumber(datum)
@@ -39,6 +46,7 @@ Float = {
 
 
 Boolean = {
+  typeName: 'Boolean'
   toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isBoolean(datum)
@@ -48,6 +56,7 @@ Boolean = {
 
 
 String = {
+  typeName: 'String'
   toJson: (datum) -> datum
   fromJson: (datum) ->
     if _.isString(datum)
@@ -57,6 +66,7 @@ String = {
 
 
 DateTime = {
+  typeName: 'DateTime'
   fromJson: (datum) ->
     if _.isString(datum)
       parsed = Date.parse datum
@@ -69,6 +79,7 @@ DateTime = {
 
 
 Binary = {
+  typeName: 'Binary'
   fromJson: (datum) ->
     if _.isString(datum)
       return new Buffer(datum, 'base64').toString 'ascii'
@@ -79,6 +90,7 @@ Binary = {
 
 
 JSON = {
+  typeName: 'JSON'
   toJson: (datum) -> datum
   fromJson: (datum) -> datum
 }
@@ -86,18 +98,24 @@ JSON = {
 
 Array = (param) ->
   return {
+    typeName: 'Array'
+    param: param
+    paramSchema: Array.paramSchema
     fromJson: (datum) ->
       if _.isArray(datum)
         return (param.fromJson(item) for item in datum)
       throw new Error()
     toJson: (datum) ->
-      return param.toJson(item) for item in datum
+      return (param.toJson(item) for item in datum)
   }
-Array.param_schema = Schema
+Array.paramSchema = Schema
 
 
 Map = (param) ->
   return {
+    typeName: 'Map'
+    param: param
+    paramSchema: Map.paramSchema
     fromJson: (datum) ->
       if isObjectNotArray datum
         ret = {}
@@ -108,16 +126,24 @@ Map = (param) ->
     toJson: (datum) ->
       ret = {}
       for key, value of datum
-        ret[key] = param.toJson value
+        if value != undefined
+          ret[key] = param.toJson value
       return ret
   }
-Map.param_schema = Schema
+Map.paramSchema = Schema
 
 
 Struct = (param) ->
   return {
+    typeName: 'Struct'
     param: param
-    toJson: (datum) -> datum
+    paramSchema: Struct.paramSchema
+    toJson: (datum) ->
+      ret = {}
+      for key, value of datum
+        if value != undefined
+          ret[key] = param.map[key].schema.toJson value
+      return ret
     fromJson: (datum) ->
       if isObjectNotArray datum
         ret = {}
@@ -136,8 +162,18 @@ Struct = (param) ->
 
 OrderedMap = (param) ->
   return {
+    typeName: 'OrderedMap'
     param: param
-    toJson: (datum) -> datum
+    paramSchema: OrderedMap.paramSchema
+    toJson: (datum) ->
+      m = {}
+      for key, value of datum.map
+        if value != undefined
+          m[key] = param.toJson value
+      return {
+        map: m
+        order: datum.order
+      }
     fromJson: (datum) ->
       datum = Struct({
         map:
@@ -155,10 +191,10 @@ OrderedMap = (param) ->
         return datum
       throw new Error("Invalid OrderedMap #{k}, #{o}", k, o)
   }
-OrderedMap.param_schema = Schema
+OrderedMap.paramSchema = Schema
 
 
-Struct.param_schema = OrderedMap(Struct(
+Struct.paramSchema = OrderedMap(Struct(
   map:
     required:
       required: true

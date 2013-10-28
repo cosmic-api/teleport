@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "coffee-script": "*",
-    "underscore": "*"
+    "underscore": "*",
+    "isostring": "*"
   },
   "devDependencies": {
     "uglify-js": "*",

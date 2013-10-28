@@ -1,4 +1,5 @@
 _ = require 'underscore'
+isostring = require 'isostring'
 
 isObjectNotArray = (datum) ->
   _.isObject(datum) and not _.isArray(datum)
@@ -87,12 +88,11 @@ makeTypes = (getter) ->
     typeName: 'DateTime'
     wraps: String
     assemble: (datum) ->
-      parsed = Date.parse datum
-      if not _.isNaN parsed
-        return new Date parsed
+      if isostring datum
+        return new Date Date.parse datum
       throw new Error("Invalid DateTime")
     disassemble: (datum) ->
-      btoa(datum)
+      return new Buffer(datum).toString 'base64'
   }
 
 

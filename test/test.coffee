@@ -18,8 +18,10 @@ for test in tests
       if schema.type in samesies
         it "should deserialize #{JSON.stringify p}", ->
           assert.deepEqual p, s.fromJson p
-      it "should reserialize #{JSON.stringify p}", ->
-        assert.deepEqual p, s.toJson s.fromJson p
+      # ISO 8601 doesn't have a normalized form
+      if schema.type != 'DateTime'
+        it "should reserialize #{JSON.stringify p}", ->
+          assert.deepEqual p, s.toJson s.fromJson p
     _.each fail, (f) ->
       it "should fail #{JSON.stringify f}", ->
         assert.throws ->

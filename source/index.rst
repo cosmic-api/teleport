@@ -126,7 +126,7 @@ Principles
 Built-In Types
 --------------
 
-Teleport provides 12 built-in types. Each implementation must provide 11
+Teleport provides 12 built-in types. Each implementation must provide 12
 corresponding serializers.
 
 The native form of the built-in types is implementation-dependent and will be

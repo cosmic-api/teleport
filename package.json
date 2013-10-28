@@ -10,10 +10,12 @@
     "type" : "git",
     "url" : "https://github.com/cosmic-api/teleport.js.git"
   },
-  "devDependencies": {
+  "dependencies": {
     "coffee-script": "*",
+    "underscore": "*"
+  },
+  "devDependencies": {
     "uglify-js": "*",
-    "underscore": "*",
     "mocha": "*",
     "stylus": "*"
   },

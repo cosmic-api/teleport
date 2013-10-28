@@ -92,7 +92,7 @@ makeTypes = (getter) ->
         return new Date parsed
       throw new Error("Invalid DateTime")
     disassemble: (datum) ->
-      datum.toJSON()
+      btoa(datum)
   }
 
 
@@ -100,7 +100,10 @@ makeTypes = (getter) ->
     typeName: 'Binary'
     wraps: String
     assemble: (datum) ->
-      return new Buffer(datum, 'base64').toString 'ascii'
+      s = new Buffer(datum, 'base64').toString 'utf-8'
+      if s != ''
+        return s
+      throw new Error("Invalid base64")
     disassemble: (datum) ->
       return new Buffer(datum).toString 'base64'
   }

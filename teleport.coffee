@@ -4,7 +4,13 @@ isostring = require 'isostring'
 isObjectNotArray = (datum) ->
   _.isObject(datum) and not _.isArray(datum)
 
-wrap = (assembler) ->
+primitiveType = (definition) ->
+  _.extend {
+    toJson: (datum) -> datum
+    fromJson: (datum) -> datum
+  }, definition
+
+wrapperType = (assembler) ->
   schema = assembler.wraps
 
   assembler = _.extend {
@@ -44,9 +50,8 @@ makeTypes = (getter) ->
   }
 
 
-  Integer = {
+  Integer = primitiveType {
     typeName: 'Integer'
-    toJson: (datum) -> datum
     fromJson: (datum) ->
       if _.isNumber(datum) and datum % 1 == 0
         return datum
@@ -54,9 +59,8 @@ makeTypes = (getter) ->
   }
 
 
-  Float = {
+  Float = primitiveType {
     typeName: 'Float'
-    toJson: (datum) -> datum
     fromJson: (datum) ->
       if _.isNumber(datum)
         return datum
@@ -64,9 +68,8 @@ makeTypes = (getter) ->
   }
 
 
-  Boolean = {
+  Boolean = primitiveType {
     typeName: 'Boolean'
-    toJson: (datum) -> datum
     fromJson: (datum) ->
       if _.isBoolean(datum)
         return datum
@@ -74,9 +77,8 @@ makeTypes = (getter) ->
   }
 
 
-  String = {
+  String = primitiveType {
     typeName: 'String'
-    toJson: (datum) -> datum
     fromJson: (datum) ->
       if _.isString(datum)
         return datum
@@ -84,7 +86,7 @@ makeTypes = (getter) ->
   }
 
 
-  DateTime = wrap {
+  DateTime = wrapperType {
     typeName: 'DateTime'
     wraps: String
     assemble: (datum) ->
@@ -96,7 +98,7 @@ makeTypes = (getter) ->
   }
 
 
-  Binary = wrap {
+  Binary = wrapperType {
     typeName: 'Binary'
     wraps: String
     assemble: (datum) ->
@@ -109,10 +111,8 @@ makeTypes = (getter) ->
   }
 
 
-  JSON = {
+  JSON = primitiveType {
     typeName: 'JSON'
-    toJson: (datum) -> datum
-    fromJson: (datum) -> datum
   }
 
 
@@ -181,7 +181,7 @@ makeTypes = (getter) ->
 
 
   OrderedMap = (param) ->
-    return wrap {
+    return wrapperType {
       typeName: 'OrderedMap'
       param: param
       paramSchema: OrderedMap.paramSchema

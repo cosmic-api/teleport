@@ -18,7 +18,8 @@
   "devDependencies": {
     "uglify-js": "*",
     "mocha": "*",
-    "stylus": "*"
+    "stylus": "*",
+    "gfm": "*"
   },
   "scripts": {
     "test": "mocha --compilers coffee:coffee-script --reporter spec"

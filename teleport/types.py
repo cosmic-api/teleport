@@ -52,7 +52,11 @@ class UnicodeDecodeValidationError(ValidationError):
     pass
 
 class UnknownTypeValidationError(ValidationError):
-    pass
+    def __init__(self, type_name):
+        self.message = "Unknown type"
+        self.has_obj = True
+        self.obj = type_name
+        self.stack = []
 
 
 
@@ -148,6 +152,15 @@ def standard_types(type_getter=None, include=None):
     :returns: A dict, mapping class names to classes.
     """
 
+    # type_getter is used here
+    def get_serializer(t):
+        if t in BUILTIN_TYPES:
+            return BUILTIN_TYPES[t]
+        if type_getter is not None:
+            return type_getter(t)
+        raise UnknownTypeValidationError(t)
+
+
     class Schema(BasicPrimitive):
 
         @staticmethod
@@ -164,14 +177,13 @@ def standard_types(type_getter=None, include=None):
                 type_name = datum.type_name
             # If datum is a class, use its name
             elif datum.__class__ == type:
-                type_name = datum.__name__
+                return datum.__name__
             # Otherwise assume it's an instance
             else:
                 type_name = datum.__class__.__name__
             if datum.param_schema != None:
                 return {
-                    "type": type_name,
-                    "param": datum.param_schema.to_json(datum.param)
+                    str(type_name): datum.param_schema.to_json(datum.param)
                 }
             else:
                 return {"type": type_name}
@@ -190,36 +202,20 @@ def standard_types(type_getter=None, include=None):
             serializer is found, :exc:`UnknownTypeValidationError` will be
             raised.
             """
-            # Peek into dict struct to get the type
-            if type(datum) != dict or "type" not in datum.keys():
-                raise ValidationError("Invalid Schema", datum)
-
-            t = datum["type"]
-
-            # Try to get the serializer class from the current TypeMap
-            try:
-                serializer = BUILTIN_TYPES.get(t, None)
-                if serializer is None:
-                    if type_getter is not None:
-                        serializer = type_getter(t)
-                    else:
-                        raise KeyError()
-            except KeyError:
-                raise UnknownTypeValidationError("Unknown type", t)
-
-            if serializer.param_schema and "param" not in datum:
-                raise ValidationError("Missing param for %s schema" % t)
-
-            if not serializer.param_schema and "param" in datum:
-                raise ValidationError("Unexpected param for %s schema" % t)
-
-            # Deserialize or instantiate
-            if serializer.param_schema != None:
-                param = serializer.param_schema.from_json(datum["param"])
-                return serializer(param)
-            else:
+            if type(datum) in (unicode, str):
+                t = datum
+                serializer = get_serializer(t)
+                if serializer.param_schema is not None:
+                    raise ValidationError("Missing param for %s schema" % t)
                 return serializer
-
+            if type(datum) == dict and len(datum) == 1:
+                t = datum.keys()[0]
+                serializer = get_serializer(t)
+                if serializer.param_schema is None:
+                    raise ValidationError("Unexpected param for %s schema" % t)
+                param = serializer.param_schema.from_json(datum[t])
+                return serializer(param)
+            raise ValidationError("Invalid Schema", datum)
 
 
     class Integer(BasicPrimitive):

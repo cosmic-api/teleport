@@ -5,40 +5,32 @@ from datetime import datetime
 
 from teleport import *
 
-array_schema = {
-    "type": u"Array",
-    "param": {
-        "type": u"Boolean"
-    }
-}
+array_schema = {u"Array": u"Boolean"}
+
 struct_schema = {
-    "type": u"Struct",
-    "param": {
+    u"Struct": {
         "map": {
             u"foo": {
                 "required": True,
-                "schema": {"type": u"Boolean"},
+                "schema": u"Boolean",
                 "doc": u"Never gonna give you up"
             },
             u"bar": {
                 "required": False,
-                "schema": {"type": u"Integer"}
+                "schema": u"Integer"
             }
         },
         "order": [u"foo", u"bar"]
     }
 }
 map_schema = {
-    "type": u"Map",
-    "param": {"type": "Boolean"}
+    u"Map": u"Boolean"
 }
 ordered_map_schema = {
-    "type": u"OrderedMap",
-    "param": {"type": "Boolean"}
+    u"OrderedMap": u"Boolean"
 }
 deep_schema = {
-    "type": u"Array",
-    "param": struct_schema
+    u"Array": struct_schema
 }
 array_serializer = Schema.from_json(array_schema)
 struct_serializer = Schema.from_json(struct_schema)
@@ -59,18 +51,18 @@ class TestSchema(TestCase):
         self.assertEqual(Schema.to_json(struct_s), struct_schema)
 
     def test_schema_subclass_delegation(self):
-        self.assertEqual(Schema.from_json({"type": u"Integer"}), Integer)
-        self.assertEqual(Schema.from_json({"type": u"Float"}), Float)
-        self.assertEqual(Schema.from_json({"type": u"Boolean"}), Boolean)
-        self.assertEqual(Schema.from_json({"type": u"String"}), String)
-        self.assertEqual(Schema.from_json({"type": u"DateTime"}), DateTime)
-        self.assertEqual(Schema.from_json({"type": u"Binary"}), Binary)
-        self.assertEqual(Schema.from_json({"type": u"Schema"}), Schema)
-        self.assertEqual(Schema.from_json({"type": u"JSON"}), JSON)
+        self.assertEqual(Schema.from_json(u"Integer"), Integer)
+        self.assertEqual(Schema.from_json(u"Float"), Float)
+        self.assertEqual(Schema.from_json(u"Boolean"), Boolean)
+        self.assertEqual(Schema.from_json(u"String"), String)
+        self.assertEqual(Schema.from_json(u"DateTime"), DateTime)
+        self.assertEqual(Schema.from_json(u"Binary"), Binary)
+        self.assertEqual(Schema.from_json(u"Schema"), Schema)
+        self.assertEqual(Schema.from_json(u"JSON"), JSON)
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
-        s["param"]["order"].append("blah")
+        s["Struct"]["order"].append("blah")
         with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
             Schema.from_json(s)
 
@@ -98,16 +90,12 @@ class TestSchema(TestCase):
             })
 
     def test_unexpected_param(self):
-        s = deepcopy(array_schema)
-        s["type"] = "Integer"
         with self.assertRaisesRegexp(ValidationError, "Unexpected param"):
-            Schema.from_json(s)
+            Schema.from_json({"Integer": 1})
 
     def test_missing_param(self):
-        s = deepcopy(struct_schema)
-        del s["param"]
         with self.assertRaisesRegexp(ValidationError, "Missing param"):
-            Schema.from_json(s)
+            Schema.from_json("Struct")
 
 
 
@@ -305,10 +293,10 @@ class TestSuits(TestCase):
     def test_to_json(self):
         self.assertEqual(Suit.to_json(u"hearts"), u"hearts")
 
-def getter(name):
-    if name == "Suit":
+def getter(t):
+    if t == "Suit":
         return Suit
-    raise KeyError()
+    raise UnknownTypeValidationError(t)
 
 suit_types = standard_types(getter, include=["Array", "Schema"])
 
@@ -319,19 +307,14 @@ class TestTypeMap(TestCase):
         Schema = suit_types["Schema"]
         Array = suit_types["Array"]
 
-        self.assertEqual(Schema.from_json({
-            "type": "Suit"
-        }), Suit)
-        self.assertEqual(Schema.from_json({
-            "type": "Array",
-            "param": {"type": "Suit"}
-        }).__class__, Array)
+        self.assertEqual(Schema.from_json("Suit"), Suit)
+        self.assertEqual(Schema.from_json({"Array": "Suit"}).__class__, Array)
 
     def test_custom_type_map_fail(self):
 
         Schema = suit_types["Schema"]
         with self.assertRaises(UnknownTypeValidationError):
-            Schema.from_json({"type": "Integer"})
+            Schema.from_json("Integer")
 
 
 def suite():

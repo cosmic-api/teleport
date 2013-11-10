@@ -11,10 +11,10 @@ except ImportError:
 
 # Some syntax sugar
 def required(name, schema, doc=None):
-    return (name, {"schema": schema, "required": True, "doc": doc})
+    return {"name": name, "schema": schema, "required": True, "doc": doc}
 
 def optional(name, schema, doc=None):
-    return (name, {"schema": schema, "required": False, "doc": doc})
+    return {"name": name, "schema": schema, "required": False, "doc": doc}
 
 
 class ValidationError(Exception):
@@ -172,13 +172,16 @@ def standard_types(type_getter=None, include=None):
             By default *type* is the class name of the serializer, but it can
             be overridden by the serializer's :data:`type_name` property.
             """
-            # Type name is declared explicitly
-            if hasattr(datum, "type_name"):
-                type_name = datum.type_name
             # If datum is a class, use its name
-            elif datum.__class__ == type:
+            if datum.__class__ == type:
+                if hasattr(datum, "type_name"):
+                    type_name = datum.type_name
+                else:
+                    type_name = datum.__name__
                 return datum.__name__
             # Otherwise assume it's an instance
+            if hasattr(datum, "type_name"):
+                type_name = datum.type_name
             else:
                 type_name = datum.__class__.__name__
             if datum.param_schema != None:
@@ -522,11 +525,6 @@ def standard_types(type_getter=None, include=None):
         like the constructor of :class:`OrderedDict`.
         """
 
-        def __init__(self, param):
-            if type(param) == list:
-                param = OrderedDict(param)
-            self.param = param
-
         def from_json(self, datum):
             """If *datum* is a dict, deserialize it against *param* and return
             the resulting dict. Otherwise raise a :exc:`ValidationError`.
@@ -542,11 +540,11 @@ def standard_types(type_getter=None, include=None):
                 ret = {}
                 required = {}
                 optional = {}
-                for name, field in self.param.items():
+                for field in self.param:
                     if field["required"] == True:
-                        required[name] = field["schema"]
+                        required[field["name"]] = field["schema"]
                     else:
-                        optional[name] = field["schema"]
+                        optional[field["name"]] = field["schema"]
                 missing = set(required.keys()) - set(datum.keys())
                 if missing:
                     raise ValidationError("Missing fields", list(missing))
@@ -566,17 +564,31 @@ def standard_types(type_getter=None, include=None):
 
         def to_json(self, datum):
             ret = {}
-            for name, field in self.param.items():
+            for field in self.param:
+                name = field['name']
                 schema = field['schema']
                 if name in datum.keys() and datum[name] != None:
                     ret[name] = schema.to_json(datum[name])
             return ret
 
-    Struct.param_schema = OrderedMap(Struct([
-        required(u"schema", Schema),
-        required(u"required", Boolean),
-        optional(u"doc", String)
-    ]))
+    class StructParam(BasicWrapper):
+        schema = Array(Struct([
+            required(u"name", String),
+            required(u"schema", Schema),
+            required(u"required", Boolean),
+            optional(u"doc", String)
+        ]))
+
+        @staticmethod
+        def assemble(datum):
+            names = set()
+            for item in datum:
+                names.add(item['name'])
+            if len(names) < len(datum):
+                raise ValidationError("Names cannot repeat")
+            return datum
+
+    Struct.param_schema = StructParam
 
 
     if include is None:

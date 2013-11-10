@@ -8,20 +8,19 @@ from teleport import *
 array_schema = {u"Array": u"Boolean"}
 
 struct_schema = {
-    u"Struct": {
-        "map": {
-            u"foo": {
-                "required": True,
-                "schema": u"Boolean",
-                "doc": u"Never gonna give you up"
-            },
-            u"bar": {
-                "required": False,
-                "schema": u"Integer"
-            }
+    u"Struct": [
+        {
+            "name": u"foo",
+            "required": True,
+            "schema": u"Boolean",
+            "doc": u"Never gonna give you up"
         },
-        "order": [u"foo", u"bar"]
-    }
+        {
+            "name": u"bar",
+            "required": False,
+            "schema": u"Integer"
+        }
+    ]
 }
 map_schema = {
     u"Map": u"Boolean"
@@ -62,8 +61,8 @@ class TestSchema(TestCase):
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
-        s["Struct"]["order"].append("blah")
-        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
+        s["Struct"].append(s["Struct"][0])
+        with self.assertRaisesRegexp(ValidationError, "Names cannot repeat"):
             Schema.from_json(s)
 
     def test_schema_not_struct(self):

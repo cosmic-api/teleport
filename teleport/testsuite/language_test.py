@@ -75,6 +75,10 @@ def make_json_suite():
             passing=[Box({})],
             failing=set(primitives) - set([Box({})])),
         t(
+            schema=Tuple([Integer, String]),
+            passing=[Box([1, ""]), Box([1.0, "2"])],
+            failing=set(primitives) | set([Box([1]), Box([1.1, ""]), Box([1, "1", "2"])])),
+        t(
             schema=Binary,
             passing=[Box('YWJj')],
             failing=set(primitives + [Box('a')]) - set([Box("")])),

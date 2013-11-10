@@ -395,6 +395,37 @@ def standard_types(type_getter=None, include=None):
             return [self.param.to_json(item) for item in datum]
 
 
+            
+    class Tuple(ParametrizedPrimitive):
+        """The argument *param* is a serializer that defines the type of each item
+        in the array.
+        """
+        param_schema = Array(Schema)
+
+        def from_json(self, datum):
+            if type(datum) in (tuple, list):
+                if len(datum) != len(self.param):
+                    raise ValidationError("Invalid Tuple, wrong number of arguments", datum)
+                ret = []
+                for i, item in enumerate(datum):
+                    schema = self.param[i]
+                    try:
+                        ret.append(schema.from_json(item))
+                    except ValidationError as e:
+                        e.stack.append(i)
+                        raise
+                return ret
+            else:
+                raise ValidationError("Invalid Tuple", datum)
+
+        def to_json(self, datum):
+            ret = []
+            for i, item in enumerate(datum):
+                schema = self.param[i]
+                ret.append(schema.to_json(item))
+            return ret
+
+            
 
     class Map(ParametrizedPrimitive):
         """The argument *param* is a serializer that defines the type of each item
@@ -555,7 +586,8 @@ def standard_types(type_getter=None, include=None):
     if include is None:
         include = [
             'Binary', 'Struct', 'Map', 'Float', 'JSON', 'Boolean',
-            'Integer', 'Array', 'Schema', 'OrderedMap', 'String', 'DateTime'
+            'Integer', 'Array', 'Schema', 'OrderedMap', 'String', 'DateTime',
+            'Tuple'
         ]
 
     BUILTIN_TYPES = {}

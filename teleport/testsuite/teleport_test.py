@@ -8,28 +8,28 @@ from teleport import *
 array_schema = {u"Array": u"Boolean"}
 
 struct_schema = {
-    u"Struct": [
+    "Struct": [
         {
-            "name": u"foo",
+            "name": "foo",
             "required": True,
-            "schema": u"Boolean",
-            "doc": u"Never gonna give you up"
+            "schema": "Boolean",
+            "doc": "Never gonna give you up"
         },
         {
-            "name": u"bar",
+            "name": "bar",
             "required": False,
-            "schema": u"Integer"
+            "schema": "Integer"
         }
     ]
 }
 map_schema = {
-    u"Map": u"Boolean"
+    "Map": "Boolean"
 }
 ordered_map_schema = {
-    u"OrderedMap": u"Boolean"
+    "OrderedMap": "Boolean"
 }
 deep_schema = {
-    u"Array": struct_schema
+    "Array": struct_schema
 }
 array_serializer = Schema.from_json(array_schema)
 struct_serializer = Schema.from_json(struct_schema)
@@ -44,20 +44,20 @@ class TestSchema(TestCase):
         self.assertEqual(struct_schema, Schema.to_json(struct_serializer))
         self.assertEqual(deep_schema, Schema.to_json(deep_serializer))
         struct_s = Struct([
-            required(u"foo", Boolean, u"Never gonna give you up"),
-            optional(u"bar", Integer)
+            required("foo", Boolean, u"Never gonna give you up"),
+            optional("bar", Integer)
         ])
         self.assertEqual(Schema.to_json(struct_s), struct_schema)
 
     def test_schema_subclass_delegation(self):
-        self.assertEqual(Schema.from_json(u"Integer"), Integer)
-        self.assertEqual(Schema.from_json(u"Float"), Float)
-        self.assertEqual(Schema.from_json(u"Boolean"), Boolean)
-        self.assertEqual(Schema.from_json(u"String"), String)
-        self.assertEqual(Schema.from_json(u"DateTime"), DateTime)
-        self.assertEqual(Schema.from_json(u"Binary"), Binary)
-        self.assertEqual(Schema.from_json(u"Schema"), Schema)
-        self.assertEqual(Schema.from_json(u"JSON"), JSON)
+        self.assertEqual(Schema.from_json("Integer"), Integer)
+        self.assertEqual(Schema.from_json("Float"), Float)
+        self.assertEqual(Schema.from_json("Boolean"), Boolean)
+        self.assertEqual(Schema.from_json("String"), String)
+        self.assertEqual(Schema.from_json("DateTime"), DateTime)
+        self.assertEqual(Schema.from_json("Binary"), Binary)
+        self.assertEqual(Schema.from_json("Schema"), Schema)
+        self.assertEqual(Schema.from_json("JSON"), JSON)
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
@@ -191,7 +191,7 @@ class TestArray(TestCase):
 
     def test_from_json(self):
         self.assertEqual(array_serializer.from_json([True, False]), [True, False])
-        with self.assertRaisesRegexp(ValidationError, "Invalid Array"):
+        with self.assertRaisesRegexp(ValidationError, "Expecting JSON array"):
             array_serializer.from_json(("no", "tuples",))
         with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
             array_serializer.from_json([True, False, 1])
@@ -207,7 +207,7 @@ class TestMap(TestCase):
         }
         self.assertEqual(map_serializer.from_json(m), m)
         self.assertEqual(map_serializer.to_json(m), m)
-        with self.assertRaisesRegexp(ValidationError, "Invalid Map"):
+        with self.assertRaisesRegexp(ValidationError, "Expecting JSON object"):
             map_serializer.from_json([True, False])
         with self.assertRaisesRegexp(ValidationError, "must be unicode"):
             map_serializer.from_json({"nope": False})
@@ -252,7 +252,7 @@ class TestStruct(TestCase):
         self.assertEqual(res, {"foo": True})
 
     def test_from_json_fail(self):
-        with self.assertRaisesRegexp(ValidationError, "Invalid Struct"):
+        with self.assertRaisesRegexp(ValidationError, "Expecting JSON object"):
             struct_serializer.from_json([])
         with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
             struct_serializer.from_json({"foo": True, "barr": 2.0})

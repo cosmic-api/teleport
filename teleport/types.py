@@ -85,6 +85,9 @@ class BasicWrapper(object):
 
 class ParametrizedWrapper(object):
 
+    def __init__(self, param):
+        self.param = param
+
     def from_json(self, datum):
         datum = self.schema.from_json(datum)
         return self.assemble(datum)
@@ -118,6 +121,27 @@ class ParametrizedPrimitive(object):
 
     def __init__(self, param):
         self.param = param
+
+
+
+        
+class JSONObject(BasicPrimitive):
+
+    @staticmethod
+    def from_json(datum):
+        if type(datum) == dict:
+            return datum
+        raise ValidationError("Expecting JSON object", datum)
+
+
+class JSONArray(BasicPrimitive):
+
+    @staticmethod
+    def from_json(datum):
+        if type(datum) == list:
+            return datum
+        raise ValidationError("Expecting JSON array", datum)
+
 
 
 
@@ -364,13 +388,14 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Array(ParametrizedPrimitive):
+    class Array(ParametrizedWrapper):
         """The argument *param* is a serializer that defines the type of each item
         in the array.
         """
+        schema = JSONArray
         param_schema = Schema
 
-        def from_json(self, datum):
+        def assemble(self, datum):
             """If *datum* is a list, construct a new list by putting each element
             of *datum* through a serializer provided as *param*. This serializer
             may raise a :exc:`ValidationError`. If *datum* is not a
@@ -387,7 +412,7 @@ def standard_types(type_getter=None, include=None):
                 return ret
             raise ValidationError("Invalid Array", datum)
 
-        def to_json(self, datum):
+        def disassemble(self, datum):
             """Serialize each item in the *datum* iterable using *param*. Return
             the resulting values in a list.
             """
@@ -395,62 +420,60 @@ def standard_types(type_getter=None, include=None):
 
 
             
-    class Tuple(ParametrizedPrimitive):
+    class Tuple(ParametrizedWrapper):
         """The argument *param* is a serializer that defines the type of each item
         in the array.
         """
         param_schema = Array(Schema)
+        schema = JSONArray
 
-        def from_json(self, datum):
-            if type(datum) in (tuple, list):
-                if len(datum) != len(self.param):
-                    raise ValidationError("Invalid Tuple, wrong number of arguments", datum)
-                ret = []
-                for i, item in enumerate(datum):
-                    schema = self.param[i]
-                    try:
-                        ret.append(schema.from_json(item))
-                    except ValidationError as e:
-                        e.stack.append(i)
-                        raise
-                return ret
-            else:
-                raise ValidationError("Invalid Tuple", datum)
+        def assemble(self, datum):
+            if len(datum) != len(self.param):
+                raise ValidationError("Invalid Tuple, wrong number of arguments", datum)
+            ret = []
+            for i, item in enumerate(datum):
+                schema = self.param[i]
+                try:
+                    ret.append(schema.from_json(item))
+                except ValidationError as e:
+                    e.stack.append(i)
+                    raise
+            return ret
 
-        def to_json(self, datum):
+        def disassemble(self, datum):
             ret = []
             for i, item in enumerate(datum):
                 schema = self.param[i]
                 ret.append(schema.to_json(item))
             return ret
 
+
             
 
-    class Map(ParametrizedPrimitive):
+    class Map(ParametrizedWrapper):
         """The argument *param* is a serializer that defines the type of each item
         in the map.
         """
+        schema = JSONObject
         param_schema = Schema
 
-        def from_json(self, datum):
+        def assemble(self, datum):
             """If *datum* is a dict, deserialize it, otherwise raise a
             :exc:`ValidationError`. The keys of the dict must be unicode, and the
             values will be deserialized using *param*.
             """
-            if type(datum) == dict:
-                ret = {}
-                for key, val in datum.items():
-                    if type(key) != unicode:
-                        raise ValidationError("Map key must be unicode", key)
-                    try:
-                        ret[key] = self.param.from_json(val)
-                    except ValidationError as e:
-                        e.stack.append(key)
-                        raise
-                return ret
-            raise ValidationError("Invalid Map", datum)
+            ret = {}
+            for key, val in datum.items():
+                if type(key) != unicode:
+                    raise ValidationError("Map key must be unicode", key)
+                try:
+                    ret[key] = self.param.from_json(val)
+                except ValidationError as e:
+                    e.stack.append(key)
+                    raise
+            return ret
 
-        def to_json(self, datum):
+        def disassemble(self, datum):
             ret = {}
             for key, val in datum.items():
                 ret[key] = self.param.to_json(val)
@@ -515,7 +538,7 @@ def standard_types(type_getter=None, include=None):
             return datum
 
 
-    class Struct(ParametrizedPrimitive):
+    class Struct(ParametrizedWrapper):
         """*param* must be an :class:`OrderedDict`, where the keys are field
         names, and values are dicts with two items: *schema* (serializer) and
         *required* (Boolean). For each pair, *schema* is used to serialize and
@@ -524,8 +547,9 @@ def standard_types(type_getter=None, include=None):
         For convenience, :class:`Struct` can be instantiated with a list of tuples
         like the constructor of :class:`OrderedDict`.
         """
+        schema = JSONObject
 
-        def from_json(self, datum):
+        def assemble(self, datum):
             """If *datum* is a dict, deserialize it against *param* and return
             the resulting dict. Otherwise raise a :exc:`ValidationError`.
 
@@ -536,33 +560,30 @@ def standard_types(type_getter=None, include=None):
             3. One of the values of *datum* does not pass validation as defined
                by the *schema* of the corresponding field.
             """
-            if type(datum) == dict:
-                ret = {}
-                required = {}
-                optional = {}
-                for field in self.param:
-                    if field["required"] == True:
-                        required[field["name"]] = field["schema"]
-                    else:
-                        optional[field["name"]] = field["schema"]
-                missing = set(required.keys()) - set(datum.keys())
-                if missing:
-                    raise ValidationError("Missing fields", list(missing))
-                extra = set(datum.keys()) - set(required.keys() + optional.keys())
-                if extra:
-                    raise ValidationError("Unexpected fields", list(extra))
-                for field, schema in optional.items() + required.items():
-                    if field in datum.keys():
-                        try:
-                            ret[field] = schema.from_json(datum[field])
-                        except ValidationError as e:
-                            e.stack.append(field)
-                            raise
-                return ret
-            else:
-                raise ValidationError("Invalid Struct", datum)
+            ret = {}
+            required = {}
+            optional = {}
+            for field in self.param:
+                if field["required"] == True:
+                    required[field["name"]] = field["schema"]
+                else:
+                    optional[field["name"]] = field["schema"]
+            missing = set(required.keys()) - set(datum.keys())
+            if missing:
+                raise ValidationError("Missing fields", list(missing))
+            extra = set(datum.keys()) - set(required.keys() + optional.keys())
+            if extra:
+                raise ValidationError("Unexpected fields", list(extra))
+            for field, schema in optional.items() + required.items():
+                if field in datum.keys():
+                    try:
+                        ret[field] = schema.from_json(datum[field])
+                    except ValidationError as e:
+                        e.stack.append(field)
+                        raise
+            return ret
 
-        def to_json(self, datum):
+        def disassemble(self, datum):
             ret = {}
             for field in self.param:
                 name = field['name']
@@ -595,7 +616,7 @@ def standard_types(type_getter=None, include=None):
         include = [
             'Binary', 'Struct', 'Map', 'Float', 'JSON', 'Boolean',
             'Integer', 'Array', 'Schema', 'OrderedMap', 'String', 'DateTime',
-            'Tuple'
+            'Tuple', 'Enum'
         ]
 
     BUILTIN_TYPES = {}

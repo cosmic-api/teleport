@@ -62,32 +62,6 @@ class UnknownTypeValidationError(ValidationError):
 class Type(object):
     param_schema = None
 
-    def __init__(self, param):
-        self.param = param
-
-    @classmethod
-    def from_json(cls, datum):
-        datum = cls.schema.from_json(datum)
-        return cls.assemble(datum)
-
-    @classmethod
-    def to_json(cls, datum):
-        datum = cls.disassemble(datum)
-        return cls.schema.to_json(datum)
-
-    @classmethod
-    def assemble(cls, datum): # pragma: no cover
-        return datum
-
-    @classmethod
-    def disassemble(cls, datum): # pragma: no cover
-        return datum
-
-
-
-class InstancePrimitive(object):
-    param_schema = None
-
     def __init__(self):
         pass
 
@@ -97,7 +71,14 @@ class InstancePrimitive(object):
     def to_json(self, datum):
         return datum
 
-class Wrapper(object):
+
+
+class Parametrized(Type):
+    def __init__(self, param):
+        self.param = param
+
+
+class Wrapper(Type):
     
     def from_json(self, datum):
         datum = self.schema.from_json(datum)
@@ -115,48 +96,9 @@ class Wrapper(object):
 
 
 
-class ParametrizedWrapper(Type):
-
-    def from_json(self, datum):
-        datum = self.schema.from_json(datum)
-        return self.assemble(datum)
-
-    def to_json(self, datum):
-        datum = self.disassemble(datum)
-        return self.schema.to_json(datum)
-
-    def assemble(self, datum): # pragma: no cover
-        return datum
-
-    def disassemble(self, datum): # pragma: no cover
-        return datum
-
-
-
-
-class BasicPrimitive(Type):
-
-    @staticmethod
-    def from_json(datum): # pragma: no cover
-        return datum
-
-    @staticmethod
-    def to_json(datum): # pragma: no cover
-        return datum
-
-
-
-class BasicWrapper(Type):
-    pass
-
-class ParametrizedPrimitive(Type):
-    pass
-
-
-
 
         
-class JSONObject(InstancePrimitive):
+class JSONObject(Type):
 
     def from_json(self, datum):
         if type(datum) == dict:
@@ -164,7 +106,7 @@ class JSONObject(InstancePrimitive):
         raise ValidationError("Expecting JSON object", datum)
 
 
-class JSONArray(InstancePrimitive):
+class JSONArray(Type):
 
     def from_json(self, datum):
         if type(datum) == list:
@@ -214,7 +156,7 @@ def standard_types(type_getter=None, include=None):
         raise UnknownTypeValidationError(t)
 
 
-    class Schema(InstancePrimitive):
+    class Schema(Type):
 
         def to_json(self, datum):
             """If given a serializer representing a simple type, return a JSON
@@ -273,7 +215,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Integer(InstancePrimitive):
+    class Integer(Type):
 
         def from_json(self, datum):
             """If *datum* is an integer, return it; if it is a float with a 0 for
@@ -291,7 +233,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Float(InstancePrimitive):
+    class Float(Type):
 
         def from_json(self, datum):
             """If *datum* is a float, return it; if it is an integer, cast it to a
@@ -305,7 +247,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class String(InstancePrimitive):
+    class String(Type):
 
         def from_json(self, datum):
             """If *datum* is of unicode type, return it. If it is a string, decode
@@ -325,7 +267,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Binary(InstancePrimitive):
+    class Binary(Type):
         """This type may be useful when you wish to send a binary file. The
         byte string will be base64-encoded for safety.
 
@@ -354,7 +296,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Boolean(InstancePrimitive):
+    class Boolean(Type):
 
         def from_json(self, datum):
             """If *datum* is a boolean, return it. Otherwise, raise a
@@ -366,7 +308,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class DateTime(Wrapper, InstancePrimitive):
+    class DateTime(Wrapper):
         """Wraps the :class:`String` type.
 
                 >>> DateTime.to_json(datetime.now())
@@ -392,7 +334,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class JSON(InstancePrimitive):
+    class JSON(Type):
         """This type may be used as a kind of wildcard that will accept any
         JSON value and return it untouched. Presumably you still want to
         interpret the meaning of this arbitrary JSON data, you just don't want
@@ -409,7 +351,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Array(ParametrizedWrapper):
+    class Array(Wrapper, Parametrized):
         """The argument *param* is a serializer that defines the type of each item
         in the array.
         """
@@ -440,19 +382,17 @@ def standard_types(type_getter=None, include=None):
             return [self.param.to_json(item) for item in datum]
 
 
-    class ArrayParamType(BasicWrapper):
+    class ArrayParamType(Wrapper):
         schema = Schema()
 
-        @staticmethod
-        def assemble(datum):
+        def assemble(self, datum):
             return Array(datum)
 
-        @staticmethod
-        def disassemble(datum):
+        def disassemble(self, datum):
             pass
 
             
-    class Tuple(ParametrizedWrapper):
+    class Tuple(Wrapper, Parametrized):
         """The argument *param* is a serializer that defines the type of each item
         in the array.
         """
@@ -482,7 +422,7 @@ def standard_types(type_getter=None, include=None):
 
             
 
-    class Map(ParametrizedWrapper):
+    class Map(Wrapper, Parametrized):
         """The argument *param* is a serializer that defines the type of each item
         in the map.
         """
@@ -513,7 +453,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class OrderedMap(ParametrizedWrapper):
+    class OrderedMap(Wrapper, Parametrized):
         """The argument *param* is a serializer that defines the type of each item
         in the map.
 
@@ -556,7 +496,7 @@ def standard_types(type_getter=None, include=None):
                 "order": datum.keys()
             }
 
-    class Enum(ParametrizedWrapper):
+    class Enum(Wrapper, Parametrized):
         schema = String()
         param_schema = Array(String())
 
@@ -570,7 +510,7 @@ def standard_types(type_getter=None, include=None):
             return datum
 
 
-    class Struct(ParametrizedWrapper):
+    class Struct(Wrapper, Parametrized):
         """*param* must be an :class:`OrderedDict`, where the keys are field
         names, and values are dicts with two items: *schema* (serializer) and
         *required* (Boolean). For each pair, *schema* is used to serialize and
@@ -624,7 +564,7 @@ def standard_types(type_getter=None, include=None):
                     ret[name] = schema.to_json(datum[name])
             return ret
 
-    class StructParam(Wrapper, InstancePrimitive):
+    class StructParam(Wrapper):
         schema = Array(Struct([
             required(u"name", String()),
             required(u"schema", Schema()),

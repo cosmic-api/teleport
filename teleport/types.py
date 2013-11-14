@@ -59,9 +59,11 @@ class UnknownTypeValidationError(ValidationError):
         self.stack = []
 
 
-
-class BasicWrapper(object):
+class Type(object):
     param_schema = None
+
+    def __init__(self, param):
+        self.param = param
 
     @classmethod
     def from_json(cls, datum):
@@ -83,10 +85,37 @@ class BasicWrapper(object):
 
 
 
-class ParametrizedWrapper(object):
+class InstancePrimitive(object):
+    param_schema = None
 
-    def __init__(self, param):
-        self.param = param
+    def __init__(self):
+        pass
+
+    def from_json(self, datum):
+        return datum
+
+    def to_json(self, datum):
+        return datum
+
+class Wrapper(object):
+    
+    def from_json(self, datum):
+        datum = self.schema.from_json(datum)
+        return self.assemble(datum)
+
+    def to_json(self, datum):
+        datum = self.disassemble(datum)
+        return self.schema.to_json(datum)
+
+    def assemble(self, datum): # pragma: no cover
+        return datum
+
+    def disassemble(self, datum): # pragma: no cover
+        return datum
+
+
+
+class ParametrizedWrapper(Type):
 
     def from_json(self, datum):
         datum = self.schema.from_json(datum)
@@ -104,8 +133,8 @@ class ParametrizedWrapper(object):
 
 
 
-class BasicPrimitive(object):
-    param_schema = None
+
+class BasicPrimitive(Type):
 
     @staticmethod
     def from_json(datum): # pragma: no cover
@@ -117,27 +146,27 @@ class BasicPrimitive(object):
 
 
 
-class ParametrizedPrimitive(object):
+class BasicWrapper(Type):
+    pass
 
-    def __init__(self, param):
-        self.param = param
+class ParametrizedPrimitive(Type):
+    pass
+
 
 
 
         
-class JSONObject(BasicPrimitive):
+class JSONObject(InstancePrimitive):
 
-    @staticmethod
-    def from_json(datum):
+    def from_json(self, datum):
         if type(datum) == dict:
             return datum
         raise ValidationError("Expecting JSON object", datum)
 
 
-class JSONArray(BasicPrimitive):
+class JSONArray(InstancePrimitive):
 
-    @staticmethod
-    def from_json(datum):
+    def from_json(self, datum):
         if type(datum) == list:
             return datum
         raise ValidationError("Expecting JSON array", datum)
@@ -185,10 +214,9 @@ def standard_types(type_getter=None, include=None):
         raise UnknownTypeValidationError(t)
 
 
-    class Schema(BasicPrimitive):
+    class Schema(InstancePrimitive):
 
-        @staticmethod
-        def to_json(datum):
+        def to_json(self, datum):
             """If given a serializer representing a simple type, return a JSON
             object with a single attribute *type*, if a parametrized one, also
             include an attribute *param*.
@@ -213,10 +241,9 @@ def standard_types(type_getter=None, include=None):
                     str(type_name): datum.param_schema.to_json(datum.param)
                 }
             else:
-                return {"type": type_name}
+                return type_name
 
-        @staticmethod
-        def from_json(datum):
+        def from_json(self, datum):
             """Expects a JSON object with a *type* attribute and an optional
             *param* attribute. Uses *type* to find the serializer. If the type
             is simple, returns the serializer, if parametrized, deserializes
@@ -234,7 +261,7 @@ def standard_types(type_getter=None, include=None):
                 serializer = get_serializer(t)
                 if serializer.param_schema is not None:
                     raise ValidationError("Missing param for %s schema" % t)
-                return serializer
+                return serializer()
             if type(datum) == dict and len(datum) == 1:
                 t = datum.keys()[0]
                 serializer = get_serializer(t)
@@ -245,10 +272,10 @@ def standard_types(type_getter=None, include=None):
             raise ValidationError("Invalid Schema", datum)
 
 
-    class Integer(BasicPrimitive):
 
-        @staticmethod
-        def from_json(datum):
+    class Integer(InstancePrimitive):
+
+        def from_json(self, datum):
             """If *datum* is an integer, return it; if it is a float with a 0 for
             its fractional part, return the integer part as an int. Otherwise,
             raise a :exc:`ValidationError`.
@@ -259,12 +286,14 @@ def standard_types(type_getter=None, include=None):
                 return int(datum)
             raise ValidationError("Invalid Integer", datum)
 
+        def to_json(self, datum):
+            return datum
 
 
-    class Float(BasicPrimitive):
 
-        @staticmethod
-        def from_json(datum):
+    class Float(InstancePrimitive):
+
+        def from_json(self, datum):
             """If *datum* is a float, return it; if it is an integer, cast it to a
             float and return it. Otherwise, raise a :exc:`ValidationError`.
             """
@@ -276,10 +305,9 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class String(BasicPrimitive):
+    class String(InstancePrimitive):
 
-        @staticmethod
-        def from_json(datum):
+        def from_json(self, datum):
             """If *datum* is of unicode type, return it. If it is a string, decode
             it as UTF-8 and return the result. Otherwise, raise a
             :exc:`ValidationError`. Unicode errors are dealt
@@ -297,7 +325,7 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class Binary(BasicPrimitive):
+    class Binary(InstancePrimitive):
         """This type may be useful when you wish to send a binary file. The
         byte string will be base64-encoded for safety.
 
@@ -309,8 +337,7 @@ def standard_types(type_getter=None, include=None):
 
         """
 
-        @staticmethod
-        def from_json(datum):
+        def from_json(self, datum):
             """If *datum* is a base64-encoded string, decode and return it. If not
             a string, or encoding is wrong, raise :exc:`ValidationError`.
             """
@@ -321,17 +348,15 @@ def standard_types(type_getter=None, include=None):
                     raise ValidationError("Invalid base64 encoding", datum)
             raise ValidationError("Invalid Binary data", datum)
 
-        @staticmethod
-        def to_json(datum):
+        def to_json(self, datum):
             "Encode *datum* using base64."
             return base64.b64encode(datum)
 
 
 
-    class Boolean(BasicPrimitive):
+    class Boolean(InstancePrimitive):
 
-        @staticmethod
-        def from_json(datum):
+        def from_json(self, datum):
             """If *datum* is a boolean, return it. Otherwise, raise a
             :exc:`ValidationError`.
             """
@@ -341,17 +366,16 @@ def standard_types(type_getter=None, include=None):
 
 
 
-    class DateTime(BasicWrapper):
+    class DateTime(Wrapper, InstancePrimitive):
         """Wraps the :class:`String` type.
 
                 >>> DateTime.to_json(datetime.now())
                 u'2013-10-18T01:58:24.904349'
 
         """
-        schema = String
+        schema = String()
 
-        @classmethod
-        def assemble(cls, datum):
+        def assemble(self, datum):
             """Parse *datum* as an ISO 8601-encoded time and return a
             :class:`datetime` object. If the string is invalid, raise a
             :exc:`ValidationError`.
@@ -361,29 +385,26 @@ def standard_types(type_getter=None, include=None):
             except (ValueError, isodate.isoerror.ISO8601Error) as e:
                 raise ValidationError(e.args[0], datum)
 
-        @classmethod
-        def disassemble(cls, datum):
+        def disassemble(self, datum):
             """Given a datetime object, return an ISO 8601-encoded string.
             """
             return unicode(datum.isoformat())
 
 
 
-    class JSON(BasicPrimitive):
+    class JSON(InstancePrimitive):
         """This type may be used as a kind of wildcard that will accept any
         JSON value and return it untouched. Presumably you still want to
         interpret the meaning of this arbitrary JSON data, you just don't want
         to do it through Teleport.
         """
 
-        @staticmethod
-        def from_json(datum):
+        def from_json(self, datum):
             """Return the JSON value wrapped in a :class:`Box`.
             """
             return Box(datum)
 
-        @staticmethod
-        def to_json(datum):
+        def to_json(self, datum):
             return datum.datum
 
 
@@ -392,8 +413,8 @@ def standard_types(type_getter=None, include=None):
         """The argument *param* is a serializer that defines the type of each item
         in the array.
         """
-        schema = JSONArray
-        param_schema = Schema
+        schema = JSONArray()
+        param_schema = Schema()
 
         def assemble(self, datum):
             """If *datum* is a list, construct a new list by putting each element
@@ -419,13 +440,24 @@ def standard_types(type_getter=None, include=None):
             return [self.param.to_json(item) for item in datum]
 
 
+    class ArrayParamType(BasicWrapper):
+        schema = Schema()
+
+        @staticmethod
+        def assemble(datum):
+            return Array(datum)
+
+        @staticmethod
+        def disassemble(datum):
+            pass
+
             
     class Tuple(ParametrizedWrapper):
         """The argument *param* is a serializer that defines the type of each item
         in the array.
         """
-        param_schema = Array(Schema)
-        schema = JSONArray
+        param_schema = Array(Schema())
+        schema = JSONArray()
 
         def assemble(self, datum):
             if len(datum) != len(self.param):
@@ -454,8 +486,8 @@ def standard_types(type_getter=None, include=None):
         """The argument *param* is a serializer that defines the type of each item
         in the map.
         """
-        schema = JSONObject
-        param_schema = Schema
+        schema = JSONObject()
+        param_schema = Schema()
 
         def assemble(self, datum):
             """If *datum* is a dict, deserialize it, otherwise raise a
@@ -495,13 +527,13 @@ def standard_types(type_getter=None, include=None):
         The order of the items in *map* is not preserved by JSON, hence the
         existence of *order*, an array of keys in *map*.
         """
-        param_schema = Schema
+        param_schema = Schema()
 
         def __init__(self, param):
             self.param = param
             self.schema = Struct([
                 required(u"map", Map(param)),
-                required(u"order", Array(String))
+                required(u"order", Array(String()))
             ])
 
         def assemble(self, datum):
@@ -525,8 +557,8 @@ def standard_types(type_getter=None, include=None):
             }
 
     class Enum(ParametrizedWrapper):
-        schema = String
-        param_schema = Array(String)
+        schema = String()
+        param_schema = Array(String())
 
         def __init__(self, param):
             self.param = param
@@ -547,7 +579,7 @@ def standard_types(type_getter=None, include=None):
         For convenience, :class:`Struct` can be instantiated with a list of tuples
         like the constructor of :class:`OrderedDict`.
         """
-        schema = JSONObject
+        schema = JSONObject()
 
         def assemble(self, datum):
             """If *datum* is a dict, deserialize it against *param* and return
@@ -592,16 +624,15 @@ def standard_types(type_getter=None, include=None):
                     ret[name] = schema.to_json(datum[name])
             return ret
 
-    class StructParam(BasicWrapper):
+    class StructParam(Wrapper, InstancePrimitive):
         schema = Array(Struct([
-            required(u"name", String),
-            required(u"schema", Schema),
-            required(u"required", Boolean),
-            optional(u"doc", String)
+            required(u"name", String()),
+            required(u"schema", Schema()),
+            required(u"required", Boolean()),
+            optional(u"doc", String())
         ]))
 
-        @staticmethod
-        def assemble(datum):
+        def assemble(self, datum):
             names = set()
             for item in datum:
                 names.add(item['name'])
@@ -609,7 +640,7 @@ def standard_types(type_getter=None, include=None):
                 raise ValidationError("Names cannot repeat")
             return datum
 
-    Struct.param_schema = StructParam
+    Struct.param_schema = StructParam()
 
 
     if include is None:
@@ -626,3 +657,4 @@ def standard_types(type_getter=None, include=None):
     return BUILTIN_TYPES
 
 globals().update(standard_types())
+

@@ -74,6 +74,7 @@ class Type(object):
 
 
 class Parametrized(Type):
+
     def __init__(self, param):
         self.param = param
 
@@ -95,25 +96,7 @@ class Wrapper(Type):
         return datum
 
 
-
-
         
-class JSONObject(Type):
-
-    def from_json(self, datum):
-        if type(datum) == dict:
-            return datum
-        raise ValidationError("Expecting JSON object", datum)
-
-
-class JSONArray(Type):
-
-    def from_json(self, datum):
-        if type(datum) == list:
-            return datum
-        raise ValidationError("Expecting JSON array", datum)
-
-
 
 
 class Box(object):
@@ -135,6 +118,15 @@ class Box(object):
         return self.datum == datum
 
 
+class NewType(object):
+
+    def __init__(self, schema):
+        self.schema = schema
+
+class NewTypeParametrized(object):
+
+    def __call__(self, param):
+        self.param = param
 
 
 def standard_types(type_getter=None, include=None):
@@ -154,6 +146,24 @@ def standard_types(type_getter=None, include=None):
         if type_getter is not None:
             return type_getter(t)
         raise UnknownTypeValidationError(t)
+
+
+
+    class JSONObject(Type):
+
+        def from_json(self, datum):
+            if type(datum) == dict:
+                return datum
+            raise ValidationError("Expecting JSON object", datum)
+
+
+    class JSONArray(Type):
+
+        def from_json(self, datum):
+            if type(datum) == list:
+                return datum
+            raise ValidationError("Expecting JSON array", datum)
+
 
 
     class Schema(Type):
@@ -509,6 +519,19 @@ def standard_types(type_getter=None, include=None):
                 raise ValidationError("Illegal value for Enum", datum)
             return datum
 
+    class Lazy(object):
+        def __init__(self, schema):
+            self._schema = schema
+            self.schema = None
+        def from_json(self, datum):
+            if self.schema == None:
+                self.schema = Schema().from_json(self._schema)
+            return self.schema.from_json(datum)
+        def to_json(self, datum):
+            if self.schema == None:
+                self.schema = Schema().from_json(self._schema)
+            return self.schema.to_json(datum)
+
 
     class Struct(Wrapper, Parametrized):
         """*param* must be an :class:`OrderedDict`, where the keys are field
@@ -571,6 +594,30 @@ def standard_types(type_getter=None, include=None):
             required(u"required", Boolean()),
             optional(u"doc", String())
         ]))
+        __schema = Lazy({"Array":
+            {"Struct": [
+                {
+                    'name': 'name',
+                    'required': True,
+                    'schema': 'String'
+                },
+                {
+                    'name': 'schema',
+                    'required': True,
+                    'schema': 'Schema'
+                },
+                {
+                    'name': 'required',
+                    'required': True,
+                    'schema': 'Boolean'
+                },
+                {
+                    'name': 'doc',
+                    'required': False,
+                    'schema': 'String'
+                }
+            ]}
+        })
 
         def assemble(self, datum):
             names = set()

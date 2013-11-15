@@ -118,16 +118,6 @@ class Box(object):
         return self.datum == datum
 
 
-class NewType(object):
-
-    def __init__(self, schema):
-        self.schema = schema
-
-class NewTypeParametrized(object):
-
-    def __call__(self, param):
-        self.param = param
-
 
 def standard_types(type_getter=None, include=None):
     """

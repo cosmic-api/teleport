@@ -12,26 +12,59 @@ class NewType(object):
     def __init__(self, schema):
         self.schema = schema
 
+    def __repr__(self):
+        return self.type_name
+
+
+class TypeParameterPair(object):
+    def __init__(self, schema, type_name, param):
+        self.schema = schema
+        self.type_name = type_name
+        self.param = param
+    def from_json(self, datum):
+        return self.schema.types[self.type_name].from_json(datum, self.param)
+    def to_json(self, datum):
+        return self.schema.types[self.type_name].to_json(datum, self.param)
+    def __repr__(self):
+        return "%s(%s)" % (self.type_name, repr(self.param))
+
     
 class NewTypeParametrized(NewType):
 
     def __call__(self, param):
-        self._param = param
-
-    @property
-    def param(self):
-        if hasattr(self, '_param'):
-            return self._param
-        raise RuntimeError()
+        return TypeParameterPair(self.schema, self.type_name, param)
 
 
 
 
 
 class SchemaType(object):
+    type_name = 'Schema'
 
     def __init__(self):
-        self.types = {}
+        self.types = types = {}
+
+        class LazyType(object):
+            def __init__(self, name, param=None):
+                self.name = name
+                self.param = param
+                self.schema = None
+            def force(self):
+                if self.param is None:
+                    self.schema = types[self.name]
+                else:
+                    self.schema = types[self.name](self.param)
+            def from_json(self, datum):
+                if self.schema is None:
+                    self.force()
+                return self.schema.from_json(datum)
+            def to_json(self, datum):
+                if self.schema is None:
+                    self.force()
+                return self.schema.to_json(datum)
+
+        self.T = LazyType
+
 
     def get_type(self, name):
         try:
@@ -97,6 +130,7 @@ class SchemaType(object):
 
 
 class IntegerType(NewType):
+    type_name = "Integer"
 
     def from_json(self, datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
@@ -118,11 +152,13 @@ class ArrayType(NewTypeParametrized):
     """The argument *param* is a serializer that defines the type of each item
     in the array.
     """
+    type_name = "Array"
 
     def __init__(self, schema):
-        self.param_schema = schema.types['Schema']
+        self.param_schema = schema.T('Schema')
+        super(ArrayType, self).__init__(schema)
 
-    def from_json(self, datum):
+    def from_json(self, datum, inner_type):
         """If *datum* is a list, construct a new list by putting each element
         of *datum* through a serializer provided as *param*. This serializer
         may raise a :exc:`ValidationError`. If *datum* is not a
@@ -132,30 +168,33 @@ class ArrayType(NewTypeParametrized):
             ret = []
             for i, item in enumerate(datum):
                 try:
-                    ret.append(self.param.from_json(item))
+                    ret.append(inner_type.from_json(item))
                 except ValidationError as e:
                     e.stack.append(i)
                     raise
             return ret
         raise ValidationError("Invalid Array", datum)
 
-    def to_json(self, datum):
+    def to_json(self, datum, inner_type):
         """Serialize each item in the *datum* iterable using *param*. Return
         the resulting values in a list.
         """
-        return [self.param.to_json(item) for item in datum]
+        return [inner_type.to_json(item) for item in datum]
 
 
- 
+
+
+
+
 Schema = SchemaType()
 Integer = IntegerType(Schema)
 Array = ArrayType(Schema)
 
-Schema.types = {
+Schema.types.update({
     "Schema": Schema,
     "Integer": Integer,
     "Array": Array,
-}
+})
 
 
 

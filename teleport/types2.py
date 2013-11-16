@@ -17,16 +17,25 @@ class NewType(object):
 
 
 class TypeParameterPair(object):
-    def __init__(self, schema, type_name, param):
+    def __init__(self, schema, type_name, param=None):
         self.schema = schema
         self.type_name = type_name
         self.param = param
     def from_json(self, datum):
-        return self.schema.types[self.type_name].from_json(datum, self.param)
+        if self.param is not None:
+            return self.schema.types[self.type_name].from_json(datum, self.param)
+        else:
+            return self.schema.types[self.type_name].from_json(datum)
     def to_json(self, datum):
-        return self.schema.types[self.type_name].to_json(datum, self.param)
+        if self.param is not None:
+            return self.schema.types[self.type_name].to_json(datum, self.param)
+        else:
+            return self.schema.types[self.type_name].to_json(datum)
     def __repr__(self):
-        return "%s(%s)" % (self.type_name, repr(self.param))
+        if self.param is not None:
+            return "%s(%s)" % (self.type_name, repr(self.param))
+        else:
+            return self.type_name
 
     
 class NewTypeParametrized(NewType):
@@ -42,29 +51,12 @@ class SchemaType(object):
     type_name = 'Schema'
 
     def __init__(self):
-        self.types = types = {}
+        self.types = types = {
+            "Schema": self
+        }
 
-        class LazyType(object):
-            def __init__(self, name, param=None):
-                self.name = name
-                self.param = param
-                self.schema = None
-            def force(self):
-                if self.param is None:
-                    self.schema = types[self.name]
-                else:
-                    self.schema = types[self.name](self.param)
-            def from_json(self, datum):
-                if self.schema is None:
-                    self.force()
-                return self.schema.from_json(datum)
-            def to_json(self, datum):
-                if self.schema is None:
-                    self.force()
-                return self.schema.to_json(datum)
-
-        self.T = LazyType
-
+    def T(self, type_name, param=None):
+        return TypeParameterPair(self, type_name, param)
 
     def get_type(self, name):
         try:
@@ -184,18 +176,18 @@ class ArrayType(NewTypeParametrized):
 
 
 
+def standard_types(schema):
+    return {
+        "Integer": IntegerType(schema),
+        "Array": ArrayType(schema),
+    }
 
 
 Schema = SchemaType()
-Integer = IntegerType(Schema)
-Array = ArrayType(Schema)
+T = Schema.T
+Schema.types.update(standard_types(Schema))
 
-Schema.types.update({
-    "Schema": Schema,
-    "Integer": Integer,
-    "Array": Array,
-})
-
+globals().update(Schema.types)
 
 
 

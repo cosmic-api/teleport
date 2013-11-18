@@ -1,7 +1,58 @@
+import json
+import base64
+import isodate
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    # Python 2.6 or earlier
+    from ordereddict import OrderedDict
+
+
+
+
+
+    
 class ValidationError(Exception):
+    """Raised during deserialization. Stores the location of the error in the
+    JSON document relative to its root.
+
+    First argument is the error message, second optional argument is the
+    object that failed validation.
+    """
+
+    def __init__(self, message, *args):
+        self.message = message
+        self.stack = []
+        # Just the message or was there also an object passed in?
+        self.has_obj = len(args) > 0
+        if self.has_obj:
+            self.obj = args[0]
+
+    def __str__(self):
+        ret = ""
+        # If there is a stack, preface the message with a location
+        if self.stack:
+            stack = ""
+            for item in reversed(self.stack):
+                stack += '[' + repr(item) + ']'
+            ret += "Item at %s " % stack
+        # Main message
+        ret += self.message
+        # If an struct was passed in, represent it at the end
+        if self.has_obj:
+            ret += ": %s" % repr(self.obj)
+        return ret
+
+class UnicodeDecodeValidationError(ValidationError):
     pass
 
+class UnknownTypeValidationError(ValidationError):
+    def __init__(self, type_name):
+        self.message = "Unknown type"
+        self.has_obj = True
+        self.obj = type_name
+        self.stack = []
 
 
 
@@ -15,33 +66,89 @@ class NewType(object):
     def __repr__(self):
         return self.type_name
 
+    def to_json(self, datum):
+        return datum
 
-class TypeParameterPair(object):
+    def from_json(self, datum):
+        return datum
+
+    
+class NewTypeParametrized(NewType):
+
+    def __call__(self, param):
+        return Serializer(self.schema, self.type_name, param)
+
+class NewTypeWrapper(NewType):
+
+    def _ensure_inner_schema(self):
+        if not hasattr(self, "_inner_schema"):
+            self._inner_schema = self.get_inner_schema()
+
+    def to_json(self, datum, param=None):
+        self._ensure_inner_schema()
+        if param is None:
+            return self._inner_schema.to_json(self.disassemble(datum))
+        else:
+            return self._inner_schema.to_json(self.disassemble(datum, param))
+            
+    def from_json(self, datum, param=None):
+        self._ensure_inner_schema()
+        if param is None:
+            return self.assemble(self._inner_schema.from_json(datum))
+        else:
+            return self.assemble(self._inner_schema.from_json(datum), param)
+
+
+class Serializer(object):
+
     def __init__(self, schema, type_name, param=None):
         self.schema = schema
         self.type_name = type_name
         self.param = param
+
     def from_json(self, datum):
         if self.param is not None:
             return self.schema.types[self.type_name].from_json(datum, self.param)
         else:
             return self.schema.types[self.type_name].from_json(datum)
+
     def to_json(self, datum):
         if self.param is not None:
             return self.schema.types[self.type_name].to_json(datum, self.param)
         else:
             return self.schema.types[self.type_name].to_json(datum)
+
     def __repr__(self):
         if self.param is not None:
             return "%s(%s)" % (self.type_name, repr(self.param))
         else:
             return self.type_name
 
-    
-class NewTypeParametrized(NewType):
+    def as_json(self):
+        if self.param is not None:
+            return {str(self.type_name): self.schema.types[self.type_name].param_schema.to_json(self.param)}
+        else:
+            return self.type_name
 
-    def __call__(self, param):
-        return TypeParameterPair(self.schema, self.type_name, param)
+
+
+class Box(object):
+    """Used as a wrapper around JSON data to disambiguate None as a JSON value
+    (``null``) from None as an absence of value. Its :attr:`datum` attribute
+    will hold the actual JSON value.
+
+    For example, an HTTP request body may be empty in which case your function
+    may return ``None`` or it may be "null", in which case the function can
+    return a :class:`Box` instance with ``None`` inside.
+    """
+    def __init__(self, datum):
+        self.datum = datum
+
+    def __hash__(self):
+        return hash(json.dumps(self.datum))
+
+    def __eq__(self, datum):
+        return self.datum == datum
 
 
 
@@ -49,14 +156,24 @@ class NewTypeParametrized(NewType):
 
 class SchemaType(object):
     type_name = 'Schema'
+    param_schema = None
 
     def __init__(self):
-        self.types = types = {
+        self.types = {
             "Schema": self
         }
 
+    def export_globals(self):
+        ret = {}
+        for type_name, type_object in self.types.items():
+            if type_object.param_schema is not None:
+                ret[type_name] = type_object
+            else:
+                ret[type_name] = self.T(type_name)
+        return ret
+
     def T(self, type_name, param=None):
-        return TypeParameterPair(self, type_name, param)
+        return Serializer(self, type_name, param)
 
     def get_type(self, name):
         try:
@@ -66,30 +183,15 @@ class SchemaType(object):
 
     def to_json(self, datum):
         """If given a serializer representing a simple type, return a JSON
-        object with a single attribute *type*, if a parametrized one, also
-        include an attribute *param*.
+        object with a single attribute *type*, if a parametrized one,
+        also include an attribute *param*.
 
-        By default *type* is the class name of the serializer, but it can
-        be overridden by the serializer's :data:`type_name` property.
+        By default *type* is the class name of the serializer, but it
+        can be overridden by the serializer's :data:`type_name`
+        property.
+
         """
-        # If datum is a class, use its name
-        if datum.__class__ == type:
-            if hasattr(datum, "type_name"):
-                type_name = datum.type_name
-            else:
-                type_name = datum.__name__
-            return datum.__name__
-        # Otherwise assume it's an instance
-        if hasattr(datum, "type_name"):
-            type_name = datum.type_name
-        else:
-            type_name = datum.__class__.__name__
-        if datum.param_schema != None:
-            return {
-                str(type_name): datum.param_schema.to_json(datum.param)
-            }
-        else:
-            return type_name
+        return datum.as_json()
 
     def from_json(self, datum):
         """Expects a JSON object with a *type* attribute and an optional
@@ -98,18 +200,19 @@ class SchemaType(object):
         *param* and uses it to instatiate the serializer class before
         returning it.
 
-        After looking in the built-in types, this method will attempt to
-        find the serializer via *type_getter*, an argument of
+        After looking in the built-in types, this method will attempt
+        to find the serializer via *type_getter*, an argument of
         :func:`standard_types`. See :ref:`extending-teleport`. If no
         serializer is found, :exc:`UnknownTypeValidationError` will be
         raised.
+
         """
         if type(datum) in (unicode, str):
             t = datum
             serializer = self.get_type(t)
             if serializer.param_schema is not None:
                 raise ValidationError("Missing param for %s schema" % t)
-            return serializer
+            return Serializer(self, t)
         if type(datum) == dict and len(datum) == 1:
             t = datum.keys()[0]
             serializer = self.get_type(t)
@@ -126,8 +229,9 @@ class IntegerType(NewType):
 
     def from_json(self, datum):
         """If *datum* is an integer, return it; if it is a float with a 0 for
-        its fractional part, return the integer part as an int. Otherwise,
-        raise a :exc:`ValidationError`.
+        its fractional part, return the integer part as an
+        int. Otherwise, raise a :exc:`ValidationError`.
+
         """
         if type(datum) == int:
             return datum
@@ -139,10 +243,142 @@ class IntegerType(NewType):
         return datum
 
 
+        
+class FloatType(NewType):
+    type_name = "Float"
+
+    def from_json(self, datum):
+        """If *datum* is a float, return it; if it is an integer, cast it to a
+        float and return it. Otherwise, raise a
+        :exc:`ValidationError`.
+
+        """
+        if type(datum) == float:
+            return datum
+        if type(datum) == int:
+            return float(datum)
+        raise ValidationError("Invalid Float", datum)
+
+
+
+class StringType(NewType):
+    type_name = "String"
+
+    def from_json(self, datum):
+        """If *datum* is of unicode type, return it. If it is a string, decode
+        it as UTF-8 and return the result. Otherwise, raise a
+        :exc:`ValidationError`. Unicode errors are dealt with strictly
+        by raising :exc:`UnicodeDecodeValidationError`, a subclass of
+        the above.
+
+        """
+        if type(datum) == unicode:
+            return datum
+        if type(datum) == str:
+            try:
+                return datum.decode('utf_8')
+            except UnicodeDecodeError as inst:
+                raise UnicodeDecodeValidationError(unicode(inst))
+        raise ValidationError("Invalid String", datum)
+
+
+
+class BinaryType(NewType):
+    """This type may be useful when you wish to send a binary file. The
+    byte string will be base64-encoded for safety.
+
+        >>> b = open('pixel.png', 'rb').read()
+        >>> Binary.to_json(b)
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAsTAAALE
+        wEAmpwYAAAAB3RJTUUH3QoSBggTmj6VgAAAABl0RVh0Q29tbWVudABDcmVhdGVkIHd
+        pdGggR0lNUFeBDhcAAAAMSURBVAjXY/j//z8ABf4C/tzMWecAAAAASUVORK5CYII='
+
+    """
+    type_name = "Binary"
+
+    def from_json(self, datum):
+        """If *datum* is a base64-encoded string, decode and return it. If not
+        a string, or encoding is wrong, raise :exc:`ValidationError`.
+
+        """
+        if type(datum) in (str, unicode,):
+            try:
+                return base64.b64decode(datum)
+            except TypeError:
+                raise ValidationError("Invalid base64 encoding", datum)
+        raise ValidationError("Invalid Binary data", datum)
+
+    def to_json(self, datum):
+        "Encode *datum* using base64."
+        return base64.b64encode(datum)
+
+
+
+class BooleanType(NewType):
+    type_name = "Boolean"
+
+    def from_json(self, datum):
+        """If *datum* is a boolean, return it. Otherwise, raise a
+        :exc:`ValidationError`.
+
+        """
+        if type(datum) == bool:
+            return datum
+        raise ValidationError("Invalid Boolean", datum)
+
+
+
+class DateTimeType(NewTypeWrapper):
+    """Wraps the :class:`String` type.
+
+            >>> DateTime.to_json(datetime.now())
+            u'2013-10-18T01:58:24.904349'
+
+    """
+    type_name = "DateTime"
+
+    def get_inner_schema(self):
+        return self.schema.T('String')
+
+    def assemble(self, datum):
+        """Parse *datum* as an ISO 8601-encoded time and return a
+        :class:`datetime` object. If the string is invalid, raise a
+        :exc:`ValidationError`.
+
+        """
+        try:
+            return isodate.parse_datetime(datum)
+        except (ValueError, isodate.isoerror.ISO8601Error) as e:
+            raise ValidationError(e.args[0], datum)
+
+    def disassemble(self, datum):
+        """Given a datetime object, return an ISO 8601-encoded string.
+        """
+        return unicode(datum.isoformat())
+
+
+
+class JSONType(NewType):
+    """This type may be used as a kind of wildcard that will accept any
+    JSON value and return it untouched. Presumably you still want to
+    interpret the meaning of this arbitrary JSON data, you just don't
+    want to do it through Teleport.
+
+    """
+
+    def from_json(self, datum):
+        """Return the JSON value wrapped in a :class:`Box`.
+        """
+        return Box(datum)
+
+    def to_json(self, datum):
+        return datum.datum
+
 
 class ArrayType(NewTypeParametrized):
-    """The argument *param* is a serializer that defines the type of each item
-    in the array.
+    """The argument *param* is a serializer that defines the type of each
+    item in the array.
+
     """
     type_name = "Array"
 
@@ -180,6 +416,12 @@ def standard_types(schema):
     return {
         "Integer": IntegerType(schema),
         "Array": ArrayType(schema),
+        "Float": FloatType(schema),
+        "String": StringType(schema),
+        "Binary": BinaryType(schema),
+        "Boolean": BooleanType(schema),
+        "DateTime": DateTimeType(schema),
+        "JSON": JSONType(schema),
     }
 
 
@@ -187,7 +429,7 @@ Schema = SchemaType()
 T = Schema.T
 Schema.types.update(standard_types(Schema))
 
-globals().update(Schema.types)
+globals().update(Schema.export_globals())
 
 
 

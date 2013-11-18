@@ -2,6 +2,7 @@ import json
 from unittest2 import TestCase, TestSuite, defaultTestLoader
 
 from teleport import *
+import teleport.types2
 
 
 tests_schema = Array(Struct([

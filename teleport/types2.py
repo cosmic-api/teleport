@@ -219,7 +219,7 @@ class SchemaType(object):
             if serializer.param_schema is None:
                 raise ValidationError("Unexpected param for %s schema" % t)
             param = serializer.param_schema.from_json(datum[t])
-            return serializer(param)
+            return Serializer(self, t, param)
         raise ValidationError("Invalid Schema", datum)
 
 
@@ -410,18 +410,87 @@ class ArrayType(NewTypeParametrized):
         return [inner_type.to_json(item) for item in datum]
 
 
+class TupleType(NewTypeParametrized):
+    """The argument *param* is a serializer that defines the type of each item
+    in the array.
+    """
+    type_name = "Tuple"
+
+    def __init__(self, schema):
+        self.param_schema = schema.T('Array', schema.T('Schema'))
+        super(TupleType, self).__init__(schema)
+
+    def assemble(self, datum, inner_types):
+        if type(datum) in [tuple, list]:
+            if len(datum) != len(inner_types):
+                raise ValidationError("Invalid Tuple, wrong number of arguments", datum)
+            ret = []
+            for i, item in enumerate(datum):
+                try:
+                    ret.append(inner_types[i].from_json(item))
+                except ValidationError as e:
+                    e.stack.append(i)
+                    raise
+            return ret
+        raise ValidationError("Invalid Tuple", datum)
+
+    def disassemble(self, datum, inner_types):
+        ret = []
+        for i, item in enumerate(datum):
+            ret.append(inner_types[i].to_json(item))
+        return ret
+
+
+
+class MapType(NewTypeParametrized):
+    """The argument *param* is a serializer that defines the type of each item
+    in the map.
+    """
+    type_name = "Map"
+
+    def __init__(self, schema):
+        self.param_schema = schema.T('Schema')
+        super(MapType, self).__init__(schema)
+
+    def from_json(self, datum, inner_type):
+        """If *datum* is a dict, deserialize it, otherwise raise a
+        :exc:`ValidationError`. The keys of the dict must be unicode, and the
+        values will be deserialized using *param*.
+        """
+        if type(datum) == dict:
+            ret = {}
+            for key, val in datum.items():
+                if type(key) != unicode:
+                    raise ValidationError("Map key must be unicode", key)
+                try:
+                    ret[key] = inner_type.from_json(val)
+                except ValidationError as e:
+                    e.stack.append(key)
+                    raise
+            return ret
+        raise ValidationError("Invalid Map", datum)
+            
+
+    def to_json(self, datum, inner_type):
+        ret = {}
+        for key, val in datum.items():
+            ret[key] = inner_type.to_json(val)
+        return ret
+
 
 
 def standard_types(schema):
     return {
         "Integer": IntegerType(schema),
-        "Array": ArrayType(schema),
         "Float": FloatType(schema),
         "String": StringType(schema),
         "Binary": BinaryType(schema),
         "Boolean": BooleanType(schema),
         "DateTime": DateTimeType(schema),
         "JSON": JSONType(schema),
+
+        "Array": ArrayType(schema),
+        "Map": MapType(schema),
     }
 
 

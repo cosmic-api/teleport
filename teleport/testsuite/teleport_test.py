@@ -35,7 +35,7 @@ deep_schema = {
 array_serializer = teleport.types2.Schema.from_json(array_schema)
 struct_serializer = Schema().from_json(struct_schema)
 deep_serializer = Schema().from_json(deep_schema)
-map_serializer = Schema().from_json(map_schema)
+map_serializer = teleport.types2.Schema.from_json(map_schema)
 ordered_map_serializer = Schema().from_json(ordered_map_schema)
 
 class TestSchema(TestCase):
@@ -208,11 +208,11 @@ class TestMap(TestCase):
         }
         self.assertEqual(map_serializer.from_json(m), m)
         self.assertEqual(map_serializer.to_json(m), m)
-        with self.assertRaisesRegexp(ValidationError, "Expecting JSON object"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Map"):
             map_serializer.from_json([True, False])
-        with self.assertRaisesRegexp(ValidationError, "must be unicode"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "must be unicode"):
             map_serializer.from_json({"nope": False})
-        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Boolean"):
             map_serializer.from_json({u"cool": 0})
 
 

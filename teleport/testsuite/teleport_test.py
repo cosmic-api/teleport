@@ -36,7 +36,7 @@ array_serializer = teleport.types2.Schema.from_json(array_schema)
 struct_serializer = teleport.types2.Schema.from_json(struct_schema)
 deep_serializer = teleport.types2.Schema.from_json(deep_schema)
 map_serializer = teleport.types2.Schema.from_json(map_schema)
-ordered_map_serializer = Schema().from_json(ordered_map_schema)
+ordered_map_serializer = teleport.types2.Schema.from_json(ordered_map_schema)
 
 class TestSchema(TestCase):
 
@@ -234,11 +234,11 @@ class TestOrderedMap(TestCase):
         ])
         self.assertEqual(ordered_map_serializer.from_json(m), md)
         self.assertEqual(ordered_map_serializer.to_json(md), m)
-        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid OrderedMap"):
             m2 = deepcopy(m)
             m2["order"].append(u"cool")
             ordered_map_serializer.from_json(m2)
-        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid OrderedMap"):
             m2 = deepcopy(m)
             m2["order"] = [u"cool", u"groovy", u"kewl"]
             ordered_map_serializer.from_json(m2)

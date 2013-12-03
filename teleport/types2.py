@@ -87,19 +87,22 @@ class NewTypeParametrized(NewType):
 
 class NewTypeWrapper(NewType):
 
-    def _ensure_inner_schema(self):
+    def _ensure_inner_schema(self, param=None):
         if not hasattr(self, "_inner_schema"):
-            self._inner_schema = self.get_inner_schema()
+            if param is None:
+                self._inner_schema = self.get_inner_schema()
+            else:
+                self._inner_schema = self.get_inner_schema(param)
 
     def to_json(self, datum, param=None):
-        self._ensure_inner_schema()
+        self._ensure_inner_schema(param)
         if param is None:
             return self._inner_schema.to_json(self.disassemble(datum))
         else:
             return self._inner_schema.to_json(self.disassemble(datum, param))
             
     def from_json(self, datum, param=None):
-        self._ensure_inner_schema()
+        self._ensure_inner_schema(param)
         if param is None:
             return self.assemble(self._inner_schema.from_json(datum))
         else:
@@ -428,7 +431,7 @@ class TupleType(NewTypeParametrized):
         self.param_schema = schema.T('Array', schema.T('Schema'))
         super(TupleType, self).__init__(schema)
 
-    def assemble(self, datum, inner_types):
+    def from_json(self, datum, inner_types):
         if type(datum) in [tuple, list]:
             if len(datum) != len(inner_types):
                 raise ValidationError("Invalid Tuple, wrong number of arguments", datum)
@@ -442,7 +445,7 @@ class TupleType(NewTypeParametrized):
             return ret
         raise ValidationError("Invalid Tuple", datum)
 
-    def disassemble(self, datum, inner_types):
+    def to_json(self, datum, inner_types):
         ret = []
         for i, item in enumerate(datum):
             ret.append(inner_types[i].to_json(item))
@@ -566,7 +569,54 @@ class StructType(NewTypeParametrized):
 
 
 
+class OrderedMapType(NewTypeWrapper, NewTypeParametrized):
+    """The argument *param* is a serializer that defines the type of each item
+    in the map.
 
+    Internal schema::
+
+        Struct([
+            required(u"map", Map(param)),
+            required(u"order", Array(String))
+        ])
+
+    The order of the items in *map* is not preserved by JSON, hence the
+    existence of *order*, an array of keys in *map*.
+    """
+    type_name = "OrderedMap"
+
+    def get_inner_schema(self, inner_type):
+        return self.schema.T('Struct', [
+            required(u"map", self.schema.T('Map', inner_type)),
+            required(u"order", self.schema.T('Array', self.schema.T('String'))),
+        ])
+
+    def __init__(self, schema):
+        self.param_schema = schema.T('Schema')
+        super(OrderedMapType, self).__init__(schema)
+
+    def assemble(self, datum, inner_type):
+        """:exc:`ValidationError` is raised if *order* does not correspond to
+        the keys in *map*. The native form is Python's :class:`OrderedDict`.
+        """
+        order = datum["order"]
+        keys = datum["map"].keys()
+        if len(order) != len(keys) or set(order) != set(keys):
+            raise ValidationError("Invalid OrderedMap", datum)
+        # Turn into OrderedDict instance
+        ret = OrderedDict()
+        for key in order:
+            ret[key] = datum["map"][key]
+        return ret
+
+    def disassemble(self, datum, inner_type):
+        return {
+            "map": dict(datum.items()),
+            "order": datum.keys()
+        }
+
+
+        
 def standard_types(schema):
     return {
         "Integer": IntegerType(schema),
@@ -580,6 +630,8 @@ def standard_types(schema):
         "Array": ArrayType(schema),
         "Struct": StructType(schema),
         "Map": MapType(schema),
+        "OrderedMap": OrderedMapType(schema),
+        "Tuple": TupleType(schema),
     }
 
 

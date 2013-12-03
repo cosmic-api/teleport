@@ -496,6 +496,7 @@ class StructType(NewTypeParametrized):
     For convenience, :class:`Struct` can be instantiated with a list of tuples
     like the constructor of :class:`OrderedDict`.
     """
+    type_name = "Struct"
     def __init__(self, schema):
 
         self.param_schema = schema.T('Array', schema.T('Struct', [

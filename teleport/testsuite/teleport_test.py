@@ -34,7 +34,7 @@ deep_schema = {
 }
 array_serializer = teleport.types2.Schema.from_json(array_schema)
 struct_serializer = teleport.types2.Schema.from_json(struct_schema)
-deep_serializer = Schema().from_json(deep_schema)
+deep_serializer = teleport.types2.Schema.from_json(deep_schema)
 map_serializer = teleport.types2.Schema.from_json(map_schema)
 ordered_map_serializer = Schema().from_json(ordered_map_schema)
 
@@ -43,12 +43,12 @@ class TestSchema(TestCase):
     def test_to_json_schema(self):
         self.assertEqual(array_schema, teleport.types2.Schema.to_json(array_serializer))
         self.assertEqual(struct_schema, teleport.types2.Schema.to_json(struct_serializer))
-        self.assertEqual(deep_schema, Schema().to_json(deep_serializer))
-        struct_s = Struct([
-            required("foo", Boolean(), u"Never gonna give you up"),
-            optional("bar", Integer())
+        self.assertEqual(deep_schema, teleport.types2.Schema.to_json(deep_serializer))
+        struct_s = teleport.types2.Struct([
+            required("foo", teleport.types2.Boolean, u"Never gonna give you up"),
+            optional("bar", teleport.types2.Integer)
         ])
-        self.assertEqual(Schema().to_json(struct_s), struct_schema)
+        self.assertEqual(teleport.types2.Schema.to_json(struct_s), struct_schema)
 
     def _test_schema_subclass_delegation(self):
         self.assertEqual(teleport.types2.Schema.from_json("Integer"), teleport.types2.Integer)
@@ -76,7 +76,7 @@ class TestSchema(TestCase):
 
     def test_deep_schema_validation_stack(self):
         # Test Python representatioon
-        with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "\[0\]\[u'bar'\]"):
             deep_serializer.from_json([{"foo": True, "bar": False}])
 
     def test_wrapper_schema_validation_error(self):

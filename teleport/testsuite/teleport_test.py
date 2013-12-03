@@ -2,9 +2,10 @@ from unittest2 import TestCase, TestSuite
 
 from copy import deepcopy
 from datetime import datetime
+from collections import OrderedDict
 
-from teleport import *
-import teleport.types2
+from teleport.types2 import *
+
 
 array_schema = {u"Array": u"Boolean"}
 
@@ -32,55 +33,55 @@ ordered_map_schema = {
 deep_schema = {
     "Array": struct_schema
 }
-array_serializer = teleport.types2.Schema.from_json(array_schema)
-struct_serializer = teleport.types2.Schema.from_json(struct_schema)
-deep_serializer = teleport.types2.Schema.from_json(deep_schema)
-map_serializer = teleport.types2.Schema.from_json(map_schema)
-ordered_map_serializer = teleport.types2.Schema.from_json(ordered_map_schema)
+array_serializer = Schema.from_json(array_schema)
+struct_serializer = Schema.from_json(struct_schema)
+deep_serializer = Schema.from_json(deep_schema)
+map_serializer = Schema.from_json(map_schema)
+ordered_map_serializer = Schema.from_json(ordered_map_schema)
 
 class TestSchema(TestCase):
 
     def test_to_json_schema(self):
-        self.assertEqual(array_schema, teleport.types2.Schema.to_json(array_serializer))
-        self.assertEqual(struct_schema, teleport.types2.Schema.to_json(struct_serializer))
-        self.assertEqual(deep_schema, teleport.types2.Schema.to_json(deep_serializer))
-        struct_s = teleport.types2.Struct([
-            required("foo", teleport.types2.Boolean, u"Never gonna give you up"),
-            optional("bar", teleport.types2.Integer)
+        self.assertEqual(array_schema, Schema.to_json(array_serializer))
+        self.assertEqual(struct_schema, Schema.to_json(struct_serializer))
+        self.assertEqual(deep_schema, Schema.to_json(deep_serializer))
+        struct_s = Struct([
+            required("foo", Boolean, u"Never gonna give you up"),
+            optional("bar", Integer)
         ])
-        self.assertEqual(teleport.types2.Schema.to_json(struct_s), struct_schema)
+        self.assertEqual(Schema.to_json(struct_s), struct_schema)
 
     def _test_schema_subclass_delegation(self):
-        self.assertEqual(teleport.types2.Schema.from_json("Integer"), teleport.types2.Integer)
-        self.assertEqual(teleport.types2.Schema.from_json("Float"), teleport.types2.Float)
-        self.assertEqual(teleport.types2.Schema.from_json("String"), teleport.types2.String)
-        self.assertEqual(teleport.types2.Schema.from_json("Boolean"), teleport.types2.Boolean)
-        self.assertEqual(teleport.types2.Schema.from_json("DateTime"), teleport.types2.DateTime)
-        self.assertEqual(teleport.types2.Schema.from_json("Binary"), teleport.types2.Binary)
-        self.assertEqual(teleport.types2.Schema.from_json("Schema"), teleport.types2.Schema)
-        self.assertEqual(teleport.types2.Schema.from_json("JSON"), teleport.types2.JSON)
+        self.assertEqual(Schema.from_json("Integer"), Integer)
+        self.assertEqual(Schema.from_json("Float"), Float)
+        self.assertEqual(Schema.from_json("String"), String)
+        self.assertEqual(Schema.from_json("Boolean"), Boolean)
+        self.assertEqual(Schema.from_json("DateTime"), DateTime)
+        self.assertEqual(Schema.from_json("Binary"), Binary)
+        self.assertEqual(Schema.from_json("Schema"), Schema)
+        self.assertEqual(Schema.from_json("JSON"), JSON)
 
     def test_schema_duplicate_fields(self):
         s = deepcopy(struct_schema)
         s["Struct"].append(s["Struct"][0])
         with self.assertRaisesRegexp(ValidationError, "Names cannot repeat"):
-            Schema().from_json(s)
+            Schema.from_json(s)
 
     def test_schema_not_struct(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid Schema: True"):
-            Schema().from_json(True)
+            Schema.from_json(True)
 
     def test_schema_unknown_type(self):
         with self.assertRaisesRegexp(ValidationError, "Unknown type"):
-            Schema().from_json({"type": "number"})
+            Schema.from_json({"type": "number"})
 
     def test_deep_schema_validation_stack(self):
         # Test Python representatioon
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "\[0\]\[u'bar'\]"):
+        with self.assertRaisesRegexp(ValidationError, "\[0\]\[u'bar'\]"):
             deep_serializer.from_json([{"foo": True, "bar": False}])
 
     def test_wrapper_schema_validation_error(self):
-        s = OrderedMap(Array(Integer()))
+        s = OrderedMap(Array(Integer))
         with self.assertRaisesRegexp(ValidationError, "\[u'foo'\]\[1\]"):
             s.from_json({
                 u"map": {
@@ -91,110 +92,110 @@ class TestSchema(TestCase):
 
     def test_unexpected_param(self):
         with self.assertRaisesRegexp(ValidationError, "Unexpected param"):
-            Schema().from_json({"Integer": 1})
+            Schema.from_json({"Integer": 1})
 
     def test_missing_param(self):
         with self.assertRaisesRegexp(ValidationError, "Missing param"):
-            Schema().from_json("Struct")
+            Schema.from_json("Struct")
 
 
 
 class TestFloat(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(teleport.types2.Float.from_json(1), 1.0)
-        self.assertEqual(teleport.types2.Float.from_json(1.0), 1.0)
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Float"):
-            teleport.types2.Float.from_json(True)
+        self.assertEqual(Float.from_json(1), 1.0)
+        self.assertEqual(Float.from_json(1.0), 1.0)
+        with self.assertRaisesRegexp(ValidationError, "Invalid Float"):
+            Float.from_json(True)
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.Float.to_json(1.1), 1.1)
+        self.assertEqual(Float.to_json(1.1), 1.1)
 
 
 class TestInteger(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(teleport.types2.Integer.from_json(1), 1)
-        self.assertEqual(teleport.types2.Integer.from_json(1.0), 1)
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Integer"):
-            teleport.types2.Integer.from_json(1.1)
+        self.assertEqual(Integer.from_json(1), 1)
+        self.assertEqual(Integer.from_json(1.0), 1)
+        with self.assertRaisesRegexp(ValidationError, "Invalid Integer"):
+            Integer.from_json(1.1)
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.Integer.to_json(1), 1)
+        self.assertEqual(Integer.to_json(1), 1)
 
 
 class TestBoolean(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(teleport.types2.Boolean.from_json(True), True)
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Boolean"):
-            teleport.types2.Boolean.from_json(0)
+        self.assertEqual(Boolean.from_json(True), True)
+        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
+            Boolean.from_json(0)
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.Boolean.to_json(True), True)
+        self.assertEqual(Boolean.to_json(True), True)
 
 
 class TestString(TestCase):
 
     def test_string_okay(self):
-        self.assertEqual(teleport.types2.String.from_json(u"omg"), u"omg")
-        self.assertEqual(teleport.types2.String.from_json("omg"), u"omg")
+        self.assertEqual(String.from_json(u"omg"), u"omg")
+        self.assertEqual(String.from_json("omg"), u"omg")
 
     def test_string_fail(self):
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid String"):
-            teleport.types2.String.from_json(0)
-        with self.assertRaisesRegexp(teleport.types2.UnicodeDecodeValidationError, "invalid start byte"):
-            teleport.types2.String.from_json("\xff")
+        with self.assertRaisesRegexp(ValidationError, "Invalid String"):
+            String.from_json(0)
+        with self.assertRaisesRegexp(UnicodeDecodeValidationError, "invalid start byte"):
+            String.from_json("\xff")
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.String.to_json(u"yo"), u"yo")
+        self.assertEqual(String.to_json(u"yo"), u"yo")
 
 
 class TestBinary(TestCase):
 
     def test_from_json(self):
-        self.assertEqual(teleport.types2.Binary.from_json('YWJj'), "abc")
-        self.assertEqual(teleport.types2.Binary.from_json(u'YWJj'), "abc")
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid base64"):
+        self.assertEqual(Binary.from_json('YWJj'), "abc")
+        self.assertEqual(Binary.from_json(u'YWJj'), "abc")
+        with self.assertRaisesRegexp(ValidationError, "Invalid base64"):
             # Will complain about incorrect padding
-            teleport.types2.Binary.from_json("a")
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Binary"):
-            teleport.types2.Binary.from_json(1)
+            Binary.from_json("a")
+        with self.assertRaisesRegexp(ValidationError, "Invalid Binary"):
+            Binary.from_json(1)
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.Binary.to_json("abc"), "YWJj")
+        self.assertEqual(Binary.to_json("abc"), "YWJj")
 
 
 class TestJSON(TestCase):
 
     def test_from_json(self):
-        self.assertTrue(isinstance(teleport.types2.JSON.from_json("A string?"), teleport.types2.Box))
-        self.assertEqual(teleport.types2.JSON.from_json('ABC').datum, "ABC")
+        self.assertTrue(isinstance(JSON.from_json("A string?"), Box))
+        self.assertEqual(JSON.from_json('ABC').datum, "ABC")
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.JSON.to_json(Box("abc")), "abc")
+        self.assertEqual(JSON.to_json(Box("abc")), "abc")
 
 
 class TestDateTime(TestCase):
 
     def test_from_json(self):
-        self.assertTrue(isinstance(teleport.types2.DateTime.from_json('2013-10-04T13:05:25.354952'), datetime))
-        self.assertEqual(teleport.types2.DateTime.from_json('2013-10-04T13:05:25.354952'), datetime(2013, 10, 4, 13, 5, 25, 354952))
+        self.assertTrue(isinstance(DateTime.from_json('2013-10-04T13:05:25.354952'), datetime))
+        self.assertEqual(DateTime.from_json('2013-10-04T13:05:25.354952'), datetime(2013, 10, 4, 13, 5, 25, 354952))
         # Separator must be T!
-        with self.assertRaises(teleport.types2.ValidationError):
-            teleport.types2.DateTime.from_json('2013-10-04 13:05:25.354952')
+        with self.assertRaises(ValidationError):
+            DateTime.from_json('2013-10-04 13:05:25.354952')
 
     def test_to_json(self):
-        self.assertEqual(teleport.types2.DateTime.to_json(datetime(2013, 10, 4, 13, 5, 25, 354952)), '2013-10-04T13:05:25.354952')
+        self.assertEqual(DateTime.to_json(datetime(2013, 10, 4, 13, 5, 25, 354952)), '2013-10-04T13:05:25.354952')
 
 
 class TestArray(TestCase):
 
     def test_from_json(self):
         self.assertEqual(array_serializer.from_json([True, False]), [True, False])
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Array"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Array"):
             array_serializer.from_json(("no", "tuples",))
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Boolean"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
             array_serializer.from_json([True, False, 1])
 
 
@@ -208,11 +209,11 @@ class TestMap(TestCase):
         }
         self.assertEqual(map_serializer.from_json(m), m)
         self.assertEqual(map_serializer.to_json(m), m)
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Map"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Map"):
             map_serializer.from_json([True, False])
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "must be unicode"):
+        with self.assertRaisesRegexp(ValidationError, "must be unicode"):
             map_serializer.from_json({"nope": False})
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Boolean"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Boolean"):
             map_serializer.from_json({u"cool": 0})
 
 
@@ -234,11 +235,11 @@ class TestOrderedMap(TestCase):
         ])
         self.assertEqual(ordered_map_serializer.from_json(m), md)
         self.assertEqual(ordered_map_serializer.to_json(md), m)
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid OrderedMap"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
             m2 = deepcopy(m)
             m2["order"].append(u"cool")
             ordered_map_serializer.from_json(m2)
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid OrderedMap"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid OrderedMap"):
             m2 = deepcopy(m)
             m2["order"] = [u"cool", u"groovy", u"kewl"]
             ordered_map_serializer.from_json(m2)
@@ -253,11 +254,11 @@ class TestStruct(TestCase):
         self.assertEqual(res, {"foo": True})
 
     def test_from_json_fail(self):
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Struct"):
+        with self.assertRaisesRegexp(ValidationError, "Invalid Struct"):
             struct_serializer.from_json([])
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Unexpected fields"):
+        with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
             struct_serializer.from_json({"foo": True, "barr": 2.0})
-        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Missing fields"):
+        with self.assertRaisesRegexp(ValidationError, "Missing fields"):
             struct_serializer.from_json({"bar": 2})
 
     def test_to_json(self):

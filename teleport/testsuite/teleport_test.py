@@ -33,7 +33,7 @@ deep_schema = {
     "Array": struct_schema
 }
 array_serializer = teleport.types2.Schema.from_json(array_schema)
-struct_serializer = Schema().from_json(struct_schema)
+struct_serializer = teleport.types2.Schema.from_json(struct_schema)
 deep_serializer = Schema().from_json(deep_schema)
 map_serializer = teleport.types2.Schema.from_json(map_schema)
 ordered_map_serializer = Schema().from_json(ordered_map_schema)
@@ -42,7 +42,7 @@ class TestSchema(TestCase):
 
     def test_to_json_schema(self):
         self.assertEqual(array_schema, teleport.types2.Schema.to_json(array_serializer))
-        self.assertEqual(struct_schema, Schema().to_json(struct_serializer))
+        self.assertEqual(struct_schema, teleport.types2.Schema.to_json(struct_serializer))
         self.assertEqual(deep_schema, Schema().to_json(deep_serializer))
         struct_s = Struct([
             required("foo", Boolean(), u"Never gonna give you up"),
@@ -253,11 +253,11 @@ class TestStruct(TestCase):
         self.assertEqual(res, {"foo": True})
 
     def test_from_json_fail(self):
-        with self.assertRaisesRegexp(ValidationError, "Expecting JSON object"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Invalid Struct"):
             struct_serializer.from_json([])
-        with self.assertRaisesRegexp(ValidationError, "Unexpected fields"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Unexpected fields"):
             struct_serializer.from_json({"foo": True, "barr": 2.0})
-        with self.assertRaisesRegexp(ValidationError, "Missing fields"):
+        with self.assertRaisesRegexp(teleport.types2.ValidationError, "Missing fields"):
             struct_serializer.from_json({"bar": 2})
 
     def test_to_json(self):

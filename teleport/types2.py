@@ -55,6 +55,13 @@ class UnknownTypeValidationError(ValidationError):
         self.stack = []
 
 
+# Some syntax sugar
+def required(name, schema, doc=None):
+    return {"name": name, "schema": schema, "required": True, "doc": doc}
+
+def optional(name, schema, doc=None):
+    return {"name": name, "schema": schema, "required": False, "doc": doc}
+
 
     
 class NewType(object):
@@ -100,6 +107,7 @@ class NewTypeWrapper(NewType):
 
 
 class Serializer(object):
+    "A thing that wraps the type and turns it into a serializer"
 
     def __init__(self, schema, type_name, param=None):
         self.schema = schema
@@ -479,6 +487,85 @@ class MapType(NewTypeParametrized):
 
 
 
+class StructType(NewTypeParametrized):
+    """*param* must be an :class:`OrderedDict`, where the keys are field
+    names, and values are dicts with two items: *schema* (serializer) and
+    *required* (Boolean). For each pair, *schema* is used to serialize and
+    deserialize a dict value matched by the corresponding key.
+
+    For convenience, :class:`Struct` can be instantiated with a list of tuples
+    like the constructor of :class:`OrderedDict`.
+    """
+    def __init__(self, schema):
+
+        self.param_schema = schema.T('Array', schema.T('Struct', [
+            required(u"name", schema.T('String')),
+            required(u"schema", schema.T('Schema')),
+            required(u"required", schema.T('Boolean')),
+            optional(u"doc", schema.T('String'))
+        ]))
+
+        def assemble(self, datum):
+            names = set()
+            for item in datum:
+                names.add(item['name'])
+            if len(names) < len(datum):
+                raise ValidationError("Names cannot repeat")
+            return datum
+
+        super(StructType, self).__init__(schema)
+
+
+    def from_json(self, datum, fields):
+        """If *datum* is a dict, deserialize it against *param* and return
+        the resulting dict. Otherwise raise a :exc:`ValidationError`.
+
+        A :exc:`ValidationError` will be raised if:
+
+        1. *datum* is missing a required field
+        2. *datum* has a field not declared in *param*.
+        3. One of the values of *datum* does not pass validation as defined
+           by the *schema* of the corresponding field.
+        """
+        if type(datum) == dict:
+            ret = {}
+            required = {}
+            optional = {}
+            for field in fields:
+                if field["required"] == True:
+                    required[field["name"]] = field["schema"]
+                else:
+                    optional[field["name"]] = field["schema"]
+            missing = set(required.keys()) - set(datum.keys())
+            if missing:
+                raise ValidationError("Missing fields", list(missing))
+            extra = set(datum.keys()) - set(required.keys() + optional.keys())
+            if extra:
+                raise ValidationError("Unexpected fields", list(extra))
+            for field, schema in optional.items() + required.items():
+                if field in datum.keys():
+                    try:
+                        ret[field] = schema.from_json(datum[field])
+                    except ValidationError as e:
+                        e.stack.append(field)
+                        raise
+            return ret
+        raise ValidationError("Invalid Struct", datum)
+
+
+    def to_json(self, datum, fields):
+        ret = {}
+        for field in fields:
+            name = field['name']
+            schema = field['schema']
+            if name in datum.keys() and datum[name] != None:
+                ret[name] = schema.to_json(datum[name])
+        return ret
+
+
+
+
+
 def standard_types(schema):
     return {
         "Integer": IntegerType(schema),
@@ -490,6 +577,7 @@ def standard_types(schema):
         "JSON": JSONType(schema),
 
         "Array": ArrayType(schema),
+        "Struct": StructType(schema),
         "Map": MapType(schema),
     }
 

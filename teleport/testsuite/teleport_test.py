@@ -72,7 +72,7 @@ class TestSchema(TestCase):
             Schema.from_json(True)
 
     def test_schema_unknown_type(self):
-        with self.assertRaisesRegexp(ValidationError, "Unknown type"):
+        with self.assertRaisesRegexp(ValidationError, "Cannot find type"):
             Schema.from_json({"type": "number"})
 
     def test_deep_schema_validation_stack(self):

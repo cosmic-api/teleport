@@ -87,26 +87,21 @@ class NewTypeParametrized(NewType):
 
 class NewTypeWrapper(NewType):
 
-    def _ensure_inner_schema(self, param=None):
-        if not hasattr(self, "_inner_schema"):
-            if param is None:
-                self._inner_schema = self.get_inner_schema()
-            else:
-                self._inner_schema = self.get_inner_schema(param)
-
     def to_json(self, datum, param=None):
-        self._ensure_inner_schema(param)
         if param is None:
-            return self._inner_schema.to_json(self.disassemble(datum))
+            inner_schema = self.get_inner_schema()
+            return inner_schema.to_json(self.disassemble(datum))
         else:
-            return self._inner_schema.to_json(self.disassemble(datum, param))
+            inner_schema = self.get_inner_schema(param)
+            return inner_schema.to_json(self.disassemble(datum, param))
             
     def from_json(self, datum, param=None):
-        self._ensure_inner_schema(param)
         if param is None:
-            return self.assemble(self._inner_schema.from_json(datum))
+            inner_schema = self.get_inner_schema()
+            return self.assemble(inner_schema.from_json(datum))
         else:
-            return self.assemble(self._inner_schema.from_json(datum), param)
+            inner_schema = self.get_inner_schema(param)
+            return self.assemble(inner_schema.from_json(datum), param)
 
 
 class Serializer(object):

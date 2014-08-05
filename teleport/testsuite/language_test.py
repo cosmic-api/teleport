@@ -98,10 +98,10 @@ def make_json_suite():
                 OrderedMap(Integer),
             ])),
             failing=primitives + [
-                Box({"type": "string"}), # case-sensitive
-                Box({"type": "XXX"}), # unknown type
-                Box({"type": "String", "param": True}), # unexpected param
-                Box({"type": "Array"}), # missing param
+                Box("string"), # case-sensitive
+                Box("XXX"), # unknown type
+                Box({"String": "param"}), # unexpected param
+                Box("Array"), # missing param
             ]),
         t(
             schema=OrderedMap(Integer),
@@ -123,6 +123,7 @@ def make_pass(schema, datum):
     class T(TestCase):
         def test_passing(self):
             schema.from_json(datum)
+
     return T('test_passing')
 
 def make_reserialize(schema, datum):

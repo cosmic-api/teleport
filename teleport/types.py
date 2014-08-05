@@ -57,10 +57,10 @@ class UnknownTypeValidationError(ValidationError):
 
 # Some syntax sugar
 def required(name, schema, doc=None):
-    return {"name": name, "schema": schema, "required": True, "doc": doc}
+    return (name, {"schema": schema, "required": True, "doc": doc})
 
 def optional(name, schema, doc=None):
-    return {"name": name, "schema": schema, "required": False, "doc": doc}
+    return (name, {"schema": schema, "required": False, "doc": doc})
 
 
     
@@ -497,20 +497,11 @@ class StructType(NewTypeParametrized):
     type_name = "Struct"
     def __init__(self, schema):
 
-        self.param_schema = schema.T('Array', schema.T('Struct', [
-            required(u"name", schema.T('String')),
+        self.param_schema = schema.T('OrderedMap', schema.T('Struct', [
             required(u"schema", schema.T('Schema')),
             required(u"required", schema.T('Boolean')),
             optional(u"doc", schema.T('String'))
         ]))
-
-        def assemble(self, datum):
-            names = set()
-            for item in datum:
-                names.add(item['name'])
-            if len(names) < len(datum):
-                raise ValidationError("Names cannot repeat")
-            return datum
 
         super(StructType, self).__init__(schema)
 
@@ -530,11 +521,11 @@ class StructType(NewTypeParametrized):
             ret = {}
             required = {}
             optional = {}
-            for field in fields:
+            for name, field in OrderedDict(fields).items():
                 if field["required"] == True:
-                    required[field["name"]] = field["schema"]
+                    required[name] = field["schema"]
                 else:
-                    optional[field["name"]] = field["schema"]
+                    optional[name] = field["schema"]
             missing = set(required.keys()) - set(datum.keys())
             if missing:
                 raise ValidationError("Missing fields", list(missing))
@@ -554,8 +545,7 @@ class StructType(NewTypeParametrized):
 
     def to_json(self, datum, fields):
         ret = {}
-        for field in fields:
-            name = field['name']
+        for name, field in OrderedDict(fields).items():
             schema = field['schema']
             if name in datum.keys() and datum[name] != None:
                 ret[name] = schema.to_json(datum[name])
@@ -605,6 +595,7 @@ class OrderedMapType(NewTypeWrapper, NewTypeParametrized):
         return ret
 
     def disassemble(self, datum, inner_type):
+        datum = OrderedDict(datum)
         return {
             "map": dict(datum.items()),
             "order": datum.keys()

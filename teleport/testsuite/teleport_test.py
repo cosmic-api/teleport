@@ -10,19 +10,20 @@ from teleport.types import *
 array_schema = {u"Array": u"Boolean"}
 
 struct_schema = {
-    "Struct": [
-        {
-            "name": "foo",
-            "required": True,
-            "schema": "Boolean",
-            "doc": "Never gonna give you up"
+    "Struct": {
+        "map": {
+            u"foo": {
+                "required": True,
+                "schema": "Boolean",
+                "doc": "Never gonna give you up"
+            },
+            u"bar": {
+                "required": False,
+                "schema": "Integer"
+            },
         },
-        {
-            "name": "bar",
-            "required": False,
-            "schema": "Integer"
-        }
-    ]
+        "order": ["foo", "bar"],
+    }
 }
 map_schema = {
     "Map": "Boolean"
@@ -60,12 +61,6 @@ class TestSchema(TestCase):
         self.assertEqual(Schema.from_json("Binary"), Binary)
         self.assertEqual(Schema.from_json("Schema"), Schema)
         self.assertEqual(Schema.from_json("JSON"), JSON)
-
-    def test_schema_duplicate_fields(self):
-        s = deepcopy(struct_schema)
-        s["Struct"].append(s["Struct"][0])
-        with self.assertRaisesRegexp(ValidationError, "Names cannot repeat"):
-            Schema.from_json(s)
 
     def test_schema_not_struct(self):
         with self.assertRaisesRegexp(ValidationError, "Invalid Schema: True"):

@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime
 from collections import OrderedDict
 
-from teleport.types2 import *
+from teleport.types import *
 
 
 array_schema = {u"Array": u"Boolean"}

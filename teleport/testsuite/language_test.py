@@ -1,14 +1,13 @@
 import json
 from unittest2 import TestCase, TestSuite, defaultTestLoader
 
-from teleport import *
-import teleport.types2
+from teleport.types import *
 
 
 tests_schema = Array(Struct([
-    required("schema", Schema()),
-    required("pass", Array(JSON())),
-    required("fail", Array(JSON())),
+    required("schema", Schema),
+    required("pass", Array(JSON)),
+    required("fail", Array(JSON)),
 ]))
 
 primitives = [
@@ -37,37 +36,37 @@ def t(schema, all=None, passing=None, failing=None):
 def make_json_suite():
     tests = [
         t(  
-            schema=Integer(),
+            schema=Integer,
             all=primitives,
             passing=[Box(-1), Box(1), Box(1.0)]),
         t(
-            schema=Boolean(),
+            schema=Boolean,
             all=primitives,
             passing=[Box(True), Box(False)]),
         t(
-            schema=String(),
+            schema=String,
             all=primitives,
             passing=[Box("")]),
         t(
-            schema=Float(),
+            schema=Float,
             all=primitives,
             passing=[Box(-1), Box(1), Box(1.0), Box(1.1)]),
         t(
-            schema=DateTime(),
+            schema=DateTime,
             failing=primitives + [Box("2013-10-04 13:05:25.354952")], # Needs a T
             passing=[Box("2013-10-04T13:05:25.354952")]),
         t(
-            schema=Array(Integer()),
+            schema=Array(Integer),
             passing=[Box([]), Box([1]), Box([1.0])],
             failing=set(primitives + [Box([1.1])]) - set([Box([])])),
         t(
-            schema=Map(Integer()),
+            schema=Map(Integer),
             passing=[Box({}), Box({"a": 1}), Box({"a": 1.0})],
             failing=set(primitives) - set([Box({})])),
         t(
             schema=Struct([
-                required("a", Integer()),
-                optional("b", Integer())
+                required("a", Integer),
+                optional("b", Integer)
             ]),
             passing=[Box({"a": 1, "b": 2}), Box({"a": 1}), Box({"a": 1.0})],
             failing=set(primitives) | set([Box({"a": 1.1}), Box({"b": 1})])),
@@ -76,26 +75,27 @@ def make_json_suite():
             passing=[Box({})],
             failing=set(primitives) - set([Box({})])),
         t(
-            schema=Tuple([Integer(), String()]),
+            schema=Tuple([Integer, String]),
             passing=[Box([1, ""]), Box([1.0, "2"])],
             failing=set(primitives) | set([Box([1]), Box([1.1, ""]), Box([1, "1", "2"])])),
         t(
-            schema=Binary(),
+            schema=Binary,
             passing=[Box('YWJj')],
             failing=set(primitives + [Box('a')]) - set([Box("")])),
         t(
-            schema=JSON(),
+            schema=JSON,
             passing=primitives,
             failing=[]),
         t(
-            schema=Schema(),
-            passing=map(Box, Array(Schema()).to_json([
-                String(), Boolean(), Integer(), Float(), Binary(),
-                DateTime(), JSON(), Schema(),
-                Array(Integer()),
-                Struct([required('a', Integer())]),
-                Map(Integer()),
-                OrderedMap(Integer()),
+            schema=Schema,
+            passing=map(Box, Array(Schema).to_json([
+                String, Boolean, Integer, 
+                Float, Binary,
+                DateTime, JSON, Schema,
+                Array(Integer),
+                Struct([required('a', Integer)]),
+                Map(Integer),
+                OrderedMap(Integer),
             ])),
             failing=primitives + [
                 Box({"type": "string"}), # case-sensitive
@@ -104,7 +104,7 @@ def make_json_suite():
                 Box({"type": "Array"}), # missing param
             ]),
         t(
-            schema=OrderedMap(Integer()),
+            schema=OrderedMap(Integer),
             passing=[
                 Box({"map": {}, "order": []}),
                 Box({"map": {"a": 1, "b": 2}, "order": ["a", "b"]}),

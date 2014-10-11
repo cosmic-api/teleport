@@ -79,13 +79,11 @@ class NewType(object):
     def from_json(self, datum):
         return datum
 
-    
-class NewTypeParametrized(NewType):
 
-    def __call__(self, param):
-        return Serializer(self.schema, self.type_name, param)
+class Parametrized(NewType):
+    pass
 
-class NewTypeWrapper(NewType):
+class Wrapper(NewType):
 
     def to_json(self, datum, param=None):
         if param is None:
@@ -111,6 +109,10 @@ class Serializer(object):
         self.schema = schema
         self.type_name = type_name
         self.param = param
+
+    def __call__(self, param):
+        self.param = param
+        return self
 
     def from_json(self, datum):
         if self.param is not None:
@@ -172,10 +174,7 @@ class SchemaType(object):
     def export_globals(self):
         ret = {}
         for type_name, type_object in self.types.items():
-            if type_object.param_schema is not None:
-                ret[type_name] = type_object
-            else:
-                ret[type_name] = self.T(type_name)
+            ret[type_name] = self.T(type_name)
         return ret
 
     def T(self, type_name, param=None):
@@ -334,7 +333,7 @@ class BooleanType(NewType):
 
 
 
-class DateTimeType(NewTypeWrapper):
+class DateTimeType(Wrapper):
     """Wraps the :class:`String` type.
 
             >>> DateTime.to_json(datetime.now())
@@ -381,7 +380,7 @@ class JSONType(NewType):
         return datum.datum
 
 
-class ArrayType(NewTypeParametrized):
+class ArrayType(Parametrized):
     """The argument *param* is a serializer that defines the type of each
     item in the array.
 
@@ -416,7 +415,7 @@ class ArrayType(NewTypeParametrized):
         return [inner_type.to_json(item) for item in datum]
 
 
-class TupleType(NewTypeParametrized):
+class TupleType(Parametrized):
     """The argument *param* is a serializer that defines the type of each item
     in the array.
     """
@@ -448,7 +447,7 @@ class TupleType(NewTypeParametrized):
 
 
 
-class MapType(NewTypeParametrized):
+class MapType(Parametrized):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
     """
@@ -485,7 +484,7 @@ class MapType(NewTypeParametrized):
 
 
 
-class StructType(NewTypeParametrized):
+class StructType(Parametrized):
     """*param* must be an :class:`OrderedDict`, where the keys are field
     names, and values are dicts with two items: *schema* (serializer) and
     *required* (Boolean). For each pair, *schema* is used to serialize and
@@ -554,7 +553,7 @@ class StructType(NewTypeParametrized):
 
 
 
-class OrderedMapType(NewTypeWrapper, NewTypeParametrized):
+class OrderedMapType(Wrapper, Parametrized):
     """The argument *param* is a serializer that defines the type of each item
     in the map.
 

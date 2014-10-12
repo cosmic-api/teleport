@@ -92,9 +92,8 @@ module.exports = (grunt) ->
   grunt.registerTask 'init', 'Set up environment.', ->
     series [
       apply exec, 'git clone -b cosmic git@github.com:cosmic-api/bootstrap.git cosmic-bootstrap'
-      apply exec, 'git clone git@github.com:cosmic-api/teleport.py.git teleport-py'
       apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
-      apply exec, 'git clone -b cosmic git@github.com:cosmic-api/sphinx-bootstrap-theme.git sphinx-bootstrap'
+      apply exec, 'git clone git@github.com:cosmic-api/teleport.py.git teleport-py'
     ], @async()
 
   grunt.registerTask 'deploy', 'Deploy to GitHub pages.', ->
@@ -126,14 +125,13 @@ generateMakefile = (callback) ->
   coffeeExec = "node_modules/.bin/coffee"
   jadeExec = "node_modules/.bin/jade"
   # Stuff necessary for injector
-  injector = "inject.coffee settings.coffee node_modules templates/includes"
+  injector = "inject.coffee settings.coffee node_modules templates"
 
   # Wildcard directories will be touched if their children are modified
   touchy = [
     "cosmic-bootstrap/less"
     "teleport-py"
     "teleport-py/docs/source"
-    "sphinx-bootstrap"
   ]
 
   tmpdir = "tmp"

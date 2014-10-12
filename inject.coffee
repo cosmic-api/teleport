@@ -3,7 +3,7 @@ find = require 'find'
 jade = require 'jade'
 jsdom = require 'jsdom'
 jquery = require 'jquery'
-{projectOrder, projects} = require './settings'
+project = require './settings'
 argv = require('optimist').argv
 
 getTemplate = (file) ->
@@ -17,20 +17,15 @@ makeScriptElement = (doc, url) ->
   return script
 
 dir = argv.dir
-pro = argv.project
 sec = argv.section
 ver = argv.version
 jq = argv.jquery
 
-gaText = getTemplate("includes/google_analytics.jade")()
-nav = getTemplate("includes/top_nav_docs.jade")
-  activeProjectId: pro
-  activeProject: projects[pro]
+nav = getTemplate("top_nav_docs.jade")
   activeSectionId: sec
-  activeSection: projects[pro].sections[sec]
+  activeSection: project.sections[sec]
+  activeProject: project
   activeVersion: ver
-  projectOrder: projectOrder
-  projects: projects
 
 find.eachfile /.html$/, dir, (file) ->
   html = (fs.readFileSync file).toString()
@@ -50,17 +45,13 @@ find.eachfile /.html$/, dir, (file) ->
     ga = window.document.createElement 'script'
     ga.type  = "text/javascript"
     ga.text = """
-      var _gaq = _gaq || [];
-      var pluginUrl = '//www.google-analytics.com/plugins/ga/inpage_linkid.js';
-      _gaq.push(['_require', 'inpage_linkid', pluginUrl]);
-      _gaq.push(['_setAccount', 'UA-36006075-1']);
-      _gaq.push(['_setDomainName', 'cosmic-api.com']);
-      _gaq.push(['_trackPageview']);
-      (function() {
-        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-      })();
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-12144432-3', 'auto');
+      ga('send', 'pageview');
     """
     window.document.head.appendChild ga
     window.document.head.appendChild makeScriptElement window.document, "/static/bootstrap/js/bootstrap.min.js"

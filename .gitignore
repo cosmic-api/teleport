@@ -1,0 +1,16 @@
+/.pip-cache
+
+/Makefile
+
+/build
+/dist
+/node_modules
+/cosmic-bootstrap
+/cosmic-py
+/cosmic-docs
+/teleport-py
+/teleport-js
+/teleport-docs
+/sphinx-bootstrap
+/flask-sphinx-themes
+/tmp

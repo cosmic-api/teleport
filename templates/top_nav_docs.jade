@@ -1,0 +1,40 @@
+div.bs
+  div.navbar.navbar-static-top.navbar-default(role="navigation")
+    ul.nav.navbar-nav
+      each sectionId in activeProject.sectionOrder
+        if sectionId === activeSectionId
+          li.active
+            a(href="/#{sectionId}/latest/")= activeProject.sections[sectionId].title
+        else
+          li
+            a(href="/#{sectionId}/latest/")= activeProject.sections[sectionId].title
+      li
+        a.hidden-xs(href="#", style="font-size:0.8em;color:#ccc") YOUR PORT HERE
+    ul.nav.navbar-nav.navbar-right
+      if activeSection.checkouts
+        li.dropdown
+          a.dropdown-toggle(href="#", data-toggle="dropdown")= activeVersion
+            b.caret
+          ul.dropdown-menu
+            li
+              a(href="/#{activeSectionId}/latest/") latest
+            li.divider
+            each checkout in activeSection.checkouts
+              li
+                a(href="/#{activeSectionId}/#{checkout.version}/")= checkout.version
+      if activeSection.star === true
+        li.hidden-xs
+          iframe(src="http://ghbtns.com/github-btn.html?user=cosmic-api&repo=#{activeSection.github}&type=watch&count=true",
+            style="margin-top:15px",
+            allowtransparency="true",
+            frameborder="0",
+            scrolling="0",
+            width="85",
+            height="20")
+      li.hidden-xs
+        a(href="https://github.com/cosmic-api/#{activeProject.sections[activeSectionId].github}",
+          style="padding-left:0px") 
+          if activeSection.star === false
+            i.icon-github
+          | &nbsp;cosmic-api/#{activeSection.github}
+

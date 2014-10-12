@@ -1,0 +1,21 @@
+{
+  "name": "Cosmic",
+  "version": "0.0.0",
+  "devDependencies": {
+    "underscore": "1.4.4",
+    "filewalker": "0.1.1",
+    "async": "0.2.9",
+    "coffee-script": "1.6.3",
+    "grunt": "*",
+    "grunt-cli": "0.1.9",
+    "grunt-exec": "0.4.2",
+    "grunt-contrib-watch": "0.5.3",
+    "connect": "2.9.0",
+    "connect-livereload": "0.3.0",
+    "optimist": "0.5.2",
+    "find": "0.1.4",
+    "jquery": "1.8.3",
+    "jsdom": "0.6.5",
+    "jade": "0.35.0"
+  }
+}

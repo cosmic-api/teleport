@@ -123,7 +123,6 @@ generateMakefile = (callback) ->
 
   # Executables
   coffeeExec = "node_modules/.bin/coffee"
-  jadeExec = "node_modules/.bin/jade"
   # Stuff necessary for injector
   injector = "inject.coffee settings.coffee node_modules templates"
 

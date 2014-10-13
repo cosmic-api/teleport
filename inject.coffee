@@ -1,14 +1,14 @@
 fs = require 'fs'
 find = require 'find'
-jade = require 'jade'
+mustache = require 'mustache'
 jsdom = require 'jsdom'
 jquery = require 'jquery'
 project = require './settings'
 argv = require('optimist').argv
 
-getTemplate = (file) ->
+render = (file, context) ->
   raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()
-  return jade.compile raw
+  return mustache.render raw, context
 
 makeScriptElement = (doc, url) ->
   script = doc.createElement 'script'
@@ -21,11 +21,12 @@ sec = argv.section
 ver = argv.version
 jq = argv.jquery
 
-nav = getTemplate("top_nav_docs.jade")
+nav = render "top_nav_docs.html", {
   activeSectionId: sec
   activeSection: project.sections[sec]
   activeProject: project
   activeVersion: ver
+}
 
 find.eachfile /.html$/, dir, (file) ->
   html = (fs.readFileSync file).toString()

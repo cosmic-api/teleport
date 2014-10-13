@@ -132,6 +132,7 @@ generateMakefile = (callback) ->
     "cosmic-bootstrap/less"
     "teleport-py"
     "teleport-py/docs/source"
+    "templates"
   ]
 
   tmpdir = "tmp"
@@ -237,6 +238,7 @@ generateMakefile = (callback) ->
   makefile += """
   dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static
   \tmkdir -p dist
+  \trm -R dist/python
   \tmkdir dist/python
   \trm -rf dist/index.html
   \ttouch dist/.nojekyll
@@ -248,6 +250,8 @@ generateMakefile = (callback) ->
   for {version, ref} in [latest].concat project.sections.python.checkouts
     makefile += "\tmkdir dist/python/#{version}\n"
     makefile += "\ttar xf build/teleport-py-#{version}.sphinx.inject.tar -C dist/python/#{version}\n"
+
+  makefile += "\tcp dist/python/latest/index.html dist/index.html\n"
 
   parallelListFiles touchy, (err, results) ->
     if err

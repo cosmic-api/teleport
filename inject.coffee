@@ -22,16 +22,21 @@ ver = argv.version
 jq = argv.jquery
 
 nav = render "top_nav_docs.html", {
+  menu:
+    about: false
+    docs: true
   activeSectionId: sec
   activeSection: project.sections[sec]
-  activeProject: project
   activeVersion: ver
 }
 
-find.eachfile /.html$/, dir, (file) ->
-  html = (fs.readFileSync file).toString()
+
+inject = (html, callback) ->
 
   jsdom.env html, (errors, window) ->
+
+    if errors
+      callback errors
 
     $ = jquery.create window
 
@@ -58,5 +63,14 @@ find.eachfile /.html$/, dir, (file) ->
     window.document.head.appendChild makeScriptElement window.document, "/static/bootstrap/js/bootstrap.min.js"
     $('head').append "\n\n"
 
-    fs.writeFileSync file, window.document.innerHTML
+    callback null, window.document.innerHTML
+
+
+find.eachfile /.html$/, dir, (file) ->
+  html = (fs.readFileSync file).toString()
+
+  inject html, (errors, injectedHtml) ->
+
+    fs.writeFileSync file, injectedHtml
     console.log "Injected content into #{file}"
+

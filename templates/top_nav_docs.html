@@ -14,16 +14,26 @@
       </a> 
     </div>
     <div class="collapse navbar-collapse" id="bs-collapse">
+      {{#menu}}
       <ul class="nav navbar-nav">
-        <li class="active">
-          <a href="/{{ activeSectionId }}/latest">Documentation</a>
+        <li{{#about}} class="active"{{/about}}>
+          <a href="/">About</a>
+        </li>
+        <li{{#docs}} class="active"{{/docs}}>
+          <a href="/python/latest/">Documentation</a>
         </li>
       </ul>
+      {{/menu}}
+      {{#activeSection}}
       <ul class="nav navbar-nav navbar-right">
-        {{#activeSection}}
+        {{#star}}
+        <li>
+          <iframe src="http://ghbtns.com/github-btn.html?user=cosmic-api&amp;repo={{ github }}&amp;type=watch&amp;count=true" style="margin-top:15px" allowtransparency="true" frameborder="0" scrolling="0" width="85" height="20"/>
+        </li>
+        {{/star}}
         <li class="dropdown">
           <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{ activeVersion }}
-            <b class="caret"></a>
+            <b class="caret"></b>
           </a>
           <ul class="dropdown-menu">
             <li>
@@ -39,23 +49,8 @@
             {{/checkouts}}
           </ul>
         </li>
-        {{#star}}
-        <li>
-          <iframe src="http://ghbtns.com/github-btn.html?user=cosmic-api&amp;repo={{ github }}&amp;type=watch&amp;count=true" style="margin-top:15px" allowtransparency="true" frameborder="0" scrolling="0" width="85" height="20"/>
-        </li>
-        {{/star}}
-        <!--
-        <li>
-          <a href="https://github.com/cosmic-api/{{ github }}" style="padding-left:0px">
-            {{^star}}
-            <i class="icon-github"></i>
-            {{/star}}
-            &nbsp;cosmic-api/{{ github }}
-          </a>
-        </li>
-        {{/activeSection}}
-        -->
       </ul>
+      {{/activeSection}}
     </div>
   </div>
 </div>

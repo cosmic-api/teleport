@@ -208,7 +208,7 @@ generateMakefile = (callback) ->
     \trm -rf #{t}
     \tmkdir -p #{t}
     \ttar xf build/#{archive}.tar -C #{t}
-    \t#{coffeeExec} inject.coffee --dir #{t} --project #{project} --section #{section} --version '#{version}' #{jqueryOpt}
+    \t#{coffeeExec} inject.coffee --dir #{t} --section #{section} --version '#{version}' #{jqueryOpt}
     \ttar cf build/#{archive}.inject.tar -C #{t} .
 
 
@@ -235,22 +235,22 @@ generateMakefile = (callback) ->
     checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static
+  dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static index.coffee
   \tmkdir -p dist
   \trm -R dist/python
-  \tmkdir dist/python
   \trm -rf dist/index.html
+
+  \tmkdir dist/python
   \ttouch dist/.nojekyll
   \tcp -R static dist
   \tcp -R cosmic-bootstrap/dist dist/static/bootstrap
+  \t#{coffeeExec} index.coffee > dist/index.html
 
   """
 
   for {version, ref} in [latest].concat project.sections.python.checkouts
     makefile += "\tmkdir dist/python/#{version}\n"
     makefile += "\ttar xf build/teleport-py-#{version}.sphinx.inject.tar -C dist/python/#{version}\n"
-
-  makefile += "\tcp dist/python/latest/index.html dist/index.html\n"
 
   parallelListFiles touchy, (err, results) ->
     if err

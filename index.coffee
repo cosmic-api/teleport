@@ -17,7 +17,7 @@ console.log """
 <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
 <title>Teleport - Lightweight JSON Types</title>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/static/jquery.min.js"></script>
 <script src="/static/bootstrap/js/bootstrap.min.js"></script>
 </head>
 <body class="bs" style="margin:0px">

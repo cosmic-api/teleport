@@ -48,7 +48,7 @@ inject = (html, callback) ->
     """
     if jq
       $('head').append """
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="/static/jquery.min.js"></script>
       """
     ga = window.document.createElement 'script'
     ga.type  = "text/javascript"

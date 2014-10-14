@@ -1,5 +1,5 @@
-Teleport
-========
+Teleport Documentation
+======================
 
 .. currentmodule:: teleport
 

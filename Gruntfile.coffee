@@ -237,8 +237,9 @@ generateMakefile = (callback) ->
   makefile += """
   dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static index.coffee
   \tmkdir -p dist
-  \trm -R dist/python
+  \trm -rf dist/python
   \trm -rf dist/index.html
+  \trm -rf dist/static
 
   \tmkdir dist/python
   \ttouch dist/.nojekyll

@@ -1,0 +1,52 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
+<link rel="stylesheet" href="/static/tomorrow.css" type="text/css"/>
+<style type="text/css">
+pre {
+    border: none !important;
+    background: none !important;
+    font-family: monospace !important;
+}
+</style>
+<link rel="icon" href="/static/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
+<title>Teleport - Lightweight JSON Types</title>
+<script src="/static/jquery.min.js"></script>
+<script src="/static/bootstrap/js/bootstrap.min.js"></script>
+</head>
+<body class="bs" style="margin:0px" onload="prettyPrint()">
+
+  {{{ nav }}}
+
+  <div class="container">
+		<h1 style="text-align:center">Teleport</h1>
+		<h4 style="text-align:center;margin-bottom:80px">Lightweight JSON Types</h4>
+    <div class="row">
+      <div class="col-md-6">
+        <pre class="prettyprint lang-py">from teleport import *
+
+schema = Struct([
+    required('text', String),
+    optional('duedate', DateTime),
+    required('tags', Array(String)),
+])</pre>
+        <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
+...     'text': 'Return videotapes',
+...     'duedate': '2014-10-14T21:17:00.663882',
+...     'tags': ['movies', 'havetodoit'],
+... })
+{'text': u'Return videotapes', 'duedate': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882), 'tags': [u'movies', u'havetodoit']}</pre>
+        <pre class="prettyprint lang-py">@route('/todo/add')
+def add_todo(request):
+    try:
+        todo = schema.from_json(json.loads(request.text))
+    except (ValidationError, TypeError):
+        return</pre>
+      </div>
+      <div class="col-md-6"></div>
+    </div>
+	</div>
+  <script src="/static/google-code-prettify/prettify.js"></script>
+</body>
+</html>

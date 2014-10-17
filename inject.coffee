@@ -21,13 +21,17 @@ sec = argv.section
 ver = argv.version
 jq = argv.jquery
 
+activeSection = project.sections[sec]
+
 nav = render "top_nav_docs.html", {
   menu:
     about: false
-    docs: true
+    docs: sec == 'python'
+    spec: sec == 'spec'
   activeSectionId: sec
-  activeSection: project.sections[sec]
+  activeSection: activeSection
   activeVersion: ver
+  showCheckouts: activeSection.checkouts.length > 0
 }
 
 

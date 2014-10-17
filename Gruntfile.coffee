@@ -94,6 +94,8 @@ module.exports = (grunt) ->
       apply exec, 'git clone -b cosmic git@github.com:cosmic-api/bootstrap.git cosmic-bootstrap'
       apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
       apply exec, 'git clone git@github.com:cosmic-api/teleport.py.git teleport-py'
+      apply exec, 'git clone git@github.com:cosmic-api/teleport-spec.git teleport-spec'
+
     ], @async()
 
   grunt.registerTask 'deploy', 'Deploy to GitHub pages.', ->
@@ -187,13 +189,12 @@ generateMakefile = (callback) ->
   makeSpecSphinx = (fullname, githubUrl) ->
     t = "tmp/#{fullname}.sphinx"
     """
-    build/#{fullname}.sphinx.tar: build/#{fullname} sphinx-bootstrap
+    build/#{fullname}.sphinx.tar: build/#{fullname} 
     \trm -rf #{t}
     \tcp -R build/#{fullname} #{t}
-    \techo '\\nhtml_theme_path = ["../../../sphinx-bootstrap"]\\n'   >> #{t}/source/conf.py
-    \techo '\\nhtml_theme_options = {"github_url": "#{githubUrl}"}\\n' >> #{t}/source/conf.py
+    \techo '\\nhtml_theme_path = ["../../../flask-sphinx-themes"]\\n'   >> #{t}/source/conf.py
     \tmkdir #{t}/build
-    \tsphinx-build -b html -D html_theme=bootstrap -D pygments_style=emacs #{t}/source #{t}/build
+    \tsphinx-build -b html -D html_theme=flask #{t}/source #{t}/build
     \ttar cf build/#{fullname}.sphinx.tar -C #{t}/build .
 
 
@@ -234,14 +235,24 @@ generateMakefile = (callback) ->
     makefile += injectNavbar "#{fullname}.sphinx", 'teleport', "python", version
     checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
 
+  for {version, branch} in [latest].concat project.sections.spec.checkouts
+    fullname = "teleport-spec-#{version}"
+
+    makefile += extractRef "teleport-spec", branch, fullname
+    makefile += makeSpecSphinx fullname, "https://github.com/cosmic-api/teleport-spec"
+    makefile += injectNavbar "#{fullname}.sphinx", "teleport", "spec", version
+    checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
+
+
   makefile += """
   dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static index.coffee
   \tmkdir -p dist
   \trm -rf dist/python
+  \trm -rf dist/spec
   \trm -rf dist/index.html
-  \trm -rf dist/static
 
   \tmkdir dist/python
+  \tmkdir dist/spec
   \ttouch dist/.nojekyll
   \tcp -R static dist
   \tcp -R cosmic-bootstrap/dist dist/static/bootstrap
@@ -252,6 +263,10 @@ generateMakefile = (callback) ->
   for {version, ref} in [latest].concat project.sections.python.checkouts
     makefile += "\tmkdir dist/python/#{version}\n"
     makefile += "\ttar xf build/teleport-py-#{version}.sphinx.inject.tar -C dist/python/#{version}\n"
+
+  for {version, ref} in [latest].concat project.sections.spec.checkouts
+    makefile += "\tmkdir dist/spec/#{version}\n"
+    makefile += "\ttar xf build/teleport-spec-#{version}.sphinx.inject.tar -C dist/spec/#{version}\n"
 
   parallelListFiles touchy, (err, results) ->
     if err

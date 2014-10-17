@@ -6,12 +6,11 @@
 /build
 /dist
 /node_modules
-/cosmic-bootstrap
-/cosmic-py
-/cosmic-docs
+
 /teleport-py
 /teleport-js
-/teleport-docs
+/teleport-spec
+
 /sphinx-bootstrap
 /flask-sphinx-themes
 /tmp

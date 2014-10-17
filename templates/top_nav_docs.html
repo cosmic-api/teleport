@@ -22,9 +22,12 @@
         <li{{#docs}} class="active"{{/docs}}>
           <a href="/python/latest/">Documentation</a>
         </li>
+        <li{{#spec}} class="active"{{/spec}}>
+          <a href="/spec/latest/">Specification</a>
+        </li>
       </ul>
       {{/menu}}
-      {{#activeSection}}
+      {{#showCheckouts}}
       <ul class="nav navbar-nav navbar-right">
         {{#star}}
         <li>
@@ -40,17 +43,19 @@
               <a href="/{{ activeSectionId }}/latest/">latest</a>
             </li>
             <li class="divider"></li>
-            {{#checkouts}}
-            <li>
-                <a href="/{{ activeSectionId }}/{{ version }}/">
-                  {{ version }}
-                </a>
-            </li>
-            {{/checkouts}}
+            {{#activeSection}}
+              {{#checkouts}}
+              <li>
+                  <a href="/{{ activeSectionId }}/{{ version }}/">
+                    {{ version }}
+                  </a>
+              </li>
+              {{/checkouts}}
+            {{/activeSection}}
           </ul>
         </li>
       </ul>
-      {{/activeSection}}
+      {{/showCheckouts}}
     </div>
   </div>
 </div>

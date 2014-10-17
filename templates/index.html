@@ -17,32 +17,7 @@ pre {
 </head>
 <body class="bs" style="margin:0px" onload="prettyPrint()">
 
-<nav class="navbar navbar-static-top navbar-default" role="navigation">
-  <div class="container">
-    <div class="navbar-header" style="width:70px">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-collapse">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a href="/">
-        <img src="/static/teleport-logo.svg" style="height:50px;width:50px"/>
-      </a> 
-    </div>
-    <div class="collapse navbar-collapse" id="bs-collapse">
-      <ul class="nav navbar-nav">
-        <li class="active">
-          <a href="/">About</a>
-        </li>
-        <li>
-          <a href="/python/latest/">Documentation</a>
-        </li>
-      </ul>
-    </div>
-  </div>
-</nav>
-
+{{{ nav }}}
 
 <div class="container">
 	<h1 style="text-align:center">Teleport</h1>
@@ -75,11 +50,11 @@ schema = Struct([
     <div class="col-md-8">
       <pre class="prettyprint lang-py">@route('/todo/add')
 def add_todo():
-  try:
-      todo = schema.from_json(request.json)
-  except ValidationError as e:
-      return (str(e), 400, {})
-  Todo(**todo).save()</pre>
+    try:
+        todo = schema.from_json(request.json)
+    except ValidationError as e:
+        return (str(e), 400, {})
+    Todo(**todo).save()</pre>
     </div>
   </div>
   <div class="row">
@@ -90,28 +65,28 @@ def add_todo():
     <div class="col-md-4" style="padding:50px;text-align:right">But infinitely extendable</div>
     <div class="col-md-8">
       <pre class="prettyprint lang-py">class Todo(BasicWrapper):
-  schema = Struct([
-      required('text', String),
-      optional('duedate', DateTime),
-      required('tags', Array(String)),
-  ])
+    schema = Struct([
+        required('text', String),
+        optional('duedate', DateTime),
+        required('tags', Array(String)),
+    ])
 
-  def __init__(self, text, tags, duedate=None):
-      self.text = text
-      self.tags = tags
-      self.duedate = duedate
+    def __init__(self, text, tags, duedate=None):
+        self.text = text
+        self.tags = tags
+        self.duedate = duedate
 
-  @classmethod
-  def assemble(cls, datum):
-      return cls(**datum)
+    @classmethod
+    def assemble(cls, datum):
+        return cls(**datum)
 
-  @classmethod
-  def disassemble(cls, todo):
-      return {
-        'text': todo.text,
-        'duedate': todo.duedate,
-        'tags': todo.tags
-      }</pre>
+    @classmethod
+    def disassemble(cls, todo):
+        return {
+          'text': todo.text,
+          'duedate': todo.duedate,
+          'tags': todo.tags
+        }</pre>
     </div>
   </div>
 </div>

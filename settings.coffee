@@ -1,4 +1,4 @@
-module.exports = {
+module.exports =
   title: "Teleport"
   sectionOrder: ["python", "spec"]
   sections:
@@ -12,9 +12,8 @@ module.exports = {
       ]
     spec:
       title: "Specification"
-      github: "teleport-docs"
+      github: "teleport-spec"
       star: false
       checkouts: [
-        { version: '1', branch: '1.0-maintenance' }
+        { version: '1.0', branch: '1.0-maintenance' }
       ]
-}

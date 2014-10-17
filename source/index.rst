@@ -6,10 +6,7 @@ Teleport
 .. note::
 
      If you're looking to dive right in, check out the `Python docs
-     </docs/teleport/python/>`_.
-
-.. image:: _static/transporter.jpg
-   :align: right
+     </python/latest/>`_.
 
 Teleport is:
 

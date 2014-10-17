@@ -471,19 +471,6 @@ def standard_types(type_getter=None, include=None):
                 "order": datum.keys()
             }
 
-    class Enum(ParametrizedWrapper):
-        schema = String
-        param_schema = Array(String)
-
-        def __init__(self, param):
-            self.param = param
-
-        @classmethod
-        def assemble(cls, datum):
-            if datum not in cls.param:
-                raise ValidationError("Illegal value for Enum", datum)
-            return datum
-
 
     class Struct(ParametrizedPrimitive):
         """*param* must be an :class:`OrderedDict`, where the keys are field
@@ -544,6 +531,7 @@ def standard_types(type_getter=None, include=None):
                 if name in datum.keys() and datum[name] != None:
                     ret[name] = schema.to_json(datum[name])
             return ret
+
 
     Struct.param_schema = OrderedMap(Struct([
         required(u"schema", Schema),

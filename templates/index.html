@@ -17,36 +17,105 @@ pre {
 </head>
 <body class="bs" style="margin:0px" onload="prettyPrint()">
 
-  {{{ nav }}}
-
+<nav class="navbar navbar-static-top navbar-default" role="navigation">
   <div class="container">
-		<h1 style="text-align:center">Teleport</h1>
-		<h4 style="text-align:center;margin-bottom:80px">Lightweight JSON Types</h4>
-    <div class="row">
-      <div class="col-md-6">
-        <pre class="prettyprint lang-py">from teleport import *
+    <div class="navbar-header" style="width:70px">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/">
+        <img src="/static/teleport-logo.svg" style="height:50px;width:50px"/>
+      </a> 
+    </div>
+    <div class="collapse navbar-collapse" id="bs-collapse">
+      <ul class="nav navbar-nav">
+        <li class="active">
+          <a href="/">About</a>
+        </li>
+        <li>
+          <a href="/python/latest/">Documentation</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+<div class="container">
+	<h1 style="text-align:center">Teleport</h1>
+	<h4 style="text-align:center;margin-bottom:80px">Lightweight JSON Types</h4>
+  <div class="row">
+    <div class="col-md-4" style="padding:50px;text-align:right">Type definitions</div>
+    <div class="col-md-8">
+      <pre class="prettyprint lang-py">from teleport import *
 
 schema = Struct([
-    required('text', String),
-    optional('duedate', DateTime),
-    required('tags', Array(String)),
+  required('text', String),
+  optional('duedate', DateTime),
+  required('tags', Array(String)),
 ])</pre>
-        <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4" style="padding:50px;text-align:right">For serialization</div>
+    <div class="col-md-8">
+      <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
 ...     'text': 'Return videotapes',
 ...     'duedate': '2014-10-14T21:17:00.663882',
-...     'tags': ['movies', 'havetodoit'],
+...     'tags': ['movies'],
 ... })
-{'text': u'Return videotapes', 'duedate': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882), 'tags': [u'movies', u'havetodoit']}</pre>
-        <pre class="prettyprint lang-py">@route('/todo/add')
-def add_todo(request):
-    try:
-        todo = schema.from_json(json.loads(request.text))
-    except (ValidationError, TypeError):
-        return</pre>
-      </div>
-      <div class="col-md-6"></div>
+{'text': u'Return videotapes', 'duedate': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882), 'tags': [u'movies']}</pre>
     </div>
-	</div>
-  <script src="/static/google-code-prettify/prettify.js"></script>
+  </div>
+  <div class="row">
+    <div class="col-md-4" style="padding:50px;text-align:right">For validating input</div>
+    <div class="col-md-8">
+      <pre class="prettyprint lang-py">@route('/todo/add')
+def add_todo():
+  try:
+      todo = schema.from_json(request.json)
+  except ValidationError as e:
+      return (str(e), 400, {})
+  Todo(**todo).save()</pre>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4" style="padding:50px;text-align:right">Tiny</div>
+    <div class="col-md-8" style="padding:50px">&lt; 1000 lines of code</div>
+  </div>
+  <div class="row">
+    <div class="col-md-4" style="padding:50px;text-align:right">But infinitely extendable</div>
+    <div class="col-md-8">
+      <pre class="prettyprint lang-py">class Todo(BasicWrapper):
+  schema = Struct([
+      required('text', String),
+      optional('duedate', DateTime),
+      required('tags', Array(String)),
+  ])
+
+  def __init__(self, text, tags, duedate=None):
+      self.text = text
+      self.tags = tags
+      self.duedate = duedate
+
+  @classmethod
+  def assemble(cls, datum):
+      return cls(**datum)
+
+  @classmethod
+  def disassemble(cls, todo):
+      return {
+        'text': todo.text,
+        'duedate': todo.duedate,
+        'tags': todo.tags
+      }</pre>
+    </div>
+  </div>
+</div>
+
+<script src="/static/google-code-prettify/prettify.js"></script>
 </body>
 </html>

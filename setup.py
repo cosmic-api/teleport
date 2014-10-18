@@ -6,13 +6,13 @@ with open("README.rst") as readme:
     long_description = readme.read()
 
 setup(
-    name = 'teleport',
-    version = "0.2.1",
-    packages = ['teleport', 'teleport.testsuite'],
-    description = 'An extandable serialization system',
-    license = "MIT",
-    author = "8313547 Canada Inc.",
-    author_email = "alexei.boronine@gmail.com",
+    name='teleport',
+    version="0.2.1",
+    packages=['teleport', 'teleport.testsuite'],
+    description='An extandable serialization system',
+    license="MIT",
+    author="8313547 Canada Inc.",
+    author_email="alexei@boronine.com",
     install_requires=[
         "isodate>=0.4.9",
         "ordereddict>=1.1"

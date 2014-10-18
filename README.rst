@@ -1,10 +1,26 @@
-===========
-Teleport.py
-===========
+========
+Teleport
+========
 
-The canonical implementation of Teleport, a cross-language extendable serialization system.
+Teleport is:
 
-Check out the `spec <http://www.cosmic-api.com/docs/teleport/spec/latest/>`_ and the `documentation <http://www.cosmic-api.com/docs/teleport/python/latest/>`_.
+* A serialization system on top of JSON
+* An input validation system
+* A declarative schema system
+* An aid in automatically generating API docs
+* Portable and extendable
+* Open Source (`MIT license <http://opensource.org/licenses/MIT>`_)
+
+Check out the `spec <http://www.teleport-json.org/spec/latest/>`_ and the `documentation <http://www.teleport-json.org/python/latest/>`_.
+
+Testing
+-------
+
+After installing `Tox <https://tox.readthedocs.org/en/latest/>`_, you can test Teleport by calling:
+
+.. code:: bash
+
+   $ tox
 
 License
 -------

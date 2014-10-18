@@ -2,6 +2,9 @@
 Teleport
 ========
 
+.. image:: https://travis-ci.org/cosmic-api/teleport.py.svg
+   :target: https://travis-ci.org/cosmic-api/teleport.py
+
 Teleport is:
 
 * A serialization system on top of JSON

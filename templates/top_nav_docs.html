@@ -29,11 +29,14 @@
       {{/menu}}
       {{#showCheckouts}}
       <ul class="nav navbar-nav navbar-right">
-        {{#star}}
-        <li>
-          <iframe src="http://ghbtns.com/github-btn.html?user=cosmic-api&amp;repo={{ github }}&amp;type=watch&amp;count=true" style="margin-top:15px" allowtransparency="true" frameborder="0" scrolling="0" width="85" height="20"/>
-        </li>
-        {{/star}}
+        {{#activeSection}}
+          {{#star}}
+          <li class="hidden-xs">
+            <iframe src="http://ghbtns.com/github-btn.html?user=cosmic-api&amp;repo={{ github }}&amp;type=watch&amp;count=true" style="margin-top:15px" allowtransparency="true" frameborder="0" scrolling="0" width="85" height="20"/>
+          </li>
+          {{/star}}
+          <li class="hidden-xs"><a href="https://github.com/cosmic-api/{{ github }}" style="padding-left:0px"> &nbsp;cosmic-api/{{ github }}</a></li>
+        {{/activeSection}}
         <li class="dropdown">
           <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{ activeVersion }}
             <b class="caret"></b>

@@ -20,23 +20,28 @@ pre {
 {{{ nav }}}
 
 <div class="container">
-	<h1 style="text-align:center">Teleport</h1>
-	<h4 style="text-align:center;margin-bottom:80px">Lightweight JSON Types</h4>
   <div class="row">
-    <div class="col-md-4" style="padding:50px;text-align:right">Type definitions</div>
-    <div class="col-md-8">
+    <div class="col-md-3" style="padding:50px;">
+      <h1>Teleport</h1>
+      <h7>JSON Types for Python</h7>
+    </div>
+    <div class="col-md-9"></div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px">Type definitions &mdash;</div>
+    <div class="col-md-9">
       <pre class="prettyprint lang-py">from teleport import *
 
 schema = Struct([
-  required('text', String),
-  optional('duedate', DateTime),
-  required('tags', Array(String)),
+    required('text', String),
+    optional('duedate', DateTime),
+    required('tags', Array(String)),
 ])</pre>
     </div>
   </div>
   <div class="row">
-    <div class="col-md-4" style="padding:50px;text-align:right">For serialization</div>
-    <div class="col-md-8">
+    <div class="col-md-3" style="padding:50px">For serialization &mdash;</div>
+    <div class="col-md-9">
       <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
 ...     'text': 'Return videotapes',
 ...     'duedate': '2014-10-14T21:17:00.663882',
@@ -46,8 +51,8 @@ schema = Struct([
     </div>
   </div>
   <div class="row">
-    <div class="col-md-4" style="padding:50px;text-align:right">For validating input</div>
-    <div class="col-md-8">
+    <div class="col-md-3" style="padding:50px">For validating input &mdash;</div>
+    <div class="col-md-9">
       <pre class="prettyprint lang-py">@route('/todo/add')
 def add_todo():
     try:
@@ -58,12 +63,12 @@ def add_todo():
     </div>
   </div>
   <div class="row">
-    <div class="col-md-4" style="padding:50px;text-align:right">Tiny</div>
-    <div class="col-md-8" style="padding:50px">&lt; 1000 lines of code</div>
+    <div class="col-md-3" style="padding:50px">Tiny &mdash;</div>
+    <div class="col-md-9" style="padding:50px">&lt; 1000 <a href="https://github.com/cosmic-api/teleport.py/blob/master/teleport/types.py">lines of code</a></div>
   </div>
   <div class="row">
-    <div class="col-md-4" style="padding:50px;text-align:right">But infinitely extendable</div>
-    <div class="col-md-8">
+    <div class="col-md-3" style="padding:50px">But infinitely extendable &mdash;</div>
+    <div class="col-md-9">
       <pre class="prettyprint lang-py">class Todo(BasicWrapper):
     schema = Struct([
         required('text', String),

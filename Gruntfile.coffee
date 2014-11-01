@@ -98,15 +98,11 @@ module.exports = (grunt) ->
 
     ], @async()
 
-  grunt.registerTask 'deploy', 'Deploy to GitHub pages.', ->
+  grunt.registerTask 'deploy', 'Deploy.', ->
     # Pull, add, commit and push
     exec """
          cd dist; \
-         git checkout master; \
-         git pull origin master; \
-         git add -A; \
-         git commit -m "Regenerated"; \
-         git push origin master
+         rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org
          """, @async()
 
   grunt.registerTask 'clean', 'Remove all but the source files.', ->

@@ -14,7 +14,6 @@ livereloadPort = 35729
 watchFiles = [
   'templates/**'
   'static/**'
-  'cosmic-bootstrap/less/**'
   'sphinx-bootstrap/**'
   'sphinx-boot.coffee'
   'inject.coffee'
@@ -109,7 +108,6 @@ module.exports = (grunt) ->
       apply exec, 'rm -rf build/*'
       apply exec, 'rm -rf dist/*'
       apply exec, 'rm -rf tmp/*'
-      apply exec, 'rm -rf cosmic-bootstrap/dist'
       apply exec, 'cd teleport-py/docs; make clean'
     ], @async()
 
@@ -125,7 +123,6 @@ generateMakefile = (callback) ->
 
   # Wildcard directories will be touched if their children are modified
   touchy = [
-    "cosmic-bootstrap/less"
     "teleport-py"
     "teleport-py/docs/source"
     "templates"
@@ -140,7 +137,6 @@ generateMakefile = (callback) ->
   node_modules: package.json
   \tnpm install
   \ttouch node_modules
-  cosmic-bootstrap/node_modules: cosmic-bootstrap/package.json
 
   # Bootstrap
 
@@ -244,7 +240,7 @@ generateMakefile = (callback) ->
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static index.coffee build/bootstrap-lumen.css build/bootstrap-lumen.min.css build/bootstrap-3.3.0-dist.zip
+  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap-lumen.css build/bootstrap-lumen.min.css build/bootstrap-3.3.0-dist.zip
   \tmkdir -p dist
   \trm -rf dist/python
   \trm -rf dist/spec

@@ -14,3 +14,7 @@
 /sphinx-bootstrap
 /flask-sphinx-themes
 /tmp
+
+# IntelliJ IDEA / PyCharm
+/.idea
+*.iml

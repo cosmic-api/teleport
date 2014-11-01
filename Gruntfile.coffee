@@ -91,7 +91,6 @@ module.exports = (grunt) ->
 
   grunt.registerTask 'init', 'Set up environment.', ->
     series [
-      apply exec, 'git clone -b cosmic git@github.com:cosmic-api/bootstrap.git cosmic-bootstrap'
       apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
       apply exec, 'git clone git@github.com:cosmic-api/teleport.py.git teleport-py'
       apply exec, 'git clone git@github.com:cosmic-api/teleport-spec.git teleport-spec'
@@ -142,13 +141,17 @@ generateMakefile = (callback) ->
   \tnpm install
   \ttouch node_modules
   cosmic-bootstrap/node_modules: cosmic-bootstrap/package.json
-  \t(cd cosmic-bootstrap; npm install)
-  \ttouch cosmic-bootstrap/node_modules
 
-  # Cosmic Bootstrap
+  # Bootstrap
 
-  cosmic-bootstrap/dist: cosmic-bootstrap/less
-  \t(cd cosmic-bootstrap; npm install; node_modules/.bin/grunt dist)
+  build/bootstrap-lumen.css:
+  \t(cd build && wget http://bootswatch.com/lumen/bootstrap.css && mv bootstrap.css bootstrap-lumen.css)
+
+  build/bootstrap-lumen.min.css:
+  \t(cd build && wget http://bootswatch.com/lumen/bootstrap.min.css && mv bootstrap.min.css bootstrap-lumen.min.css)
+
+  build/bootstrap-3.3.0-dist.zip:
+  \t(cd build && wget https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip)
 
   """
 
@@ -241,7 +244,7 @@ generateMakefile = (callback) ->
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static index.coffee
+  dist: #{checkoutDeps.join ' '} cosmic-bootstrap/dist static index.coffee build/bootstrap-lumen.css build/bootstrap-lumen.min.css build/bootstrap-3.3.0-dist.zip
   \tmkdir -p dist
   \trm -rf dist/python
   \trm -rf dist/spec
@@ -251,7 +254,11 @@ generateMakefile = (callback) ->
   \tmkdir dist/spec
   \ttouch dist/.nojekyll
   \tcp -R static dist
-  \tcp -R cosmic-bootstrap/dist dist/static/bootstrap
+  \trm -rf dist/static/bootstrap
+  \tunzip build/bootstrap-3.3.0-dist.zip -d dist/static
+  \tmv dist/static/dist dist/static/bootstrap
+  \tcp build/bootstrap-lumen.css dist/static/bootstrap/css/bootstrap.css
+  \tcp build/bootstrap-lumen.min.css dist/static/bootstrap/css/bootstrap.min.css
   \t#{coffeeExec} index.coffee > dist/index.html
 
   """
@@ -283,3 +290,4 @@ generateMakefile = (callback) ->
       """
 
     callback null, makefile
+

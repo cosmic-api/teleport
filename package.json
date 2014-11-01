@@ -16,6 +16,7 @@
     "find": "0.1.4",
     "jquery": "1.8.3",
     "jsdom": "0.6.5",
-    "mustache": "0.8.1"
+    "mustache": "0.8.1",
+    "namespace-css": "0.1.3"
   }
 }

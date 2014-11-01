@@ -143,11 +143,17 @@ generateMakefile = (callback) ->
   build/bootstrap-lumen.css:
   \t(cd build && wget http://bootswatch.com/lumen/bootstrap.css && mv bootstrap.css bootstrap-lumen.css)
 
-  build/bootstrap-lumen.min.css:
-  \t(cd build && wget http://bootswatch.com/lumen/bootstrap.min.css && mv bootstrap.min.css bootstrap-lumen.min.css)
-
   build/bootstrap-3.3.0-dist.zip:
   \t(cd build && wget https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip)
+
+  build/bootstrap.tar: build/bootstrap-lumen.css build/bootstrap-3.3.0-dist.zip
+  \trm -rf tmp/bootstrap
+  \tunzip build/bootstrap-3.3.0-dist.zip -d tmp
+  \tmv tmp/dist tmp/bootstrap
+  \tnamespace-css build/bootstrap-lumen.css -s .bs -o tmp/bootstrap/css/bootstrap.css
+  \tsed -i 's/\\.bs\\ body/\\.bs/g' tmp/bootstrap/css/bootstrap.css
+  \tcp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
+  \ttar cf build/bootstrap.tar -C tmp/bootstrap .
 
   """
 
@@ -240,7 +246,7 @@ generateMakefile = (callback) ->
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap-lumen.css build/bootstrap-lumen.min.css build/bootstrap-3.3.0-dist.zip
+  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap.tar
   \tmkdir -p dist
   \trm -rf dist/python
   \trm -rf dist/spec
@@ -251,10 +257,8 @@ generateMakefile = (callback) ->
   \ttouch dist/.nojekyll
   \tcp -R static dist
   \trm -rf dist/static/bootstrap
-  \tunzip build/bootstrap-3.3.0-dist.zip -d dist/static
-  \tmv dist/static/dist dist/static/bootstrap
-  \tcp build/bootstrap-lumen.css dist/static/bootstrap/css/bootstrap.css
-  \tcp build/bootstrap-lumen.min.css dist/static/bootstrap/css/bootstrap.min.css
+  \tmkdir -p dist/static/bootstrap
+  \ttar xf build/bootstrap.tar -C dist/static/bootstrap
   \t#{coffeeExec} index.coffee > dist/index.html
 
   """

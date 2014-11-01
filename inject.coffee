@@ -45,13 +45,13 @@ inject = (html, callback) ->
     $ = jquery.create window
 
     $('body').prepend nav
-    $('head').append """
+    $('head').prepend """
       <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
       <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
       <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
     """
     if jq
-      $('head').append """
+      $('head').prepend """
 	<script src="/static/jquery.min.js"></script>
       """
     ga = window.document.createElement 'script'

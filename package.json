@@ -1,6 +1,4 @@
 {
-  "name": "Cosmic",
-  "version": "0.0.0",
   "devDependencies": {
     "underscore": "1.4.4",
     "filewalker": "0.1.1",

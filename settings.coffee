@@ -27,7 +27,8 @@ module.exports =
       star: false
       repoLink: true
       checkouts: []
-      subMenuShow: false
+      subMenuShow: true
       subMenu: [
+        { version: 'latest' }
         { version: '1.0' }
       ]

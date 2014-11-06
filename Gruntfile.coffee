@@ -220,20 +220,9 @@ generateMakefile = (callback) ->
     makefile += injectNavbar "#{fullname}.sphinx", 'teleport', "python", version
     checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
 
-  # Old teleport spec
-  fullname = "teleport-spec-1.0"
-  makefile += """
-    build/#{fullname}.tar:
-    \ttar cf build/#{fullname}.tar -C teleport-spec-1.0 .
-
-
-    """
-  makefile += injectNavbar "#{fullname}", "teleport", "spec", "1.0"
-  checkoutDeps.push "build/#{fullname}.inject.tar"
-
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap.tar #{injector}
+  dist: #{checkoutDeps.join ' '} static index.coffee spec.coffee build/bootstrap.tar #{injector} teleport/teleport.txt
   \trm -rf dist
   \tmkdir -p dist
 
@@ -244,12 +233,19 @@ generateMakefile = (callback) ->
   \trm -rf dist/static/bootstrap
   \tmkdir -p dist/static/bootstrap
   \ttar xf build/bootstrap.tar -C dist/static/bootstrap
+
   \t#{coffeeExec} index.coffee > dist/index.html
   \t#{coffeeExec} inject.coffee --file dist/index.html --section home
 
   \t# Old Teleport spec
-  \tmkdir dist/spec/1.0
-  \ttar xf build/teleport-spec-1.0.inject.tar -C dist/spec/1.0
+  \tcp -R teleport-spec-1.0 dist/spec/1.0
+  \t#{coffeeExec} inject.coffee --dir dist/spec/1.0 --section spec --version '1.0' --jquery
+
+  \t# New Teleport spec
+  \tmkdir dist/spec/latest
+  \t#{coffeeExec} spec.coffee > dist/spec/latest/index.html
+  \t#{coffeeExec} inject.coffee --file dist/spec/latest/index.html --section spec --version 'latest'
+
 
 
   """

@@ -2,9 +2,9 @@ fs = require 'fs'
 find = require 'find'
 mustache = require 'mustache'
 jsdom = require 'jsdom'
-jquery = require 'jquery'
 project = require './settings'
 argv = require('optimist').argv
+jquerySrc = fs.readFileSync "static/jquery.min.js", "utf-8"
 
 render = (file, context) ->
   raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()
@@ -55,23 +55,20 @@ nav = render "top_nav_docs.html", {
 
 inject = (html, callback) ->
 
-  jsdom.env html, (errors, window) ->
-
+  jsdom.env html, src: [jquerySrc], (errors, window) ->
     if errors
       callback errors
 
-    $ = jquery.create window
+    if jq
+      window.document.head.appendChild makeScriptElement window.document, "/static/jquery.min.js"
 
-    $('body').prepend nav
-    $('head').prepend """
+    window.$('body').prepend nav
+    window.$('head').prepend """
       <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
       <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
       <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
     """
-    if jq
-      $('head').prepend """
-	<script src="/static/jquery.min.js"></script>
-      """
+
     ga = window.document.createElement 'script'
     ga.type  = "text/javascript"
     ga.text = """
@@ -85,8 +82,9 @@ inject = (html, callback) ->
     """
     window.document.head.appendChild ga
     window.document.head.appendChild makeScriptElement window.document, "/static/bootstrap/js/bootstrap.min.js"
-    $('head').append "\n\n"
 
-    callback null, window.document.innerHTML
+    window.$('head').append "\n\n"
+
+    callback null, window.document.documentElement.outerHTML
 
 main()

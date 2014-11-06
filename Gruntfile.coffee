@@ -235,7 +235,7 @@ generateMakefile = (callback) ->
   \ttar xf build/bootstrap.tar -C dist/static/bootstrap
 
   \t#{coffeeExec} index.coffee > dist/index.html
-  \t#{coffeeExec} inject.coffee --file dist/index.html --section home
+  \t#{coffeeExec} inject.coffee --file dist/index.html --section home --nobs
 
   \t# Old Teleport spec
   \tcp -R teleport-spec-1.0 dist/spec/1.0
@@ -244,7 +244,7 @@ generateMakefile = (callback) ->
   \t# New Teleport spec
   \tmkdir dist/spec/latest
   \t#{coffeeExec} spec.coffee > dist/spec/latest/index.html
-  \t#{coffeeExec} inject.coffee --file dist/spec/latest/index.html --section spec --version 'latest'
+  \t#{coffeeExec} inject.coffee --file dist/spec/latest/index.html --section spec --version 'latest' --nobs
 
 
 

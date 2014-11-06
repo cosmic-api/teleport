@@ -20,7 +20,6 @@ dir = argv.dir
 file = argv.file
 sec = argv.section
 ver = argv.version
-jq = argv.jquery
 
 main = ->
   if file?
@@ -59,12 +58,11 @@ inject = (html, callback) ->
     if errors
       callback errors
 
-    if jq
+    if argv.jquery
       window.document.head.appendChild makeScriptElement window.document, "/static/jquery.min.js"
 
     window.$('body').prepend nav
     window.$('head').prepend """
-      <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
       <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
       <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
     """
@@ -81,7 +79,12 @@ inject = (html, callback) ->
       ga('send', 'pageview');
     """
     window.document.head.appendChild ga
-    window.document.head.appendChild makeScriptElement window.document, "/static/bootstrap/js/bootstrap.min.js"
+
+    if not argv.nobs
+      window.document.head.appendChild makeScriptElement window.document, "/static/bootstrap/js/bootstrap.min.js"
+      window.$('head').append """
+        <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
+      """
 
     window.$('head').append "\n\n"
 

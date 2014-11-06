@@ -30,5 +30,6 @@ module.exports =
       subMenuShow: true
       subMenu: [
         { version: 'latest' }
+        { divider: true }
         { version: '1.0' }
       ]

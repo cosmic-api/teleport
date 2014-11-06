@@ -19,6 +19,9 @@
     .draft-container pre .title {
         font-weight: bold;
     }
+    .draft-container pre .meta {
+        color: #999999;
+    }
     .draft-container pre .page-stuff {
         color: #999999;
     }
@@ -32,7 +35,22 @@
 <body class="bs" style="margin:0px">
 
 <div class="container">
-    <div class="col-md-12">
+    <div class="col-md-4" style="margin-top:80px">
+        <h1 style="margin-bottom:40px">
+            Specification
+        </h1>
+        <p>
+            An <a href="https://www.ietf.org/id-info/">Internet Draft</a> is
+            ready to be submitted on Nov 10, 2014. I&nbsp;welcome you to join the
+            discussion in the <a href="https://groups.google.com/forum/#!forum/teleport-json">mailing list</a>.
+        </p>
+        <p>
+            Teleport is very new and needs all kinds of help: from reviewing the
+            specification, to suggesting features, to porting it to new programming
+            languages.
+        </p>
+    </div>
+    <div class="col-md-8">
         <div class="draft-container" style="margin-left:auto;margin-right:auto">
             {{{ body }}}
         </div>

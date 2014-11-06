@@ -4,6 +4,9 @@ module.exports =
   sections:
     home:
       title: "About"
+      github: "teleport"
+      star: true
+      repoLink: true
       subMenuShow: false
     python:
       title: "Python"

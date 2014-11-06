@@ -92,8 +92,7 @@ module.exports = (grunt) ->
     series [
       apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
       apply exec, 'git clone git@github.com:cosmic-api/teleport.py.git teleport-py'
-      apply exec, 'git clone git@github.com:cosmic-api/teleport-spec.git teleport-spec'
-
+      apply exec, 'git clone git@github.com:cosmic-api/teleport.git teleport'
     ], @async()
 
   grunt.registerTask 'deploy', 'Deploy.', ->
@@ -187,21 +186,6 @@ generateMakefile = (callback) ->
     """
 
 
-  makeSpecSphinx = (fullname, githubUrl) ->
-    t = "tmp/#{fullname}.sphinx"
-    """
-    build/#{fullname}.sphinx.tar: build/#{fullname} 
-    \trm -rf #{t}
-    \tcp -R build/#{fullname} #{t}
-    \techo '\\nhtml_theme_path = ["../../../flask-sphinx-themes"]\\n'   >> #{t}/source/conf.py
-    \tmkdir #{t}/build
-    \tsphinx-build -b html -D html_theme=flask #{t}/source #{t}/build
-    \ttar cf build/#{fullname}.sphinx.tar -C #{t}/build .
-
-
-    """
-
-
   injectNavbar = (archive, project, section, version, jquery) ->
     t = "tmp/#{archive}.inject"
     jqueryOpt = if jquery then '--jquery' else ''
@@ -236,13 +220,16 @@ generateMakefile = (callback) ->
     makefile += injectNavbar "#{fullname}.sphinx", 'teleport', "python", version
     checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
 
-  for {version, branch} in [latest].concat project.sections.spec.checkouts
-    fullname = "teleport-spec-#{version}"
+  # Old teleport spec
+  fullname = "teleport-spec-1.0"
+  makefile += """
+    build/#{fullname}.tar:
+    \ttar cf build/#{fullname}.tar -C teleport-spec-1.0 .
 
-    makefile += extractRef "teleport-spec", branch, fullname
-    makefile += makeSpecSphinx fullname, "https://github.com/cosmic-api/teleport-spec"
-    makefile += injectNavbar "#{fullname}.sphinx", "teleport", "spec", version
-    checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
+
+    """
+  makefile += injectNavbar "#{fullname}", "teleport", "spec", version
+  checkoutDeps.push "build/#{fullname}.inject.tar"
 
 
   makefile += """
@@ -261,15 +248,22 @@ generateMakefile = (callback) ->
   \ttar xf build/bootstrap.tar -C dist/static/bootstrap
   \t#{coffeeExec} index.coffee > dist/index.html
 
+  \t# Old Teleport spec
+  \tmkdir dist/spec/1.0
+  \ttar xf build/teleport-spec-1.0.inject.tar -C dist/spec/1.0
+
+
   """
 
   for {version, ref} in [latest].concat project.sections.python.checkouts
     makefile += "\tmkdir dist/python/#{version}\n"
     makefile += "\ttar xf build/teleport-py-#{version}.sphinx.inject.tar -C dist/python/#{version}\n"
 
+  """
   for {version, ref} in [latest].concat project.sections.spec.checkouts
     makefile += "\tmkdir dist/spec/#{version}\n"
     makefile += "\ttar xf build/teleport-spec-#{version}.sphinx.inject.tar -C dist/spec/#{version}\n"
+  """
 
   parallelListFiles touchy, (err, results) ->
     if err

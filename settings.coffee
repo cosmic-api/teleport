@@ -13,9 +13,9 @@ module.exports =
       ]
     spec:
       title: "Specification"
-      github: "teleport-spec"
+      github: "teleport"
       star: false
       repoLink: true
       checkouts: [
-        { version: '1.0', branch: '1.0-maintenance' }
+        { version: '1.0', branch: 'archive-1.0' }
       ]

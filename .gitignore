@@ -9,7 +9,7 @@
 
 /teleport-py
 /teleport-js
-/teleport-spec
+/teleport
 
 /sphinx-bootstrap
 /flask-sphinx-themes
@@ -18,5 +18,4 @@
 # IntelliJ IDEA / PyCharm
 /.idea
 *.iml
-
 

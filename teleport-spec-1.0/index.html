@@ -1,0 +1,317 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Teleport &mdash; Teleport Spec 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Teleport Spec 1.0 documentation" href="#" />
+   
+  
+  <link media="only screen and (max-device-width: 480px)" href="_static/small_flask.css" type= "text/css" rel="stylesheet" />
+
+  </head>
+  <body>
+  
+  
+  <div class=indexwrapper>
+  
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">Teleport Spec 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="teleport">
+<h1>Teleport<a class="headerlink" href="#teleport" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you&#8217;re looking to dive right in, check out the <a class="reference external" href="/python/latest/">Python docs</a>.</p>
+</div>
+<p>Teleport is:</p>
+<ul class="simple">
+<li>A serialization system on top of JSON</li>
+<li>An input validation system</li>
+<li>A declarative schema system</li>
+<li>An aid in automatically generating API docs</li>
+<li>Portable and extendable</li>
+<li>Open Source (<a class="reference external" href="http://opensource.org/licenses/MIT">MIT license</a>)</li>
+</ul>
+<p>Teleport is not a serialization <em>layer</em>. It provides 12 built-in data types to
+get you started, however, using Teleport for a non-trivial project means
+defining data types of your own. In object-oriented languages, this often
+involves augmenting your classes to make them serializable.</p>
+<p>Once registered with Teleport, a custom data type will become a first-class
+citizen of the serialization system. Defining an array of widgets is just as
+easy as defining an array of integers, provided that you made the Widget class
+serializable.</p>
+<p>Such definitions (like &#8220;array of widgets&#8221;) are also serializable. This feature
+is crucial in allowing <a class="reference external" href="http://www.cosmic-api.com/">Cosmic</a> clients to share
+a deeper understanding of each other.</p>
+<p>The canonical implementation of Teleport is written in Python.</p>
+<div class="section" id="motivation">
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>Many languages such as Python or JavaScript do not support static typing. But
+Python (to use it as an example) is not without type definitions! Even the
+biggest proponent of dynamic typing will admit that it&#8217;s a good idea to
+document the parameter types of public library functions. This kind of static
+typing may be adequate for libraries, but web APIs have 3 characteristics that
+make them practically beg for more:</p>
+<ol class="arabic simple">
+<li>When a user passes in a wrong value into your library&#8217;s function, it is
+<em>their code</em> failing, even if the stack trace points in your direction.
+When an API call fails in a similar manner, it is your code, your server,
+your database. If data is not checked at input, it may travel deep into
+your code before causing an error, possibly leaving your system in an
+inconsistent state.</li>
+<li>While libraries need only worry about occasional mistakes, web APIs need to
+consider malicious clients. With this in mind, the idea of the likelihood
+a certain type of input becomes irrelevant. An attacker will craft precicely
+the unlikeliest piece of data in order to make your system fail.</li>
+<li>Unlike data passed between libraries, web API data needs to be serialized
+and deserialized. Any non-trivial serialization system needs to be
+instructed with regards to the data types, either declaratively with a
+schema or imperatively with a bunch of custom functions.</li>
+</ol>
+<p>Assuming that serialization, deserialization and validation code needs to be
+written, the question is: how do we structure this code? Teleport is a
+solution to precicely this problem.</p>
+<p>Design goals:</p>
+<ol class="arabic simple">
+<li>Public functions need not worry about serialization or validation, they
+must take and return rich native data regardless of whether they are called
+remotely or locally.</li>
+<li>Type information should be specified declaratively, not imperatively.</li>
+<li>These definitions must be serializable (as <em>schemas</em>).</li>
+<li>Schemas must be well-suited for automatically generating API documentation.</li>
+<li>The generated JSON must be readable and familiar in a web programming
+context.</li>
+<li>Teleport should be small and portable.</li>
+</ol>
+</div>
+<div class="section" id="principles">
+<h2>Principles<a class="headerlink" href="#principles" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+<dt id="term-serializer">Serializer</dt>
+<dd><p class="first">An object that defines a serialization and deserialization function.
+Together, these functions define the <em>native form</em> as well as the
+<em>JSON form</em> of one particular type of data. As far as Teleport is
+concerned, a serializer is a data type definition.</p>
+<p class="last">Serializers may be <em>basic</em> (no parameters) or <em>parametrized</em>. For
+example, an array serializer needs to know what type of items the
+array is expected to contain. It&#8217;s these kinds of serializers that
+allow building deeply nested schemas for describing rich internet
+data.</p>
+</dd>
+<dt id="term-native-form">Native form</dt>
+<dd><p class="first">Data in its rich internal representation. For most built-in types,
+this data will consist of language primitives.</p>
+<p class="last">In object-oriented languages, the native form of user-defined types
+will often take the form of class instances. When you describe your
+classes to Teleport, it will be able to deserialize them from JSON and
+instantiate them for you.</p>
+</dd>
+<dt id="term-json-form">JSON form</dt>
+<dd>Data in its JSON represenation. There are many ways to represent the
+same data in JSON. This representation must be unambiguous. Because
+Teleport was designed for web APIs, the JSON data should look familiar
+and be readable as JSON was indeed designed to be.</dd>
+<dt id="term-deserialization">Deserialization</dt>
+<dd>Turning data as provided by the JSON parser into its native form.
+Validation is always performed during this step.</dd>
+<dt id="term-serialization">Serialization</dt>
+<dd>Turning data in its native form into the format expected by the JSON
+serializer. Validation is <em>not</em> performed during this step.</dd>
+</dl>
+</div>
+<div class="section" id="built-in-types">
+<h2>Built-In Types<a class="headerlink" href="#built-in-types" title="Permalink to this headline">¶</a></h2>
+<p>Teleport provides 12 built-in types. Each implementation must provide 12
+corresponding serializers.</p>
+<p>The native form of the built-in types is implementation-dependent and will be
+defined in language-specific documentation. The serialized form and the
+validation logic, however, is identical across all implementations. Below is a
+list of all built-in models and their validation logic.</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">Integer</span></tt></dt>
+<dd>Must be expressed as a JSON number. If the number has a decimal, the
+fractional part must be 0.</dd>
+<dt><tt class="docutils literal"><span class="pre">Float</span></tt></dt>
+<dd>Must be expressed as a JSON number. Implementations should support double-precision.</dd>
+<dt><tt class="docutils literal"><span class="pre">String</span></tt></dt>
+<dd>Must be expressed as a JSON string. Encoding must be UTF-8. Unicode errors
+must be dealt with strictly by throwing a validation error.</dd>
+<dt><tt class="docutils literal"><span class="pre">Boolean</span></tt></dt>
+<dd>Must be expressed as a JSON boolean.</dd>
+<dt><tt class="docutils literal"><span class="pre">Binary</span></tt></dt>
+<dd>Must be expressed as a JSON string containing Base64 encoded binary data.
+Base64 errors must result in a validation error.</dd>
+<dt><tt class="docutils literal"><span class="pre">JSON</span></tt></dt>
+<dd>Can be any JSON value. No validation is performed during deserialization.
+Depending on the implementation, it may be useful to wrap the JSON in a
+different object, so that a <tt class="docutils literal"><span class="pre">null</span></tt> JSON value won&#8217;t cause ambiguity.</dd>
+<dt><tt class="docutils literal"><span class="pre">DateTime</span></tt></dt>
+<dd>Must be expressed as an
+<a class="reference external" href="http://en.wikipedia.org/wiki/ISO_8601">ISO 8601</a>-encoded JSON string.
+If encoding is incorrect, a validation error must be thrown.</dd>
+<dt><tt class="docutils literal"><span class="pre">Array</span></tt> (parametrized by <em>items</em>)</dt>
+<dd>Must be expressed as a JSON array. The implementation must deserialize
+each of its items using the <em>items</em> serializer. If an item deserialization
+fails with a validation error, the array deserialization must fail
+likewise. The native form of an array must be an ordered sequence of
+native values, in the same order as they appear in the JSON form. If the
+array was empty, an empty sequence must be returned.</dd>
+<dt><tt class="docutils literal"><span class="pre">Map</span></tt> (parametrized by <em>items</em>)</dt>
+<dd>Must be expressed as a JSON object. The implementation must deserialize
+each value against the <em>items</em> schema. The native form must be a mapping
+type.</dd>
+<dt><tt class="docutils literal"><span class="pre">OrderedMap</span></tt> (parametrized by <em>items</em>)</dt>
+<dd>Must be expressed as a JSON object with two keys: <em>map</em> and <em>order</em>. The
+former is a <tt class="docutils literal"><span class="pre">Map</span></tt>, the latter is an array of strings representing the
+order of the keys in the map. If the implementation language has an
+ordered mapping type, it should be used, otherwise, a sequence of pairs
+will do.</dd>
+<dt><tt class="docutils literal"><span class="pre">Struct</span></tt> (parametrized by <em>fields</em>)</dt>
+<dd><p class="first">Must be expressed as a JSON object. If the object has a key that is
+different from every field name in <em>fields</em>, a validation error must be
+thrown. For every key-value pair in the object, the value must be
+deserialized against the <em>schema</em> of the corresponding field in <em>fields</em>.</p>
+<p>Each field must have a boolean attribute <em>required</em>, that, if true, will
+cause the struct to throw a validation error when the corresponding value
+is missing from the data being validated.</p>
+<p>Each field may have a string attribute <em>doc</em>, containing the documentation
+for the field.</p>
+<p class="last">The native form of the object must be a associative array containing all
+key-value pairs from the original object with native values replacing the
+JSON values.</p>
+</dd>
+<dt><tt class="docutils literal"><span class="pre">Schema</span></tt></dt>
+<dd>See the following section.</dd>
+</dl>
+</div>
+<div class="section" id="schemas">
+<h2>Schemas<a class="headerlink" href="#schemas" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+<dt id="term-schema">Schema</dt>
+<dd>The JSON form of a <a class="reference internal" href="#term-serializer"><em class="xref std std-term">serializer</em></a>.</dd>
+</dl>
+<p>A schema is always a JSON object, it must always have a <em>type</em> property.
+Parametrized types will also have <em>param</em> property. This property needs to
+be serialized and deserialized along with the rest of the schema, so it
+is useful to define it with a Teleport schema of its own.</p>
+<p><tt class="docutils literal"><span class="pre">Array</span></tt>, <tt class="docutils literal"><span class="pre">Map</span></tt> and <tt class="docutils literal"><span class="pre">OrderedMap</span></tt> are parametrized simply by:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Schema</span>
+</pre></div>
+</div>
+<p>A <tt class="docutils literal"><span class="pre">Struct</span></tt> schema&#8217;s <em>param</em> is of the following type:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">OrderedMap</span><span class="p">(</span><span class="n">Struct</span><span class="p">([</span>
+    <span class="n">required</span><span class="p">(</span><span class="s">&quot;schema&quot;</span><span class="p">,</span> <span class="n">Schema</span><span class="p">),</span>
+    <span class="n">required</span><span class="p">(</span><span class="s">&quot;required&quot;</span><span class="p">,</span> <span class="n">Boolean</span><span class="p">)</span>
+<span class="p">]))</span>
+</pre></div>
+</div>
+<p>To validate <tt class="docutils literal"><span class="pre">[{&quot;name&quot;:</span> <span class="pre">&quot;Rose&quot;,</span> <span class="pre">&quot;age&quot;:</span> <span class="pre">1},</span> <span class="pre">{&quot;name&quot;:</span> <span class="pre">&quot;Lily&quot;}]</span></tt>, you could use the following schema:</p>
+<div class="code json highlight-python"><div class="highlight"><pre><span class="p">{</span>
+    <span class="s">&quot;type&quot;</span><span class="p">:</span> <span class="s">&quot;Array&quot;</span><span class="p">,</span>
+    <span class="s">&quot;param&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s">&quot;type&quot;</span><span class="p">:</span> <span class="s">&quot;Struct&quot;</span><span class="p">,</span>
+        <span class="s">&quot;param&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s">&quot;map&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s">&quot;required&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+                    <span class="s">&quot;schema&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s">&quot;type&quot;</span><span class="p">:</span> <span class="s">&quot;String&quot;</span><span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s">&quot;age&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s">&quot;required&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+                    <span class="s">&quot;schema&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s">&quot;type&quot;</span><span class="p">:</span> <span class="s">&quot;Integer&quot;</span><span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s">&quot;order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;age&quot;</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Teleport</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#principles">Principles</a></li>
+<li><a class="reference internal" href="#built-in-types">Built-In Types</a></li>
+<li><a class="reference internal" href="#schemas">Schemas</a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="footer">
+    &copy; Copyright 2013, 8313547 Canada Inc..
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  
+  </div>
+  
+  </body>
+</html>

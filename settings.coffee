@@ -7,7 +7,7 @@ module.exports =
       subMenuShow: false
     python:
       title: "Python"
-      github: "teleport.py"
+      github: "teleport"
       star: true
       repoLink: true
       checkouts: [
@@ -16,7 +16,7 @@ module.exports =
       ]
       subMenuShow: true
       subMenu: [
-        { version: 'master' }
+        { version: 'latest' }
         { divider: true }
         { version: '0.2' }
         { version: '0.1' }
@@ -24,7 +24,7 @@ module.exports =
     spec:
       title: "Specification"
       github: "teleport"
-      star: false
+      star: true
       repoLink: true
       checkouts: []
       subMenuShow: true

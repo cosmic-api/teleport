@@ -1,14 +1,11 @@
 fs = require 'fs'
-jsdom = require 'jsdom'
 mustache = require 'mustache'
 
 render = (file, context) ->
   raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()
   return mustache.render raw, context
 
-html = (fs.readFileSync "teleport/teleport.html").toString()
-
-txt = fs.readFileSync("#{__dirname}/teleport/teleport.txt").toString()
+txt = fs.readFileSync("#{__dirname}/teleport/spec/teleport.txt").toString()
 
 pageStuffMode = null
 titleMode = null

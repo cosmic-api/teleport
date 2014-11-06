@@ -55,7 +55,7 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON 'package.json'
     exec:
       makeAll:
-        command: 'make dist'
+        command: 'make -j dist'
     watch:
       main:
         options:
@@ -91,7 +91,6 @@ module.exports = (grunt) ->
   grunt.registerTask 'init', 'Set up environment.', ->
     series [
       apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
-      apply exec, 'git clone git@github.com:cosmic-api/teleport.py.git teleport-py'
       apply exec, 'git clone git@github.com:cosmic-api/teleport.git teleport'
     ], @async()
 
@@ -122,8 +121,8 @@ generateMakefile = (callback) ->
 
   # Wildcard directories will be touched if their children are modified
   touchy = [
-    "teleport-py"
-    "teleport-py/docs/source"
+    "teleport"
+    "teleport/docs/source"
     "templates"
   ]
 
@@ -205,7 +204,7 @@ generateMakefile = (callback) ->
   for {version, branch} in [latest].concat project.sections.python.checkouts
     fullname = "teleport-py-#{version}"
 
-    makefile += extractRef "teleport-py", branch, fullname
+    makefile += extractRef "teleport", branch, fullname
     t = "tmp/#{fullname}.tox"
     makefile += """
       build/#{fullname}.tox.tar: build/#{fullname}
@@ -222,7 +221,7 @@ generateMakefile = (callback) ->
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} static index.coffee spec.coffee build/bootstrap.tar #{injector} teleport/teleport.txt
+  dist: #{checkoutDeps.join ' '} static index.coffee spec.coffee build/bootstrap.tar #{injector} teleport/spec/teleport.txt
   \trm -rf dist
   \tmkdir -p dist
 
@@ -254,11 +253,6 @@ generateMakefile = (callback) ->
     makefile += "\tmkdir dist/python/#{version}\n"
     makefile += "\ttar xf build/teleport-py-#{version}.sphinx.inject.tar -C dist/python/#{version}\n"
 
-  """
-  for {version, ref} in [latest].concat project.sections.spec.checkouts
-    makefile += "\tmkdir dist/spec/#{version}\n"
-    makefile += "\ttar xf build/teleport-spec-#{version}.sphinx.inject.tar -C dist/spec/#{version}\n"
-  """
 
   parallelListFiles touchy, (err, results) ->
     if err

@@ -17,9 +17,28 @@ makeScriptElement = (doc, url) ->
   return script
 
 dir = argv.dir
+file = argv.file
 sec = argv.section
 ver = argv.version
 jq = argv.jquery
+
+main = ->
+  if file?
+    injectFile file
+
+  if dir?
+    find.eachfile /.html$/, dir, (file) ->
+      injectFile file
+
+
+injectFile = (file) ->
+  html = (fs.readFileSync file).toString()
+
+  inject html, (errors, injectedHtml) ->
+
+    fs.writeFileSync file, injectedHtml
+    console.log "Injected content into #{file}"
+
 
 activeSection = project.sections[sec]
 
@@ -31,7 +50,6 @@ nav = render "top_nav_docs.html", {
   activeSectionId: sec
   activeSection: activeSection
   activeVersion: ver
-  showCheckouts: activeSection.checkouts.length > 0
 }
 
 
@@ -71,12 +89,4 @@ inject = (html, callback) ->
 
     callback null, window.document.innerHTML
 
-
-find.eachfile /.html$/, dir, (file) ->
-  html = (fs.readFileSync file).toString()
-
-  inject html, (errors, injectedHtml) ->
-
-    fs.writeFileSync file, injectedHtml
-    console.log "Injected content into #{file}"
-
+main()

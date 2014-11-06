@@ -2,6 +2,9 @@ module.exports =
   title: "Teleport"
   sectionOrder: ["python", "spec"]
   sections:
+    about:
+      title: "About"
+      subMenuShow: false
     python:
       title: "Python"
       github: "teleport.py"
@@ -11,11 +14,20 @@ module.exports =
         { version: '0.2', branch: '0.2-maintenance' }
         { version: '0.1', branch: '0.1-maintenance' }
       ]
+      subMenuShow: true
+      subMenu: [
+        { version: 'master' }
+        { divider: true }
+        { version: '0.2' }
+        { version: '0.1' }
+      ]
     spec:
       title: "Specification"
       github: "teleport"
       star: false
       repoLink: true
-      checkouts: [
-        { version: '1.0', branch: 'archive-1.0' }
+      checkouts: []
+      subMenuShow: false
+      subMenu: [
+        { version: '1.0' }
       ]

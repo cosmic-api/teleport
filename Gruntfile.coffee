@@ -228,16 +228,14 @@ generateMakefile = (callback) ->
 
 
     """
-  makefile += injectNavbar "#{fullname}", "teleport", "spec", version
+  makefile += injectNavbar "#{fullname}", "teleport", "spec", "1.0"
   checkoutDeps.push "build/#{fullname}.inject.tar"
 
 
   makefile += """
   dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap.tar
+  \trm -rf dist
   \tmkdir -p dist
-  \trm -rf dist/python
-  \trm -rf dist/spec
-  \trm -rf dist/index.html
 
   \tmkdir dist/python
   \tmkdir dist/spec

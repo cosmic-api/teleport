@@ -27,7 +27,6 @@
         </li>
       </ul>
       {{/menu}}
-      {{#showCheckouts}}
       <ul class="nav navbar-nav navbar-right">
         {{#activeSection}}
           {{#star}}
@@ -38,29 +37,29 @@
           {{#repoLink}}
           <li class="hidden-xs"><a href="https://github.com/cosmic-api/{{ github }}" style="padding-left:0px"> &nbsp;cosmic-api/{{ github }}</a></li>
           {{/repoLink}}
-        {{/activeSection}}
-        <li class="dropdown">
-          <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{ activeVersion }}
-            <b class="caret"></b>
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <a href="/{{ activeSectionId }}/latest/">latest</a>
+          {{#subMenuShow}}
+            <li class="dropdown">
+              <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{ activeVersion }}
+                <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                {{#subMenu}}
+                  {{#divider}}
+                    <li class="divider"></li>
+                  {{/divider}}
+                  {{#version}}
+                    <li>
+                        <a href="/{{ activeSectionId }}/{{ version }}/">
+                          {{ version }}
+                        </a>
+                    </li>
+                  {{/version}}
+                {{/subMenu}}
+              </ul>
             </li>
-            <li class="divider"></li>
-            {{#activeSection}}
-              {{#checkouts}}
-              <li>
-                  <a href="/{{ activeSectionId }}/{{ version }}/">
-                    {{ version }}
-                  </a>
-              </li>
-              {{/checkouts}}
-            {{/activeSection}}
-          </ul>
-        </li>
+          {{/subMenuShow}}
+        {{/activeSection}}
       </ul>
-      {{/showCheckouts}}
     </div>
   </div>
 </div>

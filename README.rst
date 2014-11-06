@@ -2,8 +2,8 @@
 Teleport
 ========
 
-.. image:: https://travis-ci.org/cosmic-api/teleport.py.svg
-   :target: https://travis-ci.org/cosmic-api/teleport.py
+.. image:: https://travis-ci.org/cosmic-api/teleport.svg
+   :target: https://travis-ci.org/cosmic-api/teleport
 
 Teleport is:
 

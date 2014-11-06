@@ -2,7 +2,7 @@ module.exports =
   title: "Teleport"
   sectionOrder: ["python", "spec"]
   sections:
-    about:
+    home:
       title: "About"
       subMenuShow: false
     python:

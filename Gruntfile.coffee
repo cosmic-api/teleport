@@ -233,7 +233,7 @@ generateMakefile = (callback) ->
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap.tar
+  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap.tar #{injector}
   \trm -rf dist
   \tmkdir -p dist
 
@@ -245,6 +245,7 @@ generateMakefile = (callback) ->
   \tmkdir -p dist/static/bootstrap
   \ttar xf build/bootstrap.tar -C dist/static/bootstrap
   \t#{coffeeExec} index.coffee > dist/index.html
+  \t#{coffeeExec} inject.coffee --file dist/index.html --section home
 
   \t# Old Teleport spec
   \tmkdir dist/spec/1.0

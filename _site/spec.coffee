@@ -5,7 +5,7 @@ render = (file, context) ->
   raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()
   return mustache.render raw, context
 
-txt = fs.readFileSync("#{__dirname}/teleport/spec/teleport.txt").toString()
+txt = fs.readFileSync("#{__dirname}/../_spec/teleport.txt").toString()
 
 pageStuffMode = null
 titleMode = null

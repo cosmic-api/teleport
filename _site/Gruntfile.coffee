@@ -172,7 +172,7 @@ generateMakefile = (callback) ->
     \tmkdir #{check}
     \ttar xf build/checkouts-#{branch}.tar -C #{check}
     \trm -rf #{t}
-    \tmv #{check}/python #{t}
+    \tcp -R #{check}/python #{t}
     \tmkdir #{t}/.tox
     \ttar xf build/generic-tox.tar -C #{t}/.tox
     \techo '\\nhtml_theme_path = ["../../../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
@@ -219,7 +219,7 @@ generateMakefile = (callback) ->
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} static index.coffee spec.coffee build/bootstrap.tar #{injector} teleport/spec/teleport.txt
+  dist: #{checkoutDeps.join ' '} static index.coffee spec.coffee build/bootstrap.tar #{injector} ../_spec/teleport.txt
   \trm -rf dist
   \tmkdir -p dist
 
@@ -235,6 +235,7 @@ generateMakefile = (callback) ->
   \t#{coffeeExec} inject.coffee --file dist/index.html --section home --nobs
 
   \t# Old Teleport spec
+  \tmkdir dist/spec/1.0
   \ttar xf archive/teleport-spec-old.tar -C dist/spec/1.0
   \t#{coffeeExec} inject.coffee --dir dist/spec/1.0 --section spec --version '1.0' --jquery
 

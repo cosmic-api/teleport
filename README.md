@@ -1,4 +1,3 @@
-========
 Teleport
 ========
 
@@ -9,9 +8,9 @@ Teleport is:
 * A declarative schema system
 * An aid in automatically generating API docs
 * Portable and extendable
-* Open Source (`MIT license <http://opensource.org/licenses/MIT>`_)
+* Open Source ([MIT license](http://opensource.org/licenses/MIT))
 
-Check out the `spec <http://www.teleport-json.org/spec/latest/>`_ and the `documentation <http://www.teleport-json.org/python/latest/>`_.
+Check out the [spec](http://www.teleport-json.org/spec/latest/) and the [documentation](http://www.teleport-json.org/python/latest/).
 
 License
 -------

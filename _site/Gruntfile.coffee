@@ -55,7 +55,7 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON 'package.json'
     exec:
       makeAll:
-        command: 'make -j dist'
+        command: 'make  dist'
     watch:
       main:
         options:
@@ -91,7 +91,6 @@ module.exports = (grunt) ->
   grunt.registerTask 'init', 'Set up environment.', ->
     series [
       apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
-      apply exec, 'git clone git@github.com:cosmic-api/teleport.git teleport'
     ], @async()
 
   grunt.registerTask 'deploy', 'Deploy.', ->
@@ -106,7 +105,6 @@ module.exports = (grunt) ->
       apply exec, 'rm -rf build/*'
       apply exec, 'rm -rf dist/*'
       apply exec, 'rm -rf tmp/*'
-      apply exec, 'cd teleport-py/docs; make clean'
     ], @async()
 
   grunt.registerTask 'live', ['configure', 'exec:makeAll', 'connect', 'watch']
@@ -121,8 +119,8 @@ generateMakefile = (callback) ->
 
   # Wildcard directories will be touched if their children are modified
   touchy = [
-    "teleport"
-    "teleport/docs/source"
+    "../python"
+    "../python/docs/source"
     "templates"
   ]
 
@@ -155,15 +153,16 @@ generateMakefile = (callback) ->
 
   """
 
-  extractRef = (projectDir, branch, fullname) ->
+  extractRef = (language, branch, fullname) ->
     """
-    #{projectDir}/.git/refs/heads/#{branch} :
-    \tgit --git-dir #{projectDir}/.git fetch origin #{branch}:#{branch}
+    ../.git/refs/heads/#{branch} :
+    \tgit --git-dir ../.git fetch origin #{branch}:#{branch}
 
-    build/#{fullname}: #{projectDir}/.git/refs/heads/#{branch}
+    build/#{fullname}: ../.git/refs/heads/#{branch}
     \trm -rf build/#{fullname}
     \tmkdir -p build/#{fullname}
-    \tgit --git-dir #{projectDir}/.git archive #{branch} | tar x -C build/#{fullname}
+    \tgit --git-dir ../.git archive #{branch} | tar x -C build/#{fullname}-full
+    \tcp -R build/#{fullname}-full/#{language} build/#{fullname}
 
 
     """
@@ -204,7 +203,7 @@ generateMakefile = (callback) ->
   for {version, branch} in [latest].concat project.sections.python.checkouts
     fullname = "teleport-py-#{version}"
 
-    makefile += extractRef "teleport", branch, fullname
+    makefile += extractRef "python", branch, fullname
     t = "tmp/#{fullname}.tox"
     makefile += """
       build/#{fullname}.tox.tar: build/#{fullname}
@@ -237,7 +236,7 @@ generateMakefile = (callback) ->
   \t#{coffeeExec} inject.coffee --file dist/index.html --section home --nobs
 
   \t# Old Teleport spec
-  \tcp -R teleport-spec-1.0 dist/spec/1.0
+  \ttar xf archive/teleport-spec-old.tar -C dist/spec/1.0
   \t#{coffeeExec} inject.coffee --dir dist/spec/1.0 --section spec --version '1.0' --jquery
 
   \t# New Teleport spec

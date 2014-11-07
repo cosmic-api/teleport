@@ -4,13 +4,11 @@ module.exports =
   sections:
     home:
       title: "About"
-      github: "teleport"
       star: true
       repoLink: true
       subMenuShow: false
     python:
       title: "Python"
-      github: "teleport"
       star: true
       repoLink: true
       checkouts: [
@@ -26,7 +24,6 @@ module.exports =
       ]
     spec:
       title: "Specification"
-      github: "teleport"
       star: true
       repoLink: true
       checkouts: []
@@ -36,3 +33,7 @@ module.exports =
         { divider: true }
         { version: '1.0' }
       ]
+  checkouts: [
+    '0.2-maintenance'
+    '0.1-maintenance'
+  ]

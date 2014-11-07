@@ -48,3 +48,4 @@ pip-log.txt
 
 # PyCharm
 /.idea
+*.iml

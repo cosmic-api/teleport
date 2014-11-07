@@ -89,9 +89,6 @@ module.exports = (grunt) ->
       .listen 9001
 
   grunt.registerTask 'init', 'Set up environment.', ->
-    series [
-      apply exec, 'git clone git@github.com:cosmic-api/flask-sphinx-themes.git'
-    ], @async()
 
   grunt.registerTask 'deploy', 'Deploy.', ->
     # Pull, add, commit and push
@@ -151,14 +148,22 @@ generateMakefile = (callback) ->
   \tcp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
   \ttar cf build/bootstrap.tar -C tmp/bootstrap .
 
-  # Generic Tox
+  # Generic venv
 
-  build/generic-tox.tar: build/checkouts-master.tar
-  \trm -rf tmp/generic-tox
-  \tmkdir tmp/generic-tox
-  \ttar xf build/checkouts-master.tar -C tmp/generic-tox
-  \t(cd tmp/generic-tox/python; tox -e py27 --notest)
-  \ttar cf build/generic-tox.tar -C tmp/generic-tox/python/.tox .
+  build/generic-venv.tar:
+  \trm -rf tmp/venv
+  \tvirtualenv tmp/venv
+  \t(. tmp/venv/bin/activate; pip install sphinx unittest2 coverage)
+  \ttar cf build/generic-venv.tar -C tmp/venv .
+
+  # Flask-style Python Docs
+
+  build/flask-sphinx-themes.tar:
+  \twget https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip -O tmp/flask-sphinx-themes.zip
+  \trm -rf tmp/flask-sphinx-themes-master
+  \t(cd tmp; unzip flask-sphinx-themes.zip)
+  \ttar cf build/flask-sphinx-themes.tar -C tmp/flask-sphinx-themes-master .
+
 
   """
 
@@ -167,23 +172,23 @@ generateMakefile = (callback) ->
     t = "tmp/#{fullname}.sphinx"
     check = "tmp/checkouts-#{branch}"
     """
-    build/#{fullname}.sphinx.tar: build/checkouts-#{branch}.tar build/generic-tox.tar
+    build/#{fullname}.sphinx.tar: build/checkouts-#{branch}.tar build/flask-sphinx-themes.tar
     \trm -rf #{check}
     \tmkdir #{check}
     \ttar xf build/checkouts-#{branch}.tar -C #{check}
     \trm -rf #{t}
     \tcp -R #{check}/python #{t}
-    \tmkdir #{t}/.tox
-    \ttar xf build/generic-tox.tar -C #{t}/.tox
-    \techo '\\nhtml_theme_path = ["../../../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
-    \t(. #{t}/.tox/py27/bin/activate; sphinx-build -b html -D html_theme=flask #{t}/docs/source #{t}/out)
+    \tmkdir #{t}/flask-sphinx-themes
+    \ttar xf build/flask-sphinx-themes.tar -C #{t}/flask-sphinx-themes
+    \techo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
+    \t(cd #{t}; sphinx-build -b html -D html_theme=flask docs/source out)
     \ttar cf build/#{fullname}.sphinx.tar -C #{t}/out .
 
 
     """
 
 
-  injectNavbar = (archive, project, section, version, jquery) ->
+  injectNavbar = (archive, section, version, jquery) ->
     t = "tmp/#{archive}.inject"
     jqueryOpt = if jquery then '--jquery' else ''
     """
@@ -211,10 +216,10 @@ generateMakefile = (callback) ->
 
   checkoutDeps = []
   for {version, branch} in [latest].concat project.sections.python.checkouts
-    fullname = "teleport-py-#{version}"
+    fullname = "py-docs-#{branch}"
 
     makefile += makePythonSphinx fullname, branch
-    makefile += injectNavbar "#{fullname}.sphinx", 'teleport', "python", version
+    makefile += injectNavbar "#{fullname}.sphinx", "python", version
     checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
 
 
@@ -248,9 +253,9 @@ generateMakefile = (callback) ->
 
   """
 
-  for {version, ref} in [latest].concat project.sections.python.checkouts
+  for {version, branch} in [latest].concat project.sections.python.checkouts
     makefile += "\tmkdir dist/python/#{version}\n"
-    makefile += "\ttar xf build/teleport-py-#{version}.sphinx.inject.tar -C dist/python/#{version}\n"
+    makefile += "\ttar xf build/py-docs-#{branch}.sphinx.inject.tar -C dist/python/#{version}\n"
 
 
   parallelListFiles touchy, (err, results) ->

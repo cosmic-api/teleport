@@ -14,8 +14,6 @@ livereloadPort = 35729
 watchFiles = [
   'templates/**'
   'static/**'
-  'sphinx-bootstrap/**'
-  'sphinx-boot.coffee'
   'inject.coffee'
   'package.json'
 ]
@@ -88,8 +86,6 @@ module.exports = (grunt) ->
       .use(connect.static 'dist')
       .listen 9001
 
-  grunt.registerTask 'init', 'Set up environment.', ->
-
   grunt.registerTask 'deploy', 'Deploy.', ->
     # Pull, add, commit and push
     exec """
@@ -148,14 +144,6 @@ generateMakefile = (callback) ->
   \tcp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
   \ttar cf build/bootstrap.tar -C tmp/bootstrap .
 
-  # Generic venv
-
-  build/generic-venv.tar:
-  \trm -rf tmp/venv
-  \tvirtualenv tmp/venv
-  \t(. tmp/venv/bin/activate; pip install sphinx unittest2 coverage)
-  \ttar cf build/generic-venv.tar -C tmp/venv .
-
   # Flask-style Python Docs
 
   build/flask-sphinx-themes.tar:
@@ -167,42 +155,7 @@ generateMakefile = (callback) ->
 
   """
 
-
-  makePythonSphinx = (fullname, branch) ->
-    t = "tmp/#{fullname}.sphinx"
-    check = "tmp/checkouts-#{branch}"
-    """
-    build/#{fullname}.sphinx.tar: build/checkouts-#{branch}.tar build/flask-sphinx-themes.tar
-    \trm -rf #{check}
-    \tmkdir #{check}
-    \ttar xf build/checkouts-#{branch}.tar -C #{check}
-    \trm -rf #{t}
-    \tcp -R #{check}/python #{t}
-    \tmkdir #{t}/flask-sphinx-themes
-    \ttar xf build/flask-sphinx-themes.tar -C #{t}/flask-sphinx-themes
-    \techo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
-    \t(cd #{t}; sphinx-build -b html -D html_theme=flask docs/source out)
-    \ttar cf build/#{fullname}.sphinx.tar -C #{t}/out .
-
-
-    """
-
-
-  injectNavbar = (archive, section, version, jquery) ->
-    t = "tmp/#{archive}.inject"
-    jqueryOpt = if jquery then '--jquery' else ''
-    """
-    build/#{archive}.inject.tar: build/#{archive}.tar #{injector}
-    \trm -rf #{t}
-    \tmkdir -p #{t}
-    \ttar xf build/#{archive}.tar -C #{t}
-    \t#{coffeeExec} inject.coffee --dir #{t} --section #{section} --version '#{version}' #{jqueryOpt}
-    \ttar cf build/#{archive}.inject.tar -C #{t} .
-
-
-    """
-
-
+  makefile += "# Checkouts\n\n"
   for branch in project.checkouts
     buildTar = "build/checkouts-#{branch}.tar"
     makefile += """
@@ -213,14 +166,58 @@ generateMakefile = (callback) ->
 
     """
 
+  makefile += "# Subdirectory extraction\n\n"
+  for root, subs of project.subdirs
+    for sub in subs
+      full = "#{root}-#{sub}"
+      t = "tmp/#{full}"
+      makefile += """
+      build/#{full}.tar: build/#{root}.tar
+      \trm -rf #{t}
+      \tmkdir #{t}
+      \ttar xf build/#{root}.tar -C #{t}
+      \ttar cf build/#{full}.tar -C #{t}/#{sub} .
+
+
+      """
+
+  makefile += "# Build Sphinxes\n\n"
+  for root in project.sphinx
+    full = "#{root}-sphinx"
+    t = "tmp/#{full}"
+    makefile += """
+    build/#{full}.tar: build/#{root}.tar build/flask-sphinx-themes.tar
+    \trm -rf #{t}
+    \tmkdir #{t}
+    \ttar xf build/#{root}.tar -C #{t}
+    \tmkdir #{t}/flask-sphinx-themes
+    \ttar xf build/flask-sphinx-themes.tar -C #{t}/flask-sphinx-themes
+    \techo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
+    \t(cd #{t}; sphinx-build -b html -D html_theme=flask docs/source out)
+    \ttar cf build/#{full}.tar -C #{t}/out .
+
+
+    """
+
 
   checkoutDeps = []
-  for {version, branch} in [latest].concat project.sections.python.checkouts
-    fullname = "py-docs-#{branch}"
+  makefile += "# Injecting\n\n"
+  for root, opts of project.inject
+    full = "#{root}-inject"
+    t = "tmp/#{full}"
+    jqueryOpt = if opts.jquery then '--jquery' else ''
+    makefile += """
+    build/#{full}.tar: build/#{root}.tar #{injector}
+    \trm -rf #{t}
+    \tmkdir -p #{t}
+    \ttar xf build/#{root}.tar -C #{t}
+    \t#{coffeeExec} inject.coffee --dir #{t} --section #{opts.section} --version '#{opts.version}' #{jqueryOpt}
+    \ttar cf build/#{full}.tar -C #{t} .
 
-    makefile += makePythonSphinx fullname, branch
-    makefile += injectNavbar "#{fullname}.sphinx", "python", version
-    checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
+
+    """
+    checkoutDeps.push "build/#{full}.tar"
+
 
 
   makefile += """
@@ -249,13 +246,15 @@ generateMakefile = (callback) ->
   \t#{coffeeExec} spec.coffee > dist/spec/latest/index.html
   \t#{coffeeExec} inject.coffee --file dist/spec/latest/index.html --section spec --version 'latest' --nobs
 
-
+  \t# Python docs
+  \tmkdir dist/python/0.1
+  \ttar xf build/checkouts-0.1-maintenance-python-sphinx-inject.tar -C dist/python/0.1
+  \tmkdir dist/python/0.2
+  \ttar xf build/checkouts-0.2-maintenance-python-sphinx-inject.tar -C dist/python/0.2
+  \tmkdir dist/python/latest
+  \ttar xf build/checkouts-master-python-sphinx-inject.tar -C dist/python/latest
 
   """
-
-  for {version, branch} in [latest].concat project.sections.python.checkouts
-    makefile += "\tmkdir dist/python/#{version}\n"
-    makefile += "\ttar xf build/py-docs-#{branch}.sphinx.inject.tar -C dist/python/#{version}\n"
 
 
   parallelListFiles touchy, (err, results) ->

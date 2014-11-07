@@ -1,6 +1,6 @@
 module.exports =
   title: "Teleport"
-  sectionOrder: ["python", "spec"]
+  sectionOrder: ["home", "python", "spec"]
   sections:
     home:
       title: "About"
@@ -11,10 +11,6 @@ module.exports =
       title: "Python"
       star: true
       repoLink: true
-      checkouts: [
-        { version: '0.2', branch: '0.2-maintenance' }
-        { version: '0.1', branch: '0.1-maintenance' }
-      ]
       subMenuShow: true
       subMenu: [
         { version: 'latest' }
@@ -26,7 +22,6 @@ module.exports =
       title: "Specification"
       star: true
       repoLink: true
-      checkouts: []
       subMenuShow: true
       subMenu: [
         { version: 'latest' }
@@ -35,6 +30,29 @@ module.exports =
       ]
   checkouts: [
     'master'
-    '0.2-maintenance'
     '0.1-maintenance'
+    '0.2-maintenance'
   ]
+  subdirs:
+    'checkouts-master': ['python']
+    'checkouts-0.1-maintenance': ['python']
+    'checkouts-0.2-maintenance': ['python']
+  sphinx: [
+    'checkouts-master-python'
+    'checkouts-0.1-maintenance-python'
+    'checkouts-0.2-maintenance-python'
+  ]
+  inject:
+    'checkouts-master-python-sphinx':
+      section: 'python'
+      version: 'latest'
+      jquery: true
+    'checkouts-0.1-maintenance-python-sphinx':
+      section: 'python'
+      version: '0.1'
+      jquery: true
+    'checkouts-0.2-maintenance-python-sphinx':
+      section: 'python'
+      version: '0.2'
+      jquery: true
+

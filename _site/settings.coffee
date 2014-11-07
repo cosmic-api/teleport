@@ -34,6 +34,7 @@ module.exports =
         { version: '1.0' }
       ]
   checkouts: [
+    'master'
     '0.2-maintenance'
     '0.1-maintenance'
   ]

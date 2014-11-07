@@ -151,31 +151,30 @@ generateMakefile = (callback) ->
   \tcp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
   \ttar cf build/bootstrap.tar -C tmp/bootstrap .
 
+  # Generic Tox
+
+  build/generic-tox.tar: build/checkouts-master.tar
+  \trm -rf tmp/generic-tox
+  \tmkdir tmp/generic-tox
+  \ttar xf build/checkouts-master.tar -C tmp/generic-tox
+  \t(cd tmp/generic-tox/python; tox -e py27 --notest)
+  \ttar cf build/generic-tox.tar -C tmp/generic-tox/python/.tox .
+
   """
 
-  extractRef = (language, branch, fullname) ->
-    """
-    ../.git/refs/heads/#{branch} :
-    \tgit --git-dir ../.git fetch origin #{branch}:#{branch}
 
-    build/#{fullname}: ../.git/refs/heads/#{branch}
-    \trm -rf build/#{fullname}
-    \tmkdir -p build/#{fullname}
-    \tgit --git-dir ../.git archive #{branch} | tar x -C build/#{fullname}-full
-    \tcp -R build/#{fullname}-full/#{language} build/#{fullname}
-
-
-    """
-
-
-  makePythonSphinx = (fullname) ->
+  makePythonSphinx = (fullname, branch) ->
     t = "tmp/#{fullname}.sphinx"
+    check = "tmp/checkouts-#{branch}"
     """
-    build/#{fullname}.sphinx.tar: build/#{fullname} build/#{fullname}.tox.tar
+    build/#{fullname}.sphinx.tar: build/checkouts-#{branch}.tar build/generic-tox.tar
+    \trm -rf #{check}
+    \tmkdir #{check}
+    \ttar xf build/checkouts-#{branch}.tar -C #{check}
     \trm -rf #{t}
-    \tcp -R build/#{fullname} #{t}
+    \tmv #{check}/python #{t}
     \tmkdir #{t}/.tox
-    \ttar xf build/#{fullname}.tox.tar -C #{t}/.tox
+    \ttar xf build/generic-tox.tar -C #{t}/.tox
     \techo '\\nhtml_theme_path = ["../../../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
     \t(. #{t}/.tox/py27/bin/activate; sphinx-build -b html -D html_theme=flask #{t}/docs/source #{t}/out)
     \ttar cf build/#{fullname}.sphinx.tar -C #{t}/out .
@@ -199,22 +198,22 @@ generateMakefile = (callback) ->
     """
 
 
+  for branch in project.checkouts
+    buildTar = "build/checkouts-#{branch}.tar"
+    makefile += """
+    #{buildTar}: ../.git/refs/heads/#{branch}
+    \trm -f #{buildTar}
+    \tgit --git-dir ../.git archive #{branch} > #{buildTar}
+
+
+    """
+
+
   checkoutDeps = []
   for {version, branch} in [latest].concat project.sections.python.checkouts
     fullname = "teleport-py-#{version}"
 
-    makefile += extractRef "python", branch, fullname
-    t = "tmp/#{fullname}.tox"
-    makefile += """
-      build/#{fullname}.tox.tar: build/#{fullname}
-      \trm -rf #{t}
-      \tcp -R build/#{fullname} #{t}
-      \t(cd #{t}; tox -e py27 --notest)
-      \ttar cf build/#{fullname}.tox.tar -C #{t}/.tox .
-
-
-      """
-    makefile += makePythonSphinx fullname
+    makefile += makePythonSphinx fullname, branch
     makefile += injectNavbar "#{fullname}.sphinx", 'teleport', "python", version
     checkoutDeps.push "build/#{fullname}.sphinx.inject.tar"
 

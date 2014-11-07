@@ -1,0 +1,20 @@
+/.pip-cache
+
+/Makefile
+/.DS_Store
+
+/build
+/dist
+/node_modules
+
+/teleport-js
+/teleport
+
+/sphinx-bootstrap
+/flask-sphinx-themes
+/tmp
+
+# IntelliJ IDEA / PyCharm
+/.idea
+*.iml
+

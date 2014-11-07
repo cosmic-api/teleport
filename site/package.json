@@ -1,0 +1,19 @@
+{
+  "devDependencies": {
+    "underscore": "1.4.4",
+    "filewalker": "0.1.1",
+    "async": "0.2.9",
+    "coffee-script": "1.6.3",
+    "grunt": "*",
+    "grunt-cli": "0.1.9",
+    "grunt-exec": "0.4.2",
+    "grunt-contrib-watch": "0.5.3",
+    "connect": "2.9.0",
+    "connect-livereload": "0.3.0",
+    "optimist": "0.5.2",
+    "find": "0.1.4",
+    "jsdom": "1.2.0",
+    "mustache": "0.8.1",
+    "namespace-css": "0.1.3"
+  }
+}

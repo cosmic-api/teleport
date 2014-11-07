@@ -1,0 +1,65 @@
+<div class="bs">
+
+<nav class="navbar navbar-static-top navbar-default" role="navigation">
+  <div class="container">
+    <div class="navbar-header" style="width:70px">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/">
+        <img src="/static/teleport-logo.svg" class="hide-xs" style="height:50px;width:50px"/>
+      </a> 
+    </div>
+    <div class="collapse navbar-collapse" id="bs-collapse">
+      {{#menu}}
+      <ul class="nav navbar-nav">
+        <li{{#about}} class="active"{{/about}}>
+          <a href="/">About</a>
+        </li>
+        <li{{#docs}} class="active"{{/docs}}>
+          <a href="/python/latest/">Python</a>
+        </li>
+        <li{{#spec}} class="active"{{/spec}}>
+          <a href="/spec/latest/">Specification</a>
+        </li>
+      </ul>
+      {{/menu}}
+      <ul class="nav navbar-nav navbar-right">
+        {{#activeSection}}
+          {{#repoLink}}
+          <li class="hidden-xs"><a href="https://github.com/cosmic-api/{{ github }}" style="padding-left:0px"> &nbsp;cosmic-api/{{ github }}</a></li>
+          {{/repoLink}}
+          {{#star}}
+          <li class="hidden-xs">
+            <iframe src="http://ghbtns.com/github-btn.html?user=cosmic-api&amp;repo={{ github }}&amp;type=watch&amp;count=true" style="margin-top:15px" allowtransparency="true" frameborder="0" scrolling="0" width="85" height="20"/>
+          </li>
+          {{/star}}
+          {{#subMenuShow}}
+            <li class="dropdown">
+              <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{ activeVersion }}
+                <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                {{#subMenu}}
+                  {{#divider}}
+                    <li class="divider"></li>
+                  {{/divider}}
+                  {{#version}}
+                    <li>
+                        <a href="/{{ activeSectionId }}/{{ version }}/">
+                          {{ version }}
+                        </a>
+                    </li>
+                  {{/version}}
+                {{/subMenu}}
+              </ul>
+            </li>
+          {{/subMenuShow}}
+        {{/activeSection}}
+      </ul>
+    </div>
+  </div>
+</div>

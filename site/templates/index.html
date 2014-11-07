@@ -1,0 +1,137 @@
+<html>
+<head>
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
+<link rel="stylesheet" href="/static/tomorrow.css" type="text/css"/>
+<style type="text/css">
+pre {
+    border: none !important;
+    background: none !important;
+    font-family: monospace !important;
+}
+</style>
+<link rel="icon" href="/static/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
+<title>Teleport - Lightweight JSON Type System</title>
+<script src="/static/jquery.min.js"></script>
+<script src="/static/bootstrap/js/bootstrap.min.js"></script>
+</head>
+<body class="bs" style="margin:0px" onload="prettyPrint()">
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12" style="padding:50px;text-align:center;margin-bottom:50px">
+      <h1 style="font-size:70px">Teleport</h1>
+      <h7>Lightweight JSON Type System</h7>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <dl class="dl-horizontal">
+        <dt>Current version</dt>
+        <dd>v0.2.1</dd>
+        <dt>Installation</dt>
+        <dd><code>pip install teleport</code></dd>
+        <dt>GitHub</dt>
+        <dd><a href="https://github.com/cosmic-api/teleport">cosmic-api/teleport</a></dd>
+        <dt>Development</dt>
+        <dd>
+          Use the <a href="https://github.com/cosmic-api/teleport/issues">issue tracker</a> to report bugs and offer suggestions.
+          Join the discussion in the <a href="https://groups.google.com/forum/#!forum/teleport-json">mailing list</a>
+            or email the author <a href="mailto:alexei@boronine.com">directly</a>.
+        </dd>
+      </dl>
+    </div>
+    <div class="col-md-6">
+      <p>Teleport is:</p>
+      <ul>
+        <li>A serialization system on top of JSON</li>
+        <li>An input validation system</li>
+        <li>A declarative schema system</li>
+        <li>An aid in automatically generating API docs</li>
+        <li>Portable and extendable</li>
+        <li>Open Source (<a class="reference external" href="http://opensource.org/licenses/MIT">MIT license</a>)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px;"></div>
+    <div class="col-md-9"></div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px">Type definitions &mdash;</div>
+    <div class="col-md-9">
+      <pre class="prettyprint lang-py">from teleport import *
+
+schema = Struct([
+    required('text', String),
+    optional('duedate', DateTime),
+    required('tags', Array(String)),
+])</pre>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px">For serialization &mdash;</div>
+    <div class="col-md-9">
+      <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
+...     'text': 'Return videotapes',
+...     'duedate': '2014-10-14T21:17:00.663882',
+...     'tags': ['movies'],
+... })
+{'text': u'Return videotapes', 'duedate': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882), 'tags': [u'movies']}</pre>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px">For validating input &mdash;</div>
+    <div class="col-md-9">
+      <pre class="prettyprint lang-py">@route('/todo/add')
+def add_todo():
+    try:
+        todo = schema.from_json(request.json)
+    except ValidationError as e:
+        return (str(e), 400, {})
+    Todo(**todo).save()</pre>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px">Tiny &mdash;</div>
+    <div class="col-md-9" style="padding:50px">&lt; 1000 <a href="https://github.com/cosmic-api/teleport/blob/master/teleport/types.py">lines of code</a></div>
+  </div>
+  <div class="row">
+    <div class="col-md-3" style="padding:50px">But infinitely extendable &mdash;</div>
+    <div class="col-md-9">
+      <pre class="prettyprint lang-py">class Todo(BasicWrapper):
+    schema = Struct([
+        required('text', String),
+        optional('duedate', DateTime),
+        required('tags', Array(String)),
+    ])
+
+    def __init__(self, text, tags, duedate=None):
+        self.text = text
+        self.tags = tags
+        self.duedate = duedate
+
+    @classmethod
+    def assemble(cls, datum):
+        return cls(**datum)
+
+    @classmethod
+    def disassemble(cls, todo):
+        return {
+          'text': todo.text,
+          'duedate': todo.duedate,
+          'tags': todo.tags
+        }</pre>
+    </div>
+  </div>
+</div>
+<footer style="margin-top:70px">
+  <div class="container">
+    <p>Copyright 2014 by <a href="http://www.boronine.com">Alexei Boronine.</a></p>
+  </div>
+</footer>
+
+
+<script src="/static/google-code-prettify/prettify.js"></script>
+</body>
+</html>

@@ -1,16 +1,27 @@
 Teleport
 ========
 
+Teleport is a lightweight type system that extends JSON. It can be used for:
+
+* Serializing data
+* Validation input
+* Generating documentation
+* Building API clients
+
 Teleport is:
 
-* A serialization system on top of JSON
-* An input validation system
-* A declarative schema system
-* An aid in automatically generating API docs
 * Portable and extendable
 * Open Source ([MIT license](http://opensource.org/licenses/MIT))
 
-Check out the [spec](http://www.teleport-json.org/spec/latest/) and the [documentation](http://www.teleport-json.org/python/latest/).
+Status
+======
+
+A new [specification](http://www.teleport-json.org/spec/latest/) is up and will
+be submitted as an Internet Draft on Nov 10, 2014. The old specification, 1.0
+is implemented as a [Python library](http://www.teleport-json.org/python/latest/).
+
+The Python library will soon be updated to match the new spec, a JavaScript
+library is in the works as well.
 
 License
 -------

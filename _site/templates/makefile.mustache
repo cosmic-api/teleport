@@ -4,7 +4,18 @@ node_modules: package.json
     npm install
     touch node_modules
 
-# Bootstrap
+# New Teleport spec
+
+build/spec-new.tar: ../_spec/teleport.txt spec.coffee
+    rm -rf tmp/spec-new
+    mkdir tmp/spec-new
+    {{ coffeeExec }} spec.coffee > tmp/spec-new/index.html
+    tar cf build/spec-new.tar -C tmp/spec-new .
+
+
+#---------------------------------------------
+# downloads
+#---------------------------------------------
 
 build/bootstrap-lumen.css:
     (cd build && wget http://bootswatch.com/lumen/bootstrap.css && mv bootstrap.css bootstrap-lumen.css)
@@ -21,21 +32,12 @@ build/bootstrap.tar: build/bootstrap-lumen.css build/bootstrap-3.3.0-dist.zip
     cp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
     tar cf build/bootstrap.tar -C tmp/bootstrap .
 
-# Flask-style Python Docs
-
 build/flask-sphinx-themes.tar:
     wget https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip -O tmp/flask-sphinx-themes.zip
     rm -rf tmp/flask-sphinx-themes-master
     (cd tmp; unzip flask-sphinx-themes.zip)
     tar cf build/flask-sphinx-themes.tar -C tmp/flask-sphinx-themes-master .
 
-# New Teleport spec
-
-build/spec-new.tar: ../_spec/teleport.txt spec.coffee
-    rm -rf tmp/spec-new
-    mkdir tmp/spec-new
-    {{ coffeeExec }} spec.coffee > tmp/spec-new/index.html
-    tar cf build/spec-new.tar -C tmp/spec-new .
 
 
 

@@ -16,6 +16,7 @@ watchFiles = [
   'static/**'
   'inject.coffee'
   'package.json'
+  '../_spec/teleport.txt'
 ]
 
 listFiles = (dir, callback) ->
@@ -55,18 +56,11 @@ module.exports = (grunt) ->
       makeAll:
         command: 'make dist'
     watch:
-      main:
-        options:
-          livereload: livereloadPort
-          nospawn: true
-        files: watchFiles
-        tasks: ['configure', 'exec:makeMain']
-      docs:
-        options:
-          livereload: livereloadPort
-          nospawn: true
-        files: watchFiles
-        tasks: ['configure', 'exec:makeDocs']
+      options:
+        livereload: livereloadPort
+        nospawn: true
+      files: watchFiles
+      tasks: ['configure', 'exec:makeAll']
 
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-exec'
@@ -101,7 +95,6 @@ module.exports = (grunt) ->
     ], @async()
 
   grunt.registerTask 'live', ['configure', 'exec:makeAll', 'connect', 'watch']
-  grunt.registerTask 'live-main', ['configure', 'exec:makeMain', 'connect', 'watch:main']
 
 generateMakefile = (callback) ->
 

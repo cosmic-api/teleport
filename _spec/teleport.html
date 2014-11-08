@@ -375,20 +375,21 @@
 
   <link href="#rfc.toc" rel="Contents"/>
 <link href="#rfc.section.1" rel="Chapter" title="1 Introduction"/>
-<link href="#rfc.section.1.1" rel="Chapter" title="1.1 Conventions and Terminology"/>
-<link href="#rfc.section.1.1.1" rel="Chapter" title="1.1.1 Keywords"/>
-<link href="#rfc.section.2" rel="Chapter" title="2 Mathematical Basis"/>
-<link href="#rfc.section.2.1" rel="Chapter" title="2.1 Concrete types"/>
-<link href="#rfc.section.2.2" rel="Chapter" title="2.2 Generic types"/>
-<link href="#rfc.section.3" rel="Chapter" title="3 Built-in Concrete Types"/>
-<link href="#rfc.section.4" rel="Chapter" title="4 Built-in Generic Types"/>
-<link href="#rfc.section.5" rel="Chapter" title="5 IANA Considerations"/>
-<link href="#rfc.section.6" rel="Chapter" title="6 Security Considerations"/>
-<link href="#rfc.references" rel="Chapter" title="7 References"/>
-<link href="#rfc.references.1" rel="Chapter" title="7.1 Normative References"/>
-<link href="#rfc.references.2" rel="Chapter" title="7.2 Informative References"/>
+<link href="#rfc.section.2" rel="Chapter" title="2 Conventions and Terminology"/>
+<link href="#rfc.section.2.1" rel="Chapter" title="2.1 Syntax"/>
+<link href="#rfc.section.3" rel="Chapter" title="3 Type Patterns"/>
+<link href="#rfc.section.4" rel="Chapter" title="4 JSON Schemas"/>
+<link href="#rfc.section.5" rel="Chapter" title="5 Mathematical Basis"/>
+<link href="#rfc.section.5.1" rel="Chapter" title="5.1 Concrete Types"/>
+<link href="#rfc.section.5.2" rel="Chapter" title="5.2 Generic Types"/>
+<link href="#rfc.section.6" rel="Chapter" title="6 Built-in Concrete Types"/>
+<link href="#rfc.section.7" rel="Chapter" title="7 Built-in Generic Types"/>
+<link href="#rfc.section.8" rel="Chapter" title="8 IANA Considerations"/>
+<link href="#rfc.section.9" rel="Chapter" title="9 Security Considerations"/>
+<link href="#rfc.references" rel="Chapter" title="10 References"/>
+<link href="#rfc.references.1" rel="Chapter" title="10.1 Normative References"/>
+<link href="#rfc.references.2" rel="Chapter" title="10.2 Informative References"/>
 <link href="#rfc.appendix.A" rel="Chapter" title="A Mailing List"/>
-<link href="#rfc.appendix.B" rel="Chapter" title="B Document History"/>
 <link href="#rfc.authors" rel="Chapter"/>
 
 
@@ -397,9 +398,9 @@
 
   <meta name="dct.creator" content="Boronine, A., Ed." />
   <meta name="dct.identifier" content="urn:ietf:id:draft-boronine-teleport-00" />
-  <meta name="dct.issued" scheme="ISO8601" content="2014-11-6" />
-  <meta name="dct.abstract" content="Teleport is a minimal type system designed as an extension of JSON. It comes with 10 types, sufficient for imposing order on most structured data. It provides a pattern for extending it with arbitrary types. Teleport's type definitions are JSON values, making it possible to use them for data specifications.  " />
-  <meta name="description" content="Teleport is a minimal type system designed as an extension of JSON. It comes with 10 types, sufficient for imposing order on most structured data. It provides a pattern for extending it with arbitrary types. Teleport's type definitions are JSON values, making it possible to use them for data specifications.  " />
+  <meta name="dct.issued" scheme="ISO8601" content="2014-11-8" />
+  <meta name="dct.abstract" content="Teleport is a minimal type system designed as an extension of JSON. It comes with 10 types sufficient for basic use, but it defines a pattern for extending it with arbitrary types.  Teleport's type definitions are JSON values, for example, an array of strings is defined as {&quot;Array&quot;: &quot;String&quot;}.  " />
+  <meta name="description" content="Teleport is a minimal type system designed as an extension of JSON. It comes with 10 types sufficient for basic use, but it defines a pattern for extending it with arbitrary types.  Teleport's type definitions are JSON values, for example, an array of strings is defined as {&quot;Array&quot;: &quot;String&quot;}.  " />
 
 </head>
 
@@ -418,10 +419,10 @@
 </tr>
 <tr>
   <td class="left">Intended status: Informational</td>
-  <td class="right">November 6, 2014</td>
+  <td class="right">November 8, 2014</td>
 </tr>
 <tr>
-  <td class="left">Expires: May 10, 2015</td>
+  <td class="left">Expires: May 12, 2015</td>
   <td class="right"></td>
 </tr>
 
@@ -435,16 +436,16 @@
   <h1 id="rfc.abstract">
   <a href="#rfc.abstract">Abstract</a>
 </h1>
-<p>Teleport is a minimal type system designed as an extension of JSON. It comes with 10 types, sufficient for imposing order on most structured data. It provides a pattern for extending it with arbitrary types. Teleport's type definitions are JSON values, making it possible to use them for data specifications.  </p>
-<p>Implemented as a library, Teleport can be used for data serialization, input validation, as well as an aid in generating documentation, particularly useful for web APIs.  </p>
-<p>This document provides the mathematical basis of Teleport and can be used for implementing libraries based on it.  </p>
+<p>Teleport is a minimal type system designed as an extension of JSON. It comes with 10 types sufficient for basic use, but it defines a pattern for extending it with arbitrary types.  Teleport's type definitions are JSON values, for example, an array of strings is defined as {"Array": "String"}.  </p>
+<p>Teleport implementations can be used for data serialization, input validation, for documenting JSON APIs and for building API clients.  </p>
+<p>This document provides the mathematical basis of Teleport and can be used for implementing libraries.  </p>
 <h1 id="rfc.status">
   <a href="#rfc.status">Status of This Memo</a>
 </h1>
 <p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
 <p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
 <p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
-<p>This Internet-Draft will expire on May 10, 2015.</p>
+<p>This Internet-Draft will expire on May 12, 2015.</p>
 <h1 id="rfc.copyrightnotice">
   <a href="#rfc.copyrightnotice">Copyright Notice</a>
 </h1>
@@ -457,85 +458,84 @@
   <ul class="toc">
 
   	<li>1.   <a href="#rfc.section.1">Introduction</a></li>
-<li>1.1.   <a href="#rfc.section.1.1">Conventions and Terminology</a></li>
-<li>1.1.1.   <a href="#rfc.section.1.1.1">Keywords</a></li>
-<li>2.   <a href="#rfc.section.2">Mathematical Basis</a></li>
-<li>2.1.   <a href="#rfc.section.2.1">Concrete types</a></li>
-<li>2.2.   <a href="#rfc.section.2.2">Generic types</a></li>
-<li>3.   <a href="#rfc.section.3">Built-in Concrete Types</a></li>
-<li>4.   <a href="#rfc.section.4">Built-in Generic Types</a></li>
-<li>5.   <a href="#rfc.section.5">IANA Considerations</a></li>
-<li>6.   <a href="#rfc.section.6">Security Considerations</a></li>
-<li>7.   <a href="#rfc.references">References</a></li>
-<li>7.1.   <a href="#rfc.references.1">Normative References</a></li>
-<li>7.2.   <a href="#rfc.references.2">Informative References</a></li>
+<li>2.   <a href="#rfc.section.2">Conventions and Terminology</a></li>
+<li>2.1.   <a href="#rfc.section.2.1">Syntax</a></li>
+<li>3.   <a href="#rfc.section.3">Type Patterns</a></li>
+<li>4.   <a href="#rfc.section.4">JSON Schemas</a></li>
+<li>5.   <a href="#rfc.section.5">Mathematical Basis</a></li>
+<li>5.1.   <a href="#rfc.section.5.1">Concrete Types</a></li>
+<li>5.2.   <a href="#rfc.section.5.2">Generic Types</a></li>
+<li>6.   <a href="#rfc.section.6">Built-in Concrete Types</a></li>
+<li>7.   <a href="#rfc.section.7">Built-in Generic Types</a></li>
+<li>8.   <a href="#rfc.section.8">IANA Considerations</a></li>
+<li>9.   <a href="#rfc.section.9">Security Considerations</a></li>
+<li>10.   <a href="#rfc.references">References</a></li>
+<li>10.1.   <a href="#rfc.references.1">Normative References</a></li>
+<li>10.2.   <a href="#rfc.references.2">Informative References</a></li>
 <li>Appendix A.   <a href="#rfc.appendix.A">Mailing List</a></li>
-<li>Appendix B.   <a href="#rfc.appendix.B">Document History</a></li>
 <li><a href="#rfc.authors">Author's Address</a></li>
 
 
   </ul>
 
   <h1 id="rfc.section.1"><a href="#rfc.section.1">1.</a> Introduction</h1>
-<p id="rfc.section.1.p.1">In Teleport, a type is a relation between a type definition and a value space, a potentially infinite set of values.  Because Teleport is based on JSON, all value spaces consist of JSON values and, interestingly, type definitions are JSON values too. These definitions are called JSON schemas.  </p>
-<p id="rfc.section.1.p.2">These relations are defined by expanding the definition of t function. For example: </p>
-
-<ul class="empty">
-  <li>t("String") = {"a", "b", "c", "d", ...} </li>
-</ul>
-
-<p> </p>
-<p id="rfc.section.1.p.3">This is a concrete type, a relation that maps a JSON string (the type name) to a value space. The above line lets us say that "a" is of type String.  </p>
-<p id="rfc.section.1.p.4">Teleport ships with 7 concrete types: Integer, Float, String, Boolean, DateTime, Schema and JSON. The numeric types are arbitrary-precision, DateTime uses the <a href="#ISO.8601.1988">ISO 8601</a> <cite title="NONE">[ISO.8601.1988]</cite> standard, JSON is a wildcard that maps to the entire set of JSON values and Schema is the set of all JSON schemas, letting us serialize type definitions.  </p>
-<p id="rfc.section.1.p.5">A generic type maps a set of schemas to a set of value spaces.  For consistency, every generic type schema must be an object with a single member: </p>
-
-<ul class="empty">
-  <li>t({name: ...}) = {...} </li>
-</ul>
-
-<p> </p>
-<p id="rfc.section.1.p.6">Three generic types are provided: Array, Map and Struct. Their precise definition is provided in the following sections, but these examples should be enough to understand how they work: </p>
+<p id="rfc.section.1.p.1">In Teleport, a type is a relation between a type definition and a value space. For example: </p>
 <pre>
-   ["foo", "bar"]              :: t({"Array": "String"})
-
-   {"one": 1, "two": 2}        :: t({"Map": "Integer"})
-
-   {"name": "Jake", "age": 28} :: t({"Struct": {
-                                  "required": {"name": "String"},
-                                  "optional": {"age": "Integer"}})</pre>
-<p id="rfc.section.1.p.7">Teleport's design goals is to be a natural extension of JSON, be extremely lightweight, and extendable not only with rich types but with high-level type system concepts.  </p>
-<h1 id="rfc.section.1.1"><a href="#rfc.section.1.1">1.1.</a> Conventions and Terminology</h1>
-<p id="rfc.section.1.1.p.1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in <a href="#RFC2119">RFC 2119</a> <cite title="NONE">[RFC2119]</cite>.  </p>
-<p id="rfc.section.1.1.p.2">The terms "JSON", "JSON text", "JSON value", "member", "element", "object", "array", "number", "string", "boolean", "true", "false", and "null" in this document are to be interpreted as defined in <a href="#RFC4627">RFC 4627</a> <cite title="NONE">[RFC4627]</cite>.  </p>
-<h1 id="rfc.section.1.1.1"><a href="#rfc.section.1.1.1">1.1.1.</a> Keywords</h1>
-<p id="rfc.section.1.1.1.p.1">Throughout this document, an extended JSON syntax is used.  Unquoted strings are symbols representing JSON values, sets and functions. Also, the following set theory syntax is used: </p>
+   t("Integer") = {0, -1,  1, -2,  2, -3,  3, ...}</pre>
+<p id="rfc.section.1.p.2">Here "Integer" is a type definition and t("Integer") is the set of all values this type can take. The t function is used to represent this relationship.  </p>
+<p id="rfc.section.1.p.3">Because Teleport is based on JSON, all value spaces are sets of JSON values. More interestingly, type definitions are JSON values too, which makes it trivial to share them with other programs.  </p>
+<p id="rfc.section.1.p.4">Teleport's design goals is to be a natural extension of JSON, be extremely lightweight, and extendable not only with rich types but with high-level type system concepts.  </p>
+<h1 id="rfc.section.2"><a href="#rfc.section.2">2.</a> Conventions and Terminology</h1>
+<p id="rfc.section.2.p.1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in <a href="#RFC2119">RFC 2119</a> <cite title="NONE">[RFC2119]</cite>.  </p>
+<p id="rfc.section.2.p.2">The terms "JSON", "JSON text", "JSON value", "member", "element", "object", "array", "number", "string", "boolean", "true", "false", and "null" in this document are to be interpreted as defined in <a href="#RFC4627">RFC 4627</a> <cite title="NONE">[RFC4627]</cite>.  </p>
+<h1 id="rfc.section.2.1"><a href="#rfc.section.2.1">2.1.</a> Syntax</h1>
+<p id="rfc.section.2.1.p.1">Throughout this document, an extended JSON syntax is used.  Unquoted strings are symbols representing JSON values, sets and functions. Also, the following set theory syntax is used: </p>
 <p/>
 
 <dl>
   <dt>a :: A</dt>
   <dd style="margin-left: 12">Set A contains element a.  </dd>
   <dt>D -&gt; C</dt>
-  <dd style="margin-left: 12">The set of functions with domain D and co-domain C.  </dd>
+  <dd style="margin-left: 12">The set of functions that map values from set D to values from set C.  </dd>
 </dl>
 
 <p> </p>
-<h1 id="rfc.section.2"><a href="#rfc.section.2">2.</a> Mathematical Basis</h1>
-<p id="rfc.section.2.p.1">The set of all JSON values is called V. A subset of V is called a value space and the set of all value spaces is called S.  </p>
+<h1 id="rfc.section.3"><a href="#rfc.section.3">3.</a> Type Patterns</h1>
+<p id="rfc.section.3.p.1">Types defined simply by a string, like "Integer" above, are called concrete. Teleport ships with 7 concrete types.  </p>
+<p id="rfc.section.3.p.2">A generic type maps a set of schemas to a set of value spaces.  Each pair in the mapping is called an instance. For example, {"Array": "Integer"} is an instance of the Array type.  </p>
+<p id="rfc.section.3.p.3">Three generic types are provided: Array, Map and Struct. Their precise definition is provided in the following sections, but these examples should be enough to understand how they work: </p>
+<pre>
+   ["foo", "bar"]       :: t({"Array": "String"})
+
+   {"a": 1, "b": 2}     :: t({"Map": "Integer"})
+
+   {"name": "Alexei"}   :: t({"Struct": {
+                                "required": {"name": "String"},
+                                "optional": {"age": "Integer"}})</pre>
+<h1 id="rfc.section.4"><a href="#rfc.section.4">4.</a> JSON Schemas</h1>
+<p id="rfc.section.4.p.1">"Schema", one of the build-in concrete types, is defined as the set of all known type definitions. This is made possible by the fact that type definitions are JSON values. The Schema type is useful to specify APIs. For example, to describe a function you can use this: </p>
+<pre>
+   t({"Struct": {
+        "required": {
+           "input": "Schema",
+           "output": "Schema"}}}</pre>
+<h1 id="rfc.section.5"><a href="#rfc.section.5">5.</a> Mathematical Basis</h1>
+<p id="rfc.section.5.p.1">The set of all JSON values is called V. A subset of V is called a value space and the set of all value spaces is called S.  </p>
 
 <ul class="empty">
-  <li>V = {null, true, false, 0, 1, 2, 3, 4, ...} <br/><br/> S = {{}, {null}, {null, true}, {null, ...} </li>
+  <li>V = {null, true, false, 0, 1, 2, 3, 4, ...} <br/><br/> S = {{}, {null}, {null, true}, {null, ...}, ...} </li>
 </ul>
 
 <p> </p>
-<p id="rfc.section.2.p.2">There is a certain function t that maps JSON values to value spaces.  </p>
+<p id="rfc.section.5.p.2">There is a certain function t that maps JSON values to value spaces.  </p>
 
 <ul class="empty">
   <li>t :: (V -&gt; S) </li>
 </ul>
 
 <p> </p>
-<h1 id="rfc.section.2.1"><a href="#rfc.section.2.1">2.1.</a> Concrete types</h1>
-<p id="rfc.section.2.1.p.1">x is of concrete type c if and only if </p>
+<h1 id="rfc.section.5.1"><a href="#rfc.section.5.1">5.1.</a> Concrete Types</h1>
+<p id="rfc.section.5.1.p.1">x is of concrete type c if and only if </p>
 
 <ol>
   <li>c is a string </li>
@@ -543,8 +543,8 @@
 </ol>
 
 <p> </p>
-<h1 id="rfc.section.2.2"><a href="#rfc.section.2.2">2.2.</a> Generic types</h1>
-<p id="rfc.section.2.2.p.1">x is of generic type g if and only if </p>
+<h1 id="rfc.section.5.2"><a href="#rfc.section.5.2">5.2.</a> Generic Types</h1>
+<p id="rfc.section.5.2.p.1">x is of generic type g if and only if </p>
 
 <ol>
   <li>g is a string </li>
@@ -552,14 +552,14 @@
 </ol>
 
 <p> </p>
-<h1 id="rfc.section.3"><a href="#rfc.section.3">3.</a> Built-in Concrete Types</h1>
+<h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> Built-in Concrete Types</h1>
 <p/>
 
 <dl>
   <dt>t("JSON")</dt>
   <dd style="margin-left: 16">JSON</dd>
   <dt>t("Schema")</dt>
-  <dd style="margin-left: 16">The known domain of the t function.  </dd>
+  <dd style="margin-left: 16">The set of all type definitions, including all strings representing concrete types as well as every instance of every generic type.  </dd>
   <dt>t("Integer")</dt>
   <dd style="margin-left: 16">All numbers that don't have a fractional or exponent part.  </dd>
   <dt>t("Float")</dt>
@@ -573,8 +573,8 @@
 </dl>
 
 <p> </p>
-<h1 id="rfc.section.4"><a href="#rfc.section.4">4.</a> Built-in Generic Types</h1>
-<p id="rfc.section.4.p.1">x :: t({"Array": p}) if and only if </p>
+<h1 id="rfc.section.7"><a href="#rfc.section.7">7.</a> Built-in Generic Types</h1>
+<p id="rfc.section.7.p.1">x :: t({"Array": p}) if and only if </p>
 
 <ul class="empty">
   <li>x is an array </li>
@@ -582,7 +582,7 @@
 </ul>
 
 <p> </p>
-<p id="rfc.section.4.p.2">x :: t({"Map": p}) if and only if </p>
+<p id="rfc.section.7.p.2">x :: t({"Map": p}) if and only if </p>
 
 <ul class="empty">
   <li>x is an object </li>
@@ -590,7 +590,7 @@
 </ul>
 
 <p> </p>
-<p id="rfc.section.4.p.3">x :: t({"Struct": p}) if and only if </p>
+<p id="rfc.section.7.p.3">x :: t({"Struct": p}) if and only if </p>
 
 <ul class="empty">
   <li>p is an object with two members: required and optional.  Both are objects and their names are disjoint, that is, they don't have a pair of members with the same name.  </li>
@@ -599,12 +599,12 @@
 </ul>
 
 <p> </p>
-<h1 id="rfc.section.5"><a href="#rfc.section.5">5.</a> <a href="#IANA" id="IANA">IANA Considerations</a></h1>
-<p id="rfc.section.5.p.1">This memo includes no request to IANA.</p>
-<h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> <a href="#Security" id="Security">Security Considerations</a></h1>
-<p id="rfc.section.6.p.1">All drafts are required to have a security considerations section. See <a href="#RFC3552">RFC 3552</a> <cite title="NONE">[RFC3552]</cite> for a guide.  </p>
-<h1 id="rfc.references"><a href="#rfc.references">7.</a> References</h1>
-<h1 id="rfc.references.1"><a href="#rfc.references.1">7.1.</a> Normative References</h1>
+<h1 id="rfc.section.8"><a href="#rfc.section.8">8.</a> <a href="#IANA" id="IANA">IANA Considerations</a></h1>
+<p id="rfc.section.8.p.1">This memo includes no request to IANA.</p>
+<h1 id="rfc.section.9"><a href="#rfc.section.9">9.</a> <a href="#Security" id="Security">Security Considerations</a></h1>
+<p id="rfc.section.9.p.1">All drafts are required to have a security considerations section. See <a href="#RFC3552">RFC 3552</a> <cite title="NONE">[RFC3552]</cite> for a guide.  </p>
+<h1 id="rfc.references"><a href="#rfc.references">10.</a> References</h1>
+<h1 id="rfc.references.1"><a href="#rfc.references.1">10.1.</a> Normative References</h1>
 <table>
   <tbody>
     <tr>
@@ -627,7 +627,7 @@
     </tr>
   </tbody>
 </table>
-<h1 id="rfc.references.2"><a href="#rfc.references.2">7.2.</a> Informative References</h1>
+<h1 id="rfc.references.2"><a href="#rfc.references.2">10.2.</a> Informative References</h1>
 <table>
   <tbody>
     <tr>
@@ -640,15 +640,6 @@
 </table>
 <h1 id="rfc.appendix.A"><a href="#rfc.appendix.A">Appendix A.</a> <a href="#discussion" id="discussion">Mailing List</a></h1>
 <p id="rfc.section.A.p.1">Comments are solicited and should be addressed to the working group's mailing list at teleport-json@googlegroups.com and/or the author.  </p>
-<h1 id="rfc.appendix.B"><a href="#rfc.appendix.B">Appendix B.</a> <a href="#changelog" id="changelog">Document History</a></h1>
-<p id="rfc.section.B.p.1">This section will be removed for RFC.</p>
-<p id="rfc.section.B.p.2">-00 </p>
-
-<ul>
-  <li>Initial draft by Alexei Boronine</li>
-</ul>
-
-<p> </p>
 <h1 id="rfc.authors">
   <a href="#rfc.authors">Author's Address</a>
 </h1>

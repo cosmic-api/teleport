@@ -3,11 +3,14 @@
 <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
 <link rel="stylesheet" href="/static/tomorrow.css" type="text/css"/>
 <style type="text/css">
-pre {
-    border: none !important;
-    background: none !important;
-    font-family: monospace !important;
-}
+    pre {
+        border: none !important;
+        background: none !important;
+        font-family: monospace !important;
+    }
+    .safe-mdash {
+        font-family: sans-serif;
+    }
 </style>
 <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
@@ -58,7 +61,7 @@ pre {
     <div class="col-md-9"></div>
   </div>
   <div class="row">
-    <div class="col-md-3" style="padding:50px">Type definitions &mdash;</div>
+    <div class="col-md-3" style="padding:50px">Type definitions <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
       <pre class="prettyprint lang-py">from teleport import *
 
@@ -70,7 +73,7 @@ schema = Struct([
     </div>
   </div>
   <div class="row">
-    <div class="col-md-3" style="padding:50px">For serialization &mdash;</div>
+    <div class="col-md-3" style="padding:50px">For serialization <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
       <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
 ...     'text': 'Return videotapes',
@@ -81,7 +84,7 @@ schema = Struct([
     </div>
   </div>
   <div class="row">
-    <div class="col-md-3" style="padding:50px">For validating input &mdash;</div>
+    <div class="col-md-3" style="padding:50px">For validating input <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
       <pre class="prettyprint lang-py">@route('/todo/add')
 def add_todo():
@@ -93,11 +96,11 @@ def add_todo():
     </div>
   </div>
   <div class="row">
-    <div class="col-md-3" style="padding:50px">Tiny &mdash;</div>
+    <div class="col-md-3" style="padding:50px">Tiny <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9" style="padding:50px">&lt; 1000 <a href="https://github.com/cosmic-api/teleport/blob/master/teleport/types.py">lines of code</a></div>
   </div>
   <div class="row">
-    <div class="col-md-3" style="padding:50px">But infinitely extendable &mdash;</div>
+    <div class="col-md-3" style="padding:50px">But infinitely extendable <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
       <pre class="prettyprint lang-py">class Todo(BasicWrapper):
     schema = Struct([

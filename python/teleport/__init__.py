@@ -1,1 +1,3 @@
-from types import *
+from legacy import *
+
+import testsuite

@@ -1,8 +1,9 @@
 from unittest2 import defaultTestLoader, TestSuite
 
 def suite():
-    import teleport_test, language_test
-    main = defaultTestLoader.loadTestsFromModule(teleport_test)
-    language = language_test.suite()
-    return TestSuite([main, language])
+    import legacy_full_test, legacy_test, draft00_test
+    main = defaultTestLoader.loadTestsFromModule(legacy_full_test)
+    language = legacy_test.suite()
+    draft00 = draft00_test.suite()
+    return TestSuite([main, language, draft00])
 

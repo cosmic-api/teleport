@@ -18,7 +18,7 @@ def is_datetime(value):
     try:
         isodate.parse_datetime(value)
         return True
-    except (ValueError, isodate.isoerror.ISO8601Error):
+    except (isodate.isoerror.ISO8601Error, Exception):
         return False
 
 

@@ -1,8 +1,24 @@
 import json
 from unittest2 import TestCase, TestSuite
 
-from teleport.legacy import Box
-from teleport.draft00 import t
+
+class Box(object):
+    """Used as a wrapper around JSON data to disambiguate None as a JSON value
+    (``null``) from None as an absence of value. Its :attr:`datum` attribute
+    will hold the actual JSON value.
+
+    For example, an HTTP request body may be empty in which case your function
+    may return ``None`` or it may be "null", in which case the function can
+    return a :class:`Box` instance with ``None`` inside.
+    """
+    def __init__(self, datum):
+        self.datum = datum
+
+    def __hash__(self):
+        return hash(json.dumps(self.datum))
+
+    def __eq__(self, datum):
+        return self.datum == datum
 
 
 def make_pass_test(schema, datum):
@@ -39,54 +55,54 @@ primitives = {
 
 ttt = [
     {
-        "schema": t("Integer"),
+        "schema": "Integer",
         "all": primitives,
         "pass": {Box(-1), Box(1), Box(3123342342349238429834)}
     },
     {
-        "schema": t("Float"),
+        "schema": "Float",
         "all": primitives,
         "pass": {Box(1e4), Box(1.0), Box(1.1)}
     },
     {
-        "schema": t("Boolean"),
+        "schema": "Boolean",
         "all": primitives,
         "pass": {Box(True), Box(False)}
     },
     {
-        "schema": t("String"),
+        "schema": "String",
         "all": primitives,
         "pass": {Box(u""), Box(u"2007-04-05T14:30"), Box(u"Boolean")}
     },
     {
-        "schema": t("JSON"),
+        "schema": "JSON",
         "all": primitives,
         "fail": set()
     },
     {
-        "schema": t("DateTime"),
+        "schema": "DateTime",
         "all": primitives,
         "pass": {Box(u"2007-04-05T14:30")}
     },
     {
-        "schema": t({"Array": "Integer"}),
+        "schema": {"Array": "Integer"},
         "fail": (primitives - {Box([])}) | {Box([1, True])},
         "pass": {Box([]), Box([1]), Box([2, 3])}
     },
     {
-        "schema": t({"Map": "Integer"}),
+        "schema": {"Map": "Integer"},
         "fail": (primitives - {Box({})}) | {Box({"a": True})},
         "pass": {Box({"a": 1}), Box({"a": -123, "b": 123})}
     },
     {
-        "schema": t({"Struct": {
+        "schema": {"Struct": {
             "required": {"a": "Integer"},
-            "optional": {"b": "Integer"}}}),
+            "optional": {"b": "Integer"}}},
         "fail": primitives | {Box({"a": 1.0})},
         "pass": {Box({"a": 1}), Box({"a": -1, "b": 13})}
     },
     {
-        "schema": t("Schema"),
+        "schema": "Schema",
         "all": primitives,
         "pass": {
             Box(u"Integer"),
@@ -101,7 +117,6 @@ ttt = [
 ]
 
 
-
 for tt in ttt:
     if "all" in tt:
         if "fail" in tt:
@@ -109,15 +124,14 @@ for tt in ttt:
         elif "pass" in tt:
             tt["fail"] = tt["all"] - tt["pass"]
 
+suite = []
+for test in ttt:
+    suite.append({
+        'schema': test['schema'],
+        'passing': [p.datum for p in test['pass']],
+        'failing': [p.datum for p in test['fail']]
+    })
 
-def suite():
-    suite = TestSuite()
-    for test in ttt:
-        for p in test['pass']:
-            datum = json.loads(json.dumps(p.datum))
-            suite.addTest(make_pass_test(test['schema'], datum))
-        for f in test['fail']:
-            datum = json.loads(json.dumps(f.datum))
-            suite.addTest(make_fail_test(test['schema'], datum))
-    return suite
 
+if __name__ == "__main__":
+    print json.dumps(suite)

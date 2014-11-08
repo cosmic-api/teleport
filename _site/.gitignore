@@ -1,12 +1,7 @@
-/.pip-cache
-
 /Makefile
-/.DS_Store
 
 /build
 /dist
-/node_modules
-
-/sphinx-bootstrap
 /tmp
 
+/node_modules

@@ -40,4 +40,4 @@ for line in txt.split "\n"
 
   spec += line + "\n"
 
-console.log render "spec.html", body: "<pre class='rfc'>#{spec}</pre>"
+console.log render "spec.mustache", body: "<pre class='rfc'>#{spec}</pre>"

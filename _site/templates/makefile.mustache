@@ -1,0 +1,141 @@
+# Reinstall stuff if package.json is modified
+
+node_modules: package.json
+    npm install
+    touch node_modules
+
+# Bootstrap
+
+build/bootstrap-lumen.css:
+    (cd build && wget http://bootswatch.com/lumen/bootstrap.css && mv bootstrap.css bootstrap-lumen.css)
+
+build/bootstrap-3.3.0-dist.zip:
+    (cd build && wget https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip)
+
+build/bootstrap.tar: build/bootstrap-lumen.css build/bootstrap-3.3.0-dist.zip
+    rm -rf tmp/bootstrap
+    unzip build/bootstrap-3.3.0-dist.zip -d tmp
+    mv tmp/dist tmp/bootstrap
+    namespace-css build/bootstrap-lumen.css -s .bs -o tmp/bootstrap/css/bootstrap.css
+    sed -i 's/\\.bs\\ body/\\.bs/g' tmp/bootstrap/css/bootstrap.css
+    cp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
+    tar cf build/bootstrap.tar -C tmp/bootstrap .
+
+# Flask-style Python Docs
+
+build/flask-sphinx-themes.tar:
+    wget https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip -O tmp/flask-sphinx-themes.zip
+    rm -rf tmp/flask-sphinx-themes-master
+    (cd tmp; unzip flask-sphinx-themes.zip)
+    tar cf build/flask-sphinx-themes.tar -C tmp/flask-sphinx-themes-master .
+
+# New Teleport spec
+
+build/spec-new.tar: ../_spec/teleport.txt spec.coffee
+    rm -rf tmp/spec-new
+    mkdir tmp/spec-new
+    {{ coffeeExec }} spec.coffee > tmp/spec-new/index.html
+    tar cf build/spec-new.tar -C tmp/spec-new .
+
+
+
+#---------------------------------------------
+# checkouts from git
+#---------------------------------------------
+
+{{#checkouts}}
+{{{ out }}}: ../.git/refs/heads/{{ branch }}
+    git --git-dir ../.git archive {{ branch }} > {{{ out }}}
+
+{{/checkouts}}
+
+
+
+#---------------------------------------------
+# copying
+#---------------------------------------------
+
+{{#copy}}
+{{{ to }}}: {{{ from }}}
+    rm -rf {{{ to }}}
+    cp -R {{{ from }}} {{{ to }}}
+
+{{/copy}}
+
+
+
+#---------------------------------------------
+# extracting subdirectories
+#---------------------------------------------
+
+{{#extractSubDirs}}
+{{{ out }}}: {{{ source }}}
+    rm -rf {{{ tmp }}}
+    mkdir {{{ tmp }}}
+    tar xf {{{ source }}} -C {{{ tmp }}}
+    tar cf {{{ out }}} -C {{{ tmp }}}/{{{ dir }}} .
+
+{{/extractSubDirs}}
+
+
+
+#---------------------------------------------
+# building sphixes
+#---------------------------------------------
+
+{{#sphinxes}}
+{{{ out }}}: {{{ source }}} build/flask-sphinx-themes.tar
+    rm -rf {{{ tmp }}}
+    mkdir {{{ tmp }}}
+    tar xf {{{ source }}} -C {{{ tmp }}}
+    mkdir {{{ tmp }}}/flask-sphinx-themes
+    tar xf build/flask-sphinx-themes.tar -C {{{ tmp }}}/flask-sphinx-themes
+    echo '\nhtml_theme_path = ["../../flask-sphinx-themes"]\n' >> {{{ tmp }}}/docs/source/conf.py
+    echo '\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\n' >> {{{ tmp }}}/docs/source/conf.py
+    (cd {{{ tmp }}}; sphinx-build -b html -D html_theme=flask docs/source out)
+    tar cf {{{ out }}} -C {{{ tmp }}}/out .
+
+{{/sphinxes}}
+
+
+
+#---------------------------------------------
+# injecting
+#---------------------------------------------
+
+{{#injections}}
+{{{ out }}}: {{{ source }}} {{{ injectorDeps }}}
+    rm -rf {{{ tmp }}}
+    mkdir -p {{{ tmp }}}
+    tar xf {{{ source }}} -C {{{ tmp }}}
+    {{{ coffeeExec }}} inject.coffee --dir {{{ tmp }}} {{{ injectorOpts }}}
+    tar cf {{{ out }}} -C {{{ tmp }}} .
+
+{{/injections}}
+
+
+
+#---------------------------------------------
+# dist - putting everything together
+#---------------------------------------------
+
+dist: static index.coffee build/bootstrap.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
+    rm -rf dist
+    mkdir -p dist
+
+    touch dist/.nojekyll
+    cp -R static dist
+    rm -rf dist/static/bootstrap
+    mkdir -p dist/static/bootstrap
+    tar xf build/bootstrap.tar -C dist/static/bootstrap
+
+    {{{ coffeeExec }}} index.coffee > dist/index.html
+    {{{ coffeeExec }}} inject.coffee --file dist/index.html --section home --nobs
+
+    {{#dist}}
+        mkdir -p {{{ dir }}}
+        tar xf {{{ source }}} -C {{{ dir }}}
+
+    {{/dist}}
+
+

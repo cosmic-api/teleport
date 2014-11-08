@@ -1,7 +1,6 @@
 {
   "devDependencies": {
     "underscore": "1.4.4",
-    "filewalker": "0.1.1",
     "async": "0.2.9",
     "coffee-script": "1.6.3",
     "grunt": "*",

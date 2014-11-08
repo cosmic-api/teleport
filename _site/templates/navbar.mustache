@@ -39,7 +39,7 @@
           {{/star}}
           {{#subMenuShow}}
             <li class="dropdown">
-              <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{ activeVersion }}
+              <a class="dropdown-toggle" href="#" data-toggle="dropdown">{{{ activeVersion }}}
                 <b class="caret"></b>
               </a>
               <ul class="dropdown-menu">
@@ -50,7 +50,7 @@
                   {{#version}}
                     <li>
                         <a href="/{{ activeSectionId }}/{{ version }}/">
-                          {{ version }}
+                          {{{ version }}}
                         </a>
                     </li>
                   {{/version}}

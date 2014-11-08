@@ -44,9 +44,9 @@ injectFile = (file) ->
 
 activeSection = project.sections[sec]
 
-nav = render "navbar.html", {
+nav = render "navbar.mustache", {
   menu:
-    about: false
+    about: sec == 'home'
     docs: sec == 'python'
     spec: sec == 'spec'
   activeSectionId: sec

@@ -1,8 +1,8 @@
 import json
-from unittest2 import TestCase, TestSuite, defaultTestLoader
+from unittest2 import TestCase, TestSuite
 
-from teleport.legacy import *
-from teleport.draft00 import t as t
+from teleport.legacy import Box
+from teleport.draft00 import t
 
 
 def make_pass_test(schema, datum):
@@ -69,6 +69,23 @@ ttt = [
         "pass": {Box(u"2007-04-05T14:30")}
     },
     {
+        "schema": t({"Array": "Integer"}),
+        "fail": (primitives - {Box([])}) | {Box([1, True])},
+        "pass": {Box([]), Box([1]), Box([2, 3])}
+    },
+    {
+        "schema": t({"Map": "Integer"}),
+        "fail": (primitives - {Box({})}) | {Box({"a": True})},
+        "pass": {Box({"a": 1}), Box({"a": -123, "b": 123})}
+    },
+    {
+        "schema": t({"Struct": {
+            "required": {"a": "Integer"},
+            "optional": {"b": "Integer"}}}),
+        "fail": primitives | {Box({"a": 1.0})},
+        "pass": {Box({"a": 1}), Box({"a": -1, "b": 13})}
+    },
+    {
         "schema": t("Schema"),
         "all": primitives,
         "pass": {
@@ -82,6 +99,7 @@ ttt = [
         }
     }
 ]
+
 
 
 for tt in ttt:

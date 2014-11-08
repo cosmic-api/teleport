@@ -9,7 +9,7 @@ node_modules: package.json
 build/spec-new.tar: ../_spec/teleport.txt spec.coffee
     rm -rf tmp/spec-new
     mkdir tmp/spec-new
-    {{ coffeeExec }} spec.coffee > tmp/spec-new/index.html
+    {{{ coffeeExec }}} spec.coffee > tmp/spec-new/index.html
     tar cf build/spec-new.tar -C tmp/spec-new .
 
 

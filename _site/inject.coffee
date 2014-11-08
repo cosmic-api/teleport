@@ -1,7 +1,10 @@
 fs = require 'fs'
 find = require 'find'
 mustache = require 'mustache'
+
 jsdom = require 'jsdom'
+he = require 'he'
+
 project = require './settings'
 argv = require('optimist').argv
 jquerySrc = fs.readFileSync "static/jquery.min.js", "utf-8"
@@ -52,6 +55,10 @@ nav = render "navbar.html", {
 }
 
 
+cleanEntities = (html) ->
+  # jsdom renders some HTML entities into unicode which causes problems
+  he.encode html, allowUnsafeSymbols: true
+
 inject = (html, callback) ->
 
   jsdom.env html, src: [jquerySrc], (errors, window) ->
@@ -88,6 +95,6 @@ inject = (html, callback) ->
 
     window.$('head').append "\n\n"
 
-    callback null, window.document.documentElement.outerHTML
+    callback null, cleanEntities window.document.documentElement.outerHTML
 
 main()

@@ -53,7 +53,7 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON 'package.json'
     exec:
       makeAll:
-        command: 'make  dist'
+        command: 'make dist'
     watch:
       main:
         options:
@@ -152,8 +152,24 @@ generateMakefile = (callback) ->
   \t(cd tmp; unzip flask-sphinx-themes.zip)
   \ttar cf build/flask-sphinx-themes.tar -C tmp/flask-sphinx-themes-master .
 
+  # New Teleport spec
+  build/spec-new.tar: ../_spec/teleport.txt spec.coffee
+  \trm -rf tmp/spec-new
+  \tmkdir tmp/spec-new
+  \t#{coffeeExec} spec.coffee > tmp/spec-new/index.html
+  \ttar cf build/spec-new.tar -C tmp/spec-new .
+
 
   """
+
+  makefile += "# Copying from archive\n\n"
+  for arch in project.archive
+    makefile += """
+    build/archive-#{arch}.tar: archive/#{arch}.tar
+    \tcp archive/#{arch}.tar build/archive-#{arch}.tar
+
+
+    """
 
   makefile += "# Checkouts\n\n"
   for branch in project.checkouts
@@ -193,40 +209,39 @@ generateMakefile = (callback) ->
     \tmkdir #{t}/flask-sphinx-themes
     \ttar xf build/flask-sphinx-themes.tar -C #{t}/flask-sphinx-themes
     \techo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{t}/docs/source/conf.py
+    \techo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{t}/docs/source/conf.py
     \t(cd #{t}; sphinx-build -b html -D html_theme=flask docs/source out)
     \ttar cf build/#{full}.tar -C #{t}/out .
 
 
     """
 
-
-  checkoutDeps = []
+  checkoutDeps = ["build/spec-new.tar"]
   makefile += "# Injecting\n\n"
-  for root, opts of project.inject
-    full = "#{root}-inject"
-    t = "tmp/#{full}"
-    jqueryOpt = if opts.jquery then '--jquery' else ''
-    makefile += """
-    build/#{full}.tar: build/#{root}.tar #{injector}
-    \trm -rf #{t}
-    \tmkdir -p #{t}
-    \ttar xf build/#{root}.tar -C #{t}
-    \t#{coffeeExec} inject.coffee --dir #{t} --section #{opts.section} --version '#{opts.version}' #{jqueryOpt}
-    \ttar cf build/#{full}.tar -C #{t} .
+  for section, vers of project.layout
+    for version, {content, jquery, nobs} of vers
+      full = "#{content}-inject"
+      t = "tmp/#{full}"
+      jqueryOpt = if jquery then '--jquery' else ''
+      nobsOpt = if nobs then '--nobs' else ''
+      makefile += """
+      build/#{full}.tar: build/#{content}.tar #{injector}
+      \trm -rf #{t}
+      \tmkdir -p #{t}
+      \ttar xf build/#{content}.tar -C #{t}
+      \t#{coffeeExec} inject.coffee --dir #{t} --section #{section} --version '#{version}' #{jqueryOpt} #{nobsOpt}
+      \ttar cf build/#{full}.tar -C #{t} .
 
 
-    """
-    checkoutDeps.push "build/#{full}.tar"
-
+      """
+      checkoutDeps.push "build/#{full}.tar"
 
 
   makefile += """
-  dist: #{checkoutDeps.join ' '} static index.coffee spec.coffee build/bootstrap.tar #{injector} ../_spec/teleport.txt
+  dist: #{checkoutDeps.join ' '} static index.coffee build/bootstrap.tar #{injector}
   \trm -rf dist
   \tmkdir -p dist
 
-  \tmkdir dist/python
-  \tmkdir dist/spec
   \ttouch dist/.nojekyll
   \tcp -R static dist
   \trm -rf dist/static/bootstrap
@@ -236,25 +251,19 @@ generateMakefile = (callback) ->
   \t#{coffeeExec} index.coffee > dist/index.html
   \t#{coffeeExec} inject.coffee --file dist/index.html --section home --nobs
 
-  \t# Old Teleport spec
-  \tmkdir dist/spec/1.0
-  \ttar xf archive/teleport-spec-old.tar -C dist/spec/1.0
-  \t#{coffeeExec} inject.coffee --dir dist/spec/1.0 --section spec --version '1.0' --jquery
-
-  \t# New Teleport spec
-  \tmkdir dist/spec/latest
-  \t#{coffeeExec} spec.coffee > dist/spec/latest/index.html
-  \t#{coffeeExec} inject.coffee --file dist/spec/latest/index.html --section spec --version 'latest' --nobs
-
-  \t# Python docs
-  \tmkdir dist/python/0.1
-  \ttar xf build/checkouts-0.1-maintenance-python-sphinx-inject.tar -C dist/python/0.1
-  \tmkdir dist/python/0.2
-  \ttar xf build/checkouts-0.2-maintenance-python-sphinx-inject.tar -C dist/python/0.2
-  \tmkdir dist/python/latest
-  \ttar xf build/checkouts-master-python-sphinx-inject.tar -C dist/python/latest
-
   """
+
+  for section, vers of project.layout
+    makefile += """
+    \tmkdir dist/#{section}
+
+    """
+    for version, {content, jquery} of vers
+      makefile += """
+      \tmkdir dist/#{section}/#{version}
+      \ttar xf build/#{content}-inject.tar -C dist/#{section}/#{version}
+
+      """
 
 
   parallelListFiles touchy, (err, results) ->

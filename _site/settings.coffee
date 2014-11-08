@@ -28,6 +28,9 @@ module.exports =
         { divider: true }
         { version: '1.0' }
       ]
+  archive: [
+    'spec-old'
+  ]
   checkouts: [
     'master'
     '0.1-maintenance'
@@ -42,17 +45,22 @@ module.exports =
     'checkouts-0.1-maintenance-python'
     'checkouts-0.2-maintenance-python'
   ]
-  inject:
-    'checkouts-master-python-sphinx':
-      section: 'python'
-      version: 'latest'
-      jquery: true
-    'checkouts-0.1-maintenance-python-sphinx':
-      section: 'python'
-      version: '0.1'
-      jquery: true
-    'checkouts-0.2-maintenance-python-sphinx':
-      section: 'python'
-      version: '0.2'
-      jquery: true
+  layout:
+    python:
+      '0.1':
+        content: 'checkouts-0.1-maintenance-python-sphinx'
+        jquery: true
+      '0.2':
+        content: 'checkouts-0.2-maintenance-python-sphinx'
+        jquery: true
+      'latest':
+        content: 'checkouts-master-python-sphinx'
+        jquery: true
+     spec:
+      '1.0':
+        content: 'archive-spec-old'
+        jquery: true
+      'latest':
+        content: 'spec-new'
+        nobs: true
 

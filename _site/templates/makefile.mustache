@@ -66,20 +66,6 @@ build/flask-sphinx-themes.tar:
 
 
 
-#---------------------------------------------
-# extracting subdirectories
-#---------------------------------------------
-
-{{#extractSubDirs}}
-{{{ out }}}: {{{ source }}}
-    rm -rf {{{ tmp }}}
-    mkdir {{{ tmp }}}
-    tar xf {{{ source }}} -C {{{ tmp }}}
-    tar cf {{{ out }}} -C {{{ tmp }}}/{{{ dir }}} .
-
-{{/extractSubDirs}}
-
-
 
 #---------------------------------------------
 # building sphixes
@@ -90,12 +76,12 @@ build/flask-sphinx-themes.tar:
     rm -rf {{{ tmp }}}
     mkdir {{{ tmp }}}
     tar xf {{{ source }}} -C {{{ tmp }}}
-    mkdir {{{ tmp }}}/flask-sphinx-themes
-    tar xf build/flask-sphinx-themes.tar -C {{{ tmp }}}/flask-sphinx-themes
-    echo '\nhtml_theme_path = ["../../flask-sphinx-themes"]\n' >> {{{ tmp }}}/docs/source/conf.py
-    echo '\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\n' >> {{{ tmp }}}/docs/source/conf.py
-    (cd {{{ tmp }}}; sphinx-build -b html -D html_theme=flask docs/source out)
-    tar cf {{{ out }}} -C {{{ tmp }}}/out .
+    mkdir {{{ tmp }}}/python/flask-sphinx-themes
+    tar xf build/flask-sphinx-themes.tar -C {{{ tmp }}}/python/flask-sphinx-themes
+    echo '\nhtml_theme_path = ["../../flask-sphinx-themes"]\n' >> {{{ tmp }}}/python/docs/source/conf.py
+    echo '\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\n' >> {{{ tmp }}}/python/docs/source/conf.py
+    (cd {{{ tmp }}}/python; sphinx-build -b html -D html_theme=flask docs/source out)
+    tar cf {{{ out }}} -C {{{ tmp }}}/python/out .
 
 {{/sphinxes}}
 

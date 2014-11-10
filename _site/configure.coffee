@@ -58,16 +58,6 @@ makefile = do ->
     distDeps: (do ->
       for {content} in flatLayout
         "build/#{content}-inject.tar").join(' ')
-    extractSubDirs: do ->
-      d = []
-      for source, subs of build.subdirs
-        for sub in subs
-          d.push
-            out: "build/#{source}-#{sub}.tar"
-            source: "build/#{source}.tar"
-            tmp: "tmp/#{source}-#{sub}"
-            dir: sub
-      return d
     dist:
       for {section, version, content} in flatLayout
         dir: "dist/#{section}/#{version}"

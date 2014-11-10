@@ -40,25 +40,21 @@ module.exports =
       '0.1-maintenance'
       '0.2-maintenance'
     ]
-    subdirs:
-      'checkouts-master': ['python']
-      'checkouts-0.1-maintenance': ['python']
-      'checkouts-0.2-maintenance': ['python']
     sphinx: [
-      'checkouts-master-python'
-      'checkouts-0.1-maintenance-python'
-      'checkouts-0.2-maintenance-python'
+      'checkouts-master'
+      'checkouts-0.1-maintenance'
+      'checkouts-0.2-maintenance'
     ]
     layout:
       python:
         '0.1':
-          content: 'checkouts-0.1-maintenance-python-sphinx'
+          content: 'checkouts-0.1-maintenance-sphinx'
           jquery: true
         '0.2':
-          content: 'checkouts-0.2-maintenance-python-sphinx'
+          content: 'checkouts-0.2-maintenance-sphinx'
           jquery: true
         'latest':
-          content: 'checkouts-master-python-sphinx'
+          content: 'checkouts-master-sphinx'
           jquery: true
        spec:
         '1.0':

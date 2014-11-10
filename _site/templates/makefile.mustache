@@ -2,15 +2,6 @@
 
 node_modules: package.json
     npm install
-    touch node_modules
-
-# New Teleport spec
-
-build/spec-new.tar: ../_spec/teleport.txt spec.coffee
-    rm -rf tmp/spec-new
-    mkdir tmp/spec-new
-    {{{ coffeeExec }}} spec.coffee > tmp/spec-new/index.html
-    tar cf build/spec-new.tar -C tmp/spec-new .
 
 
 #---------------------------------------------
@@ -46,8 +37,8 @@ build/flask-sphinx-themes.tar:
 #---------------------------------------------
 
 {{#checkouts}}
-{{{ out }}}: ../.git/refs/heads/{{ branch }}
-    git --git-dir ../.git archive {{ branch }} > {{{ out }}}
+{{{ out }}}: ../.git/refs/{{{ ref }}}
+    git --git-dir ../.git archive $(shell cat ../.git/refs/{{{ ref }}}) > {{{ out }}}
 
 {{/checkouts}}
 
@@ -84,6 +75,27 @@ build/flask-sphinx-themes.tar:
     tar cf {{{ out }}} -C {{{ tmp }}}/python/out .
 
 {{/sphinxes}}
+
+
+
+
+#---------------------------------------------
+# xml2rfc spec
+#---------------------------------------------
+
+{{#xml2rfc}}
+
+{{{ out }}}: {{{ source }}}
+    rm -rf {{{ tmp }}}
+    mkdir {{{ tmp }}}
+    tar xf {{{ source }}} -C {{{ tmp }}}
+    (cd {{{ tmp }}}/_spec; xml2rfc teleport.xml --text)
+    mkdir {{{ tmp }}}/out
+    {{{ coffeeExec }}} spec.coffee < {{{ tmp }}}/_spec/teleport.txt > {{{ tmp }}}/out/index.html
+    tar cf {{{ out }}} -C {{{ tmp }}}/out .
+
+{{/xml2rfc}}
+
 
 
 

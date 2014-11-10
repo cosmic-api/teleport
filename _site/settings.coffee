@@ -28,38 +28,43 @@ module.exports =
         { divider: true }
         { version: '1.0' }
       ]
-    archive: [
-      'spec-old'
-    ]
   build:
     archive: [
       'spec-old'
     ]
     checkouts: [
-      'master'
-      '0.1-maintenance'
-      '0.2-maintenance'
+      {branch: 'master'}
+      {branch: 'py-0.1-maintenance'}
+      {branch: 'py-0.2-maintenance'}
+      {tag: 'spec-draft-00'}
     ]
     sphinx: [
       'checkouts-master'
-      'checkouts-0.1-maintenance'
-      'checkouts-0.2-maintenance'
+      'checkouts-py-0.1-maintenance'
+      'checkouts-py-0.2-maintenance'
+    ]
+    xml2rfc: [
+      'checkouts-master'
+      'checkouts-spec-draft-00'
     ]
     layout:
       python:
         '0.1':
-          content: 'checkouts-0.1-maintenance-sphinx'
+          content: 'checkouts-py-0.1-maintenance-sphinx'
           jquery: true
         '0.2':
-          content: 'checkouts-0.2-maintenance-sphinx'
+          content: 'checkouts-py-0.2-maintenance-sphinx'
           jquery: true
         'latest':
           content: 'checkouts-master-sphinx'
           jquery: true
        spec:
+        'latest':
+          content: 'checkouts-master-xml2rfc'
+          nobs: true
+        'draft-00':
+          content: 'checkouts-spec-draft-00-xml2rfc'
+          nobs: true
         '1.0':
           content: 'archive-spec-old'
           jquery: true
-        'latest':
-          content: 'spec-new'
-          nobs: true

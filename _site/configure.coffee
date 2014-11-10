@@ -43,9 +43,13 @@ makefile = do ->
     coffeeExec: coffeeExec
     injectorDeps: injector
     checkouts:
-      for branch in build.checkouts
-        out: "build/checkouts-#{branch}.tar"
-        branch: branch
+      for ref in build.checkouts
+        if ref.branch?
+          out: "build/checkouts-#{ref.branch}.tar"
+          ref: "heads/#{ref.branch}"
+        else if ref.tag?
+          out: "build/checkouts-#{ref.tag}.tar"
+          ref: "tags/#{ref.tag}"
     copy:
       for arc in build.archive
         from: "archive/#{arc}.tar"
@@ -53,6 +57,11 @@ makefile = do ->
     sphinxes:
       for root in build.sphinx
         out: "build/#{root}-sphinx.tar"
+        source: "build/#{root}.tar"
+        tmp: "tmp/#{root}-sphinx"
+    xml2rfc:
+      for root in build.xml2rfc
+        out: "build/#{root}-xml2rfc.tar"
         source: "build/#{root}.tar"
         tmp: "tmp/#{root}-sphinx"
     distDeps: (do ->

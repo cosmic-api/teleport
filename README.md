@@ -16,9 +16,9 @@ Teleport is:
 Status
 ======
 
-A new [specification](http://www.teleport-json.org/spec/latest/) is up and will
-be submitted as an Internet Draft on Nov 10, 2014. The old specification, 1.0
-is implemented as a [Python library](http://www.teleport-json.org/python/latest/).
+A new [specification](http://www.teleport-json.org/spec/latest/) has been
+submitted as [an Internet Draft](https://datatracker.ietf.org/doc/draft-boronine-teleport/)
+on Nov 10, 2014. The old specification is implemented as a [Python library](http://www.teleport-json.org/python/latest/).
 
 The Python library will soon be updated to match the new spec, a JavaScript
 library is in the works as well.

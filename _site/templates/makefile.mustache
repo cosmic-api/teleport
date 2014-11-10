@@ -85,7 +85,7 @@ build/flask-sphinx-themes.tar:
 
 {{#xml2rfc}}
 
-{{{ out }}}: {{{ source }}}
+{{{ out }}}: {{{ source }}} spec.coffee templates/spec.mustache
     rm -rf {{{ tmp }}}
     mkdir {{{ tmp }}}
     tar xf {{{ source }}} -C {{{ tmp }}}

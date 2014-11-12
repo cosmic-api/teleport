@@ -1,6 +1,3 @@
-*.py[co]
-/.pip-cache
-
 # Vim swap files
 *.swp
 *.swo
@@ -10,42 +7,13 @@
 .\#*
 \#*
 
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-MANIFEST
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
-.coverage
-.tox
-/htmlcov
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-
-# Python virtual env
-/venv
-
-# Docs
-/docs/build
-
-/.pypirc
+/tmp
+/build
+/Makefile
 
 # PyCharm
 /.idea
 *.iml
+
+*.pyc
+*.pyo

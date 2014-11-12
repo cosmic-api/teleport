@@ -69,7 +69,7 @@ makefile = do ->
         "build/#{content}-inject.tar").join(' ')
     dist:
       for {section, version, content} in flatLayout
-        dir: "dist/#{section}/#{version}"
+        dir: "#{section}/#{version}"
         source: "build/#{content}-inject.tar"
     injections:
       for {section, version, content, jquery, nobs} in flatLayout

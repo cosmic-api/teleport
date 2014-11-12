@@ -119,23 +119,24 @@ build/flask-sphinx-themes.tar:
 # dist - putting everything together
 #---------------------------------------------
 
-dist: static index.coffee build/bootstrap.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
-    rm -rf dist
-    mkdir -p dist
+build/dist.tar: static index.coffee build/bootstrap.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
+    rm -rf tmp/dist
+    mkdir -p tmp/dist
 
-    touch dist/.nojekyll
-    cp -R static dist
-    rm -rf dist/static/bootstrap
-    mkdir -p dist/static/bootstrap
-    tar xf build/bootstrap.tar -C dist/static/bootstrap
+    touch tmp/dist/.nojekyll
+    cp -R static tmp/dist
+    rm -rf tmp/dist/static/bootstrap
+    mkdir -p tmp/dist/static/bootstrap
+    tar xf build/bootstrap.tar -C tmp/dist/static/bootstrap
 
-    {{{ coffeeExec }}} index.coffee > dist/index.html
-    {{{ coffeeExec }}} inject.coffee --file dist/index.html --section home --nobs
+    {{{ coffeeExec }}} index.coffee > tmp/dist/index.html
+    {{{ coffeeExec }}} inject.coffee --file tmp/dist/index.html --section home --nobs
 
     {{#dist}}
-        mkdir -p {{{ dir }}}
-        tar xf {{{ source }}} -C {{{ dir }}}
+        mkdir -p tmp/dist/{{{ dir }}}
+        tar xf {{{ source }}} -C tmp/dist/{{{ dir }}}
 
     {{/dist}}
 
+    tar cf build/dist.tar -C tmp/dist .
 

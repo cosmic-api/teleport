@@ -1,4 +1,4 @@
-.PHONY: clean deploy
+.PHONY: clean deploy site py
 
 clean:
     rm -rf build/*
@@ -7,9 +7,14 @@ clean:
 deploy:
     (cd tmp/site; rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
 
+site:
+    grunt live:site
+
+py:
+    grunt live:py
+
 
 # Reinstall stuff if package.json is modified
-
 node_modules: package.json
     npm install
 

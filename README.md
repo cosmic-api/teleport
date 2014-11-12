@@ -23,6 +23,39 @@ on Nov 10, 2014. The old specification is implemented as a [Python library](http
 The Python library will soon be updated to match the new spec, a JavaScript
 library is in the works as well.
 
+Build Instructions
+==================
+
+Install requirements (in project root):
+
+    sudo pip install sphinx, xml2rfc
+    npm install
+
+Create Makefile:
+
+	./configure
+
+To build full site:
+
+	make build/site.tar
+
+To build Python docs from current tree:
+
+	make build/current-source-sphinx.tar
+
+To clear cache:
+
+	make clean
+
+To deploy via rsync (private key):
+
+	make deploy
+
+Live development mode:
+
+	make site
+	make py
+
 License
 -------
 

@@ -8,10 +8,10 @@ deploy:
     (cd tmp/site; rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
 
 site:
-    grunt live:site
+    grunt --gruntfile _site/Gruntfile.coffee live:site
 
 py:
-    grunt live:py
+    grunt --gruntfile _site/Gruntfile.coffee live:py
 
 
 # Reinstall stuff if package.json is modified

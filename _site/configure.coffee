@@ -1,7 +1,6 @@
 _ = require 'underscore'
 mustache = require 'mustache'
 fs = require 'fs'
-{build} = require './settings'
 
 
 render = (file, context) ->
@@ -22,7 +21,9 @@ tabbifyText = (text) ->
   return mapLines text, tabbifyLine
 
 
-makefile = do ->
+generateMakefile = ->
+
+  {build} = require './settings'
 
   # Executables
   coffeeExec = "node_modules/.bin/coffee"
@@ -81,8 +82,10 @@ makefile = do ->
         source: "build/#{content}.tar"
         injectorOpts: "--section #{section} --version '#{version}' #{jqueryOpt} #{nobsOpt}"
 
-  tabbifyText render "makefile.mustache", context
+  return tabbifyText render "makefile.mustache", context
 
 
 module.exports =
-  makefile: makefile
+  generateMakefile: generateMakefile
+  main: ->
+    fs.writeFileSync "#{__dirname}/../Makefile", generateMakefile()

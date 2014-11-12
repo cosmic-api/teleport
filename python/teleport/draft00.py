@@ -20,6 +20,8 @@ class Type(object):
     def from_json(self, value):
         if value in self:
             return value
+        else:
+            raise Undefined()
 
     def to_json(self, value):
         return value
@@ -57,16 +59,15 @@ class ArrayType(GenericType):
     def process_param(self, param):
         self.space = self.t(param)
 
-    def __contains__(self, value):
+    def from_json(self, value):
 
         if type(value) != list:
-            return False
+            raise Undefined()
 
-        for element in value:
-            if element not in self.space:
-                return False
+        return map(self.space.from_json, value)
 
-        return True
+    def to_json(self, value):
+        return map(self.space.to_json, value)
 
 
 class MapType(GenericType):
@@ -74,16 +75,23 @@ class MapType(GenericType):
     def process_param(self, param):
         self.space = self.t(param)
 
-    def __contains__(self, value):
+    def from_json(self, value):
 
         if type(value) != dict:
-            return False
+            raise Undefined()
 
+        ret = {}
         for key, val in value.items():
-            if val not in self.space:
-                return False
+            ret[key] = self.space.from_json(val)
 
-        return True
+        return ret
+
+    def to_json(self, value):
+        ret = {}
+        for key, val in value.items():
+            ret[key] = self.space.to_json(val)
+
+        return ret
 
 
 class StructType(GenericType):
@@ -108,20 +116,27 @@ class StructType(GenericType):
         if not self.opt.isdisjoint(self.req):
             raise Undefined()
 
-    def __contains__(self, value):
+    def from_json(self, value):
 
         if type(value) != dict:
-            return False
+            raise Undefined()
 
         for k in self.req:
             if k not in value:
-                return False
+                raise Undefined()
 
+        ret = {}
         for k, v in value.items():
-            if k not in self.schemas or v not in self.schemas[k]:
-                return False
+            ret[k] = self.schemas[k].from_json(v)
 
-        return True
+        return ret
+
+    def to_json(self, value):
+        ret = {}
+        for k, v in value.items():
+            ret[k] = self.schemas[k].to_json(v)
+
+        return ret
 
 
 class JSONType(ConcreteType):

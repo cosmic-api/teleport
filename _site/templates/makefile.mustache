@@ -1,3 +1,13 @@
+.PHONY: clean deploy
+
+clean:
+    rm -rf build/*
+    rm -rf tmp/*
+
+deploy:
+    (cd tmp/site; rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
+
+
 # Reinstall stuff if package.json is modified
 
 node_modules: package.json
@@ -116,27 +126,26 @@ build/flask-sphinx-themes.tar:
 
 
 #---------------------------------------------
-# dist - putting everything together
+# site - putting everything together
 #---------------------------------------------
 
-build/dist.tar: static index.coffee build/bootstrap.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
-    rm -rf tmp/dist
-    mkdir -p tmp/dist
+build/site.tar: static index.coffee build/bootstrap.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
+    rm -rf tmp/site
+    mkdir -p tmp/site
 
-    touch tmp/dist/.nojekyll
-    cp -R static tmp/dist
-    rm -rf tmp/dist/static/bootstrap
-    mkdir -p tmp/dist/static/bootstrap
-    tar xf build/bootstrap.tar -C tmp/dist/static/bootstrap
+    touch tmp/site/.nojekyll
+    cp -R static tmp/site
+    rm -rf tmp/site/static/bootstrap
+    mkdir -p tmp/site/static/bootstrap
+    tar xf build/bootstrap.tar -C tmp/site/static/bootstrap
 
-    {{{ coffeeExec }}} index.coffee > tmp/dist/index.html
-    {{{ coffeeExec }}} inject.coffee --file tmp/dist/index.html --section home --nobs
+    {{{ coffeeExec }}} index.coffee > tmp/site/index.html
+    {{{ coffeeExec }}} inject.coffee --file tmp/site/index.html --section home --nobs
 
     {{#dist}}
-        mkdir -p tmp/dist/{{{ dir }}}
-        tar xf {{{ source }}} -C tmp/dist/{{{ dir }}}
+        mkdir -p tmp/site/{{{ dir }}}
+        tar xf {{{ source }}} -C tmp/site/{{{ dir }}}
 
     {{/dist}}
 
-    tar cf build/dist.tar -C tmp/dist .
-
+    tar cf build/site.tar -C tmp/site .

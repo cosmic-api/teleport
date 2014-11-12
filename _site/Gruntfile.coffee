@@ -1,13 +1,8 @@
 _ = require 'underscore'
 fs = require 'fs'
-exec = require('child_process').exec
 livereload = require 'connect-livereload'
 connect = require 'connect'
 serve = require 'serve-static'
-
-{apply, series, each, map} = require 'async'
-
-latest = { version: 'latest', branch: 'master' }
 
 {makefile} = require './configure'
 
@@ -23,7 +18,7 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON 'package.json'
     exec:
       site:
-        command: 'make build/dist.tar'
+        command: 'make build/site.tar'
     watch:
       site:
         options:
@@ -47,21 +42,5 @@ module.exports = (grunt) ->
   grunt.registerTask 'connect', 'Start a static web server.', ->
     connect()
       .use(livereload({port: livereloadPort}))
-      .use(serve 'tmp/dist')
+      .use(serve 'tmp/site')
       .listen 9001
-
-  grunt.registerTask 'deploy', 'Deploy.', ->
-    # Pull, add, commit and push
-    exec """
-         cd dist; \
-         rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org
-         """, @async()
-
-  grunt.registerTask 'clean', 'Remove all but the source files.', ->
-    series [
-      apply exec, 'rm -rf build/*'
-      apply exec, 'rm -rf dist/*'
-      apply exec, 'rm -rf tmp/*'
-    ], @async()
-
-

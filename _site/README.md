@@ -8,15 +8,15 @@ Install requirements:
 
 Basic make commands:
 
-	grunt clean
 	grunt configure
-    grunt
+	make clean
+    make build/dist.tar
 
 To run a server enabled with livereload:
 
-	grunt live
+	grunt live:site
 
 To deploy:
 
-	grunt deploy
+	make deploy
 

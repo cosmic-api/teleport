@@ -1,22 +1,19 @@
 Static Site Generator
 =====================
 
-Install requirements:
+Install requirements (in project root):
 
-    sudo pip install sphinx, livereload
+    sudo pip install sphinx, xml2rfc
     npm install
 
 Basic make commands:
 
-	grunt configure
+	./configure
+	make build/site.tar
 	make clean
-    make build/dist.tar
+	make deploy
 
 To run a server enabled with livereload:
 
 	grunt live:site
-
-To deploy:
-
-	make deploy
 

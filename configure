@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+require('coffee-script').register();
+
+var makefile = require('./_site/configure.coffee').makefile;
+
+fs.writeFileSync('Makefile', makefile);

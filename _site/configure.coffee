@@ -27,7 +27,7 @@ makefile = do ->
   # Executables
   coffeeExec = "node_modules/.bin/coffee"
   # Stuff necessary for injector
-  injector = "inject.coffee settings.coffee node_modules templates/navbar.mustache"
+  injector = "_site/inject.coffee _site/settings.coffee node_modules _site/templates/navbar.mustache"
 
   flatLayout = do ->
     d = []
@@ -52,7 +52,7 @@ makefile = do ->
           ref: "tags/#{ref.tag}"
     copy:
       for arc in build.archive
-        from: "archive/#{arc}.tar"
+        from: "_site/archive/#{arc}.tar"
         to: "build/archive-#{arc}.tar"
     sphinxes:
       for root in build.sphinx

@@ -7,7 +7,7 @@ he = require 'he'
 
 project = require './settings'
 argv = require('optimist').argv
-jquerySrc = fs.readFileSync "static/jquery.min.js", "utf-8"
+jquerySrc = fs.readFileSync "#{__dirname}/static/jquery.min.js", "utf-8"
 
 render = (file, context) ->
   raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()

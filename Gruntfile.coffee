@@ -17,30 +17,28 @@ module.exports = (grunt) ->
   grunt.initConfig
     pkg: grunt.file.readJSON 'package.json'
     exec:
-      site:
+      configure:
+        command: './configure'
+      makeSite:
         command: 'make build/site.tar'
     watch:
       site:
         options:
           spawn: false
         files: [
-          'templates/**'
-          'static/**'
-          'inject.coffee'
+          '_site/templates/**'
+          '_site/static/**'
+          '_site/inject.coffee'
+          '_spec/teleport.txt'
           'package.json'
-          '../_spec/teleport.txt'
         ]
-        tasks: ['configure', 'exec:site']
-
-  grunt.registerTask 'live:site', ['configure', 'exec:site', 'connect', 'watch:site']
-
-  grunt.registerTask 'default', ['configure', 'exec:site']
-
-  grunt.registerTask 'configure', 'Write Makefile.', ->
-    fs.writeFileSync 'Makefile', makefile
+        tasks: ['configure', 'exec:makeSite']
 
   grunt.registerTask 'connect', 'Start a static web server.', ->
     connect()
       .use(livereload({port: livereloadPort}))
       .use(serve 'tmp/site')
       .listen 9001
+
+  grunt.registerTask 'live:site', ['exec:configure', 'exec:makeSite', 'connect', 'watch:site']
+

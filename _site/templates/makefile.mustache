@@ -44,6 +44,17 @@ build/flask-sphinx-themes.tar:
     (cd tmp; unzip flask-sphinx-themes.zip)
     tar cf build/flask-sphinx-themes.tar -C tmp/flask-sphinx-themes-master .
 
+build/fonts.tar:
+    rm -rf tmp/fonts
+    mkdir -p tmp/fonts
+    wget -O tmp/fonts/index.css "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+    cat tmp/fonts/index.css | grep -o -e "http.*ttf" > tmp/fonts/download.list
+    (cd tmp/fonts && xargs -i wget '{}' < download.list)
+    mkdir tmp/fonts/out
+    cp tmp/fonts/*.ttf tmp/fonts/out
+    sed 's/http.*\/\(.*\.ttf\)/\1/g' < tmp/fonts/index.css > tmp/fonts/out/index.css
+    tar cf build/fonts.tar -C tmp/fonts/out .
+
 
 
 #---------------------------------------------
@@ -145,7 +156,7 @@ build/current-source.tar:
 # site - putting everything together
 #---------------------------------------------
 
-build/site.tar: _site/static _site/index.coffee build/bootstrap.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
+build/site.tar: _site/static _site/index.coffee build/bootstrap.tar build/fonts.tar build/spec-new.tar {{{ injector }}} {{{ distDeps }}}
     rm -rf tmp/site
     mkdir -p tmp/site
 
@@ -154,6 +165,8 @@ build/site.tar: _site/static _site/index.coffee build/bootstrap.tar build/spec-n
     rm -rf tmp/site/static/bootstrap
     mkdir -p tmp/site/static/bootstrap
     tar xf build/bootstrap.tar -C tmp/site/static/bootstrap
+    mkdir -p tmp/site/static/fonts
+    tar xf build/fonts.tar -C tmp/site/static/fonts
 
     {{{ coffeeExec }}} _site/index.coffee > tmp/site/index.html
     {{{ coffeeExec }}} _site/inject.coffee --file tmp/site/index.html --section home --nobs

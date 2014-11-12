@@ -42,6 +42,7 @@ module.exports =
       'checkouts-master'
       'checkouts-py-0.1-maintenance'
       'checkouts-py-0.2-maintenance'
+      'current-source'
     ]
     xml2rfc: [
       'checkouts-master'

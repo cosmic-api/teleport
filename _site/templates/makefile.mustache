@@ -41,6 +41,16 @@ build/flask-sphinx-themes.tar:
 
 
 
+#---------------------------------------------
+# current source (delete to rebuild)
+#---------------------------------------------
+
+build/current-source.tar:
+    git ls-files -o -i --exclude-standard > tmp/excludes
+    rm -f build/current-source.tar
+    # We are excluding build/current-source.tar so tar doesn't complain about recursion
+    tar cf build/current-source.tar --exclude build/current-source.tar --exclude-from=tmp/excludes .
+
 
 #---------------------------------------------
 # checkouts from git
@@ -149,3 +159,8 @@ build/site.tar: _site/static _site/index.coffee build/bootstrap.tar build/spec-n
     {{/dist}}
 
     tar cf build/site.tar -C tmp/site .
+
+
+
+
+

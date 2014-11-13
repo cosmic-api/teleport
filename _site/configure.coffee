@@ -36,6 +36,8 @@ class BaseRule
 
   constructor: (opts) ->
     {@targetFile, @deps, @commands} = opts
+    if not @deps?
+      @deps = []
 
   toString: ->
     "#{@targetFile}: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
@@ -44,16 +46,20 @@ class BaseRule
 class Rule extends BaseRule
 
   constructor: (opts) ->
-    {@target, @deps, @commands} = opts
-    @targetFile = "build/#{@target}.tar"
+    {@target, deps, commands} = opts
+    super
+      targetFile: "build/#{@target}.tar"
+      deps: deps
+      commands: commands
 
 
 class Phony extends BaseRule
 
-  constructor: (@name, @commands) ->
+  constructor: (@name, commands) ->
     @target = null
-    @targetFile = @name
-    @deps = []
+    super
+      targetFile: @name
+      commands: commands
 
 
 class RulePrepareTar extends Rule
@@ -116,7 +122,6 @@ class RuleCurrentSource extends Rule
   constructor: ->
     super
       target: "current-source"
-      deps: []
       commands: commandsFromLines """
         git ls-files -o -i --exclude-standard > tmp/excludes
         rm -f build/current-source.tar
@@ -182,7 +187,6 @@ class RuleDownloadZip extends RulePrepareTar
     super
       target: target
       resultDir: '/out'
-      deps: []
       getLines: (tmp) -> """
         wget #{url} -O #{tmp}/src-#{target}.zip
         mkdir #{tmp}/out
@@ -195,7 +199,6 @@ class RuleDownloadFonts extends RulePrepareTar
     super
       target: 'fonts'
       resultDir: '/out'
-      deps: []
       getLines: (tmp) -> """
         wget -O #{tmp}/index.css "#{googleUrl}"
         cat #{tmp}/index.css | grep -o -e "http.*ttf" > #{tmp}/download.list
@@ -205,20 +208,6 @@ class RuleDownloadFonts extends RulePrepareTar
         sed 's/http.*\\/\\(.*\\.ttf\\)/\\1/g' < #{tmp}/index.css > #{tmp}/out/index.css
       """
 
-class RuleBuildBootstrap extends RulePrepareTar
-
-  constructor: ->
-    super
-      target: 'bootstrap'
-      resultDir: '/'
-      deps: ["build/bootstrap-lumen.css"]
-      mounts:
-        '/': 'bootstrap-dist'
-      getLines: (tmp) -> """
-        namespace-css build/bootstrap-lumen.css -s .bs -o #{tmp}/css/bootstrap.css
-        sed -i 's/\\\\.bs\\ body/\\\\.bs/g' #{tmp}/css/bootstrap.css
-        cp #{tmp}/css/bootstrap.css #{tmp}/css/bootstrap.min.css
-      """
 
 
 makefile = new Makefile()
@@ -231,8 +220,6 @@ makefile.addRules [
   new Phony 'site', ["#{coffeeExec} _site/live.coffee site"]
   new Phony 'py', ["#{coffeeExec} _site/live.coffee py"]
 
-  new RuleBuildBootstrap()
-
   new BaseRule
     targetFile: 'node_modules'
     deps: ["package.json"]
@@ -240,11 +227,22 @@ makefile.addRules [
 
   new BaseRule
     targetFile: 'build/bootstrap-lumen.css'
-    deps: []
     commands: ["wget http://bootswatch.com/lumen/bootstrap.css -O build/bootstrap-lumen.css"]
 
   flaskSphinxThemes = new RuleDownloadZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
   bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
+
+  bootstrap = new RulePrepareTar
+    target: 'bootstrap'
+    resultDir: '/'
+    deps: ["build/bootstrap-lumen.css"]
+    mounts:
+      '/': bootstrapDist.target
+    getLines: (tmp) -> """
+      namespace-css build/bootstrap-lumen.css -s .bs -o #{tmp}/css/bootstrap.css
+      sed -i 's/\\\\.bs\\ body/\\\\.bs/g' #{tmp}/css/bootstrap.css
+      cp #{tmp}/css/bootstrap.css #{tmp}/css/bootstrap.min.css
+    """
 
   fonts = new RuleDownloadFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
 

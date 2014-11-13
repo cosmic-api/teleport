@@ -12,29 +12,48 @@ commandsFromLines = (lines) ->
 
 class Makefile
 
-  constructor: (@initial) ->
-    @initial = "" if not @initial?
+  constructor: ->
     @rules = []
 
   addRule: (rule) ->
     @rules.push rule
 
+  addRules: (rules) ->
+    for rule in rules
+      @addRule rule
+
+  getPhonies: ->
+    (rule.name for rule in @rules when rule.target == null)
+
   toString: ->
-    s = @initial
+    s = ".PHONY: #{@getPhonies().join(' ')}\n\n"
     for rule in @rules
       s += rule.toString() + "\n\n"
     return s
 
 
+class BaseRule
 
-class Rule
+  constructor: (opts) ->
+    {@targetFile, @deps, @commands} = opts
+
+  toString: ->
+    "#{@targetFile}: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
+
+
+class Rule extends BaseRule
 
   constructor: (opts) ->
     {@target, @deps, @commands} = opts
+    @targetFile = "build/#{@target}.tar"
 
-  toString: ->
-    "build/#{@target}.tar: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
 
+class Phony extends BaseRule
+
+  constructor: (@name, @commands) ->
+    @target = null
+    @targetFile = @name
+    @deps = []
 
 
 class RulePrepareTar extends Rule
@@ -52,32 +71,32 @@ class RulePrepareTar extends Rule
       mountLines.push "mkdir -p #{tmp}#{root}"
       mountLines.push "tar xf build/#{source}.tar -C #{tmp}#{root}"
 
-    @target = target
-    @deps = deps
-    @commands = ["rm -rf #{tmp}", "mkdir #{tmp}"]
-      .concat mountLines
-      .concat(commandsFromLines getLines(tmp))
-      .concat ["tar cf build/#{target}.tar -C #{tmp}#{resultDir} ."]
+    super
+      target: target
+      deps: deps
+      commands: ["rm -rf #{tmp}", "mkdir #{tmp}"]
+        .concat mountLines
+        .concat(commandsFromLines getLines(tmp))
+        .concat ["tar cf build/#{target}.tar -C #{tmp}#{resultDir} ."]
 
 
 class RuleCopyFromArchive extends Rule
 
   constructor: (name) ->
     source = "_site/archive/#{name}.tar"
-
-    @target = "archive-#{name}"
-    @deps = [source]
-    @commands = ["cp -R #{source} build/#{@target}.tar"]
+    super
+      target: "archive-#{name}"
+      deps: [source]
+      commands: ["cp -R #{source} build/archive-#{name}.tar"]
 
 
 class RuleCheckout extends Rule
 
   constructor: (name, refFile) ->
-    @target = "checkouts-#{name}"
-    @deps = [refFile]
-    @commands = [
-      "git --git-dir .git archive $(shell cat #{refFile}) > build/#{@target}.tar"
-    ]
+    super
+      target: "checkouts-#{name}"
+      deps: [refFile]
+      commands: ["git --git-dir .git archive $(shell cat #{refFile}) > build/checkouts-#{name}.tar"]
 
 
 class RuleCheckoutBranch extends RuleCheckout
@@ -95,15 +114,15 @@ class RuleCheckoutTag extends RuleCheckout
 class RuleCurrentSource extends Rule
 
   constructor: ->
-    @target = "current-source"
-    @deps = []
-    @commands = commandsFromLines """
-      git ls-files -o -i --exclude-standard > tmp/excludes
-      rm -f build/current-source.tar
-      # We are excluding build/current-source.tar so tar doesn't complain about recursion
-      tar cf build/current-source.tar --exclude build/current-source.tar --exclude-from=tmp/excludes .
-    """
-
+    super
+      target: "current-source"
+      deps: []
+      commands: commandsFromLines """
+        git ls-files -o -i --exclude-standard > tmp/excludes
+        rm -f build/current-source.tar
+        # We are excluding build/current-source.tar so tar doesn't complain about recursion
+        tar cf build/current-source.tar --exclude build/current-source.tar --exclude-from=tmp/excludes .
+      """
 
 class RuleNewSpec extends RulePrepareTar
 
@@ -157,7 +176,6 @@ class RuleInject extends RulePrepareTar
         #{coffeeExec} _site/inject.coffee --dir #{tmp} #{args}
       """
 
-
 class RuleDownloadZip extends RulePrepareTar
 
   constructor: (target, url) ->
@@ -171,57 +189,64 @@ class RuleDownloadZip extends RulePrepareTar
         unzip #{tmp}/src-#{target}.zip -d #{tmp}/out
       """
 
+class RuleDownloadFonts extends RulePrepareTar
 
-initial = """
-.PHONY: clean deploy site py
+  constructor: (googleUrl) ->
+    super
+      target: 'fonts'
+      resultDir: '/out'
+      deps: []
+      getLines: (tmp) -> """
+        wget -O #{tmp}/index.css "#{googleUrl}"
+        cat #{tmp}/index.css | grep -o -e "http.*ttf" > #{tmp}/download.list
+        (cd #{tmp} && xargs -i wget '{}' < download.list)
+        mkdir #{tmp}/out
+        cp #{tmp}/*.ttf #{tmp}/out
+        sed 's/http.*\\/\\(.*\\.ttf\\)/\\1/g' < #{tmp}/index.css > #{tmp}/out/index.css
+      """
 
-clean:
-\trm -rf build/*
-\trm -rf tmp/*
+class RuleBuildBootstrap extends RulePrepareTar
 
-deploy:
-\t(cd tmp/site; rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
-
-site:
-\t#{coffeeExec} _site/live.coffee site
-
-py:
-\t#{coffeeExec} _site/live.coffee py
-
-# Reinstall stuff if package.json is modified
-node_modules: package.json
-\tnpm install
-
-build/bootstrap-lumen.css:
-\t(cd build && wget http://bootswatch.com/lumen/bootstrap.css && mv bootstrap.css bootstrap-lumen.css)
-
-build/bootstrap.tar: build/bootstrap-lumen.css build/bootstrap-dist.tar
-\trm -rf tmp/bootstrap
-\ttar xf build/bootstrap-dist.tar -d tmp
-\tmv tmp/dist tmp/bootstrap
-\tnamespace-css build/bootstrap-lumen.css -s .bs -o tmp/bootstrap/css/bootstrap.css
-\tsed -i 's/\\\\.bs\\ body/\\\\.bs/g' tmp/bootstrap/css/bootstrap.css
-\tcp tmp/bootstrap/css/bootstrap.css tmp/bootstrap/css/bootstrap.min.css
-\ttar cf build/bootstrap.tar -C tmp/bootstrap .
-
-build/fonts.tar:
-\trm -rf tmp/fonts
-\tmkdir -p tmp/fonts
-\twget -O tmp/fonts/index.css "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
-\tcat tmp/fonts/index.css | grep -o -e "http.*ttf" > tmp/fonts/download.list
-\t(cd tmp/fonts && xargs -i wget '{}' < download.list)
-\tmkdir tmp/fonts/out
-\tcp tmp/fonts/*.ttf tmp/fonts/out
-\tsed 's/http.*\\/\\(.*\\.ttf\\)/\\1/g' < tmp/fonts/index.css > tmp/fonts/out/index.css
-\ttar cf build/fonts.tar -C tmp/fonts/out .
+  constructor: ->
+    super
+      target: 'bootstrap'
+      resultDir: '/'
+      deps: ["build/bootstrap-lumen.css"]
+      mounts:
+        '/': 'bootstrap-dist'
+      getLines: (tmp) -> """
+        namespace-css build/bootstrap-lumen.css -s .bs -o #{tmp}/css/bootstrap.css
+        sed -i 's/\\\\.bs\\ body/\\\\.bs/g' #{tmp}/css/bootstrap.css
+        cp #{tmp}/css/bootstrap.css #{tmp}/css/bootstrap.min.css
+      """
 
 
-"""
+makefile = new Makefile()
 
-makefile = new Makefile initial
-makefile.rules = [
+makefile.addRules [
+  new Phony "clean", ["rm -rf build/*", "rm -rf tmp/*"]
+  new Phony "deploy", commandsFromLines """
+      (cd tmp/site; rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
+    """
+  new Phony 'site', ["#{coffeeExec} _site/live.coffee site"]
+  new Phony 'py', ["#{coffeeExec} _site/live.coffee py"]
+
+  new RuleBuildBootstrap()
+
+  new BaseRule
+    targetFile: 'node_modules'
+    deps: ["package.json"]
+    commands: ['npm install']
+
+  new BaseRule
+    targetFile: 'build/bootstrap-lumen.css'
+    deps: []
+    commands: ["wget http://bootswatch.com/lumen/bootstrap.css -O build/bootstrap-lumen.css"]
+
   flaskSphinxThemes = new RuleDownloadZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
   bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
+
+  fonts = new RuleDownloadFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
 
   master = new RuleCheckoutBranch 'master'
   py01m = new RuleCheckoutBranch '0.1-maintenance'

@@ -236,7 +236,6 @@ makefile.addRules [
     commands: ['npm install']
 
   downloadLumen = new RuleDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
-  downloadTomorrow = new RuleDownload 'prettify-tomorrow.css', 'http://jmblog.github.io/color-themes-for-google-code-prettify/css/themes/tomorrow.css'
 
   flaskSphinxThemes = new RuleDownloadZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
   bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
@@ -250,10 +249,10 @@ makefile.addRules [
       '/': bootstrapDist.target
       '/dist/fonts': fonts.target
       '/lumen': downloadLumen.target
-      '/tomorrow': downloadTomorrow.target
+    deps: ['node_modules/highlight.js/styles/tomorrow.css']
     getLines: (tmp) -> """
       namespace-css #{tmp}/lumen/bootstrap-lumen.css -s .bs -o #{tmp}/dist/css/bootstrap.css
-      namespace-css #{tmp}/tomorrow/prettify-tomorrow.css -s .bs >> #{tmp}/dist/css/bootstrap.css
+      namespace-css node_modules/highlight.js/styles/tomorrow.css -s .bs >> #{tmp}/dist/css/bootstrap.css
       sed -i 's/\\.bs\\ body/\\.bs/g' #{tmp}/dist/css/bootstrap.css
       sed -i '/googleapis/d' #{tmp}/dist/css/bootstrap.css
       echo "" >> #{tmp}/dist/css/bootstrap.css

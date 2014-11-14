@@ -71,7 +71,7 @@ schema = Struct([
   <div class="row">
     <div class="col-md-3" style="padding:50px">For serialization <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
-      <pre class="prettyprint lang-py">&gt;&gt;&gt; schema.from_json({
+      <pre class="highlight-please python">&gt;&gt;&gt; schema.from_json({
 ...     'text': 'Return videotapes',
 ...     'duedate': '2014-10-14T21:17:00.663882',
 ...     'tags': ['movies'],
@@ -82,7 +82,7 @@ schema = Struct([
   <div class="row">
     <div class="col-md-3" style="padding:50px">For validating input <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
-      <pre class="prettyprint lang-py">@route('/todo/add')
+      <pre class="highlight-please python">@route('/todo/add')
 def add_todo():
     try:
         todo = schema.from_json(request.json)
@@ -98,7 +98,7 @@ def add_todo():
   <div class="row">
     <div class="col-md-3" style="padding:50px">But infinitely extendable <span class="safe-mdash">&mdash;</span></div>
     <div class="col-md-9">
-      <pre class="prettyprint lang-py">class Todo(BasicWrapper):
+      <pre class="highlight-please python">class Todo(BasicWrapper):
     schema = Struct([
         required('text', String),
         optional('duedate', DateTime),

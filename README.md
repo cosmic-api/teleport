@@ -54,8 +54,8 @@ To deploy via rsync (private key):
 
 Live development mode:
 
-	make site
-	make py
+	./live site
+	./live current-source-sphinx
 
 License
 -------

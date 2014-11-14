@@ -14,71 +14,95 @@ commandsFromLines = (lines) ->
 class Makefile
 
   constructor: ->
-    @rules = []
+    @targets = {}
+    @tasks = []
+    @dag = {}
 
-  addRule: (rule) ->
-    @rules.push rule
+  addRule: (target) ->
+    @targets[target.filename] = target
+    @dag[target.filename] = target.deps
 
-  addRules: (rules) ->
-    for rule in rules
-      @addRule rule
+  addRules: (targets) ->
+    for target in targets
+      @addRule target
 
-  getPhonies: ->
-    (rule.name for rule in @rules when rule.target == null)
+  getLeaves: (vertex) ->
+    leaves = []
+
+    gatherLeaves = (vertex) =>
+      return if vertex in leaves
+      if @dag[vertex].length == 0
+        leaves.push vertex
+      else
+        for d in @dag[vertex]
+          continue if d in leaves
+          if @dag[d]?
+            gatherLeaves d
+          else
+            leaves.push d
+
+    gatherLeaves vertex
+    return leaves
+
+  addTask: (name, lines) ->
+    @tasks.push new Phony name, commandsFromLines lines
 
   toString: ->
-    s = ".PHONY: #{@getPhonies().join(' ')}\n\n"
-    for rule in @rules
-      s += rule.toString() + "\n\n"
+    s = ".PHONY: #{(task.name for task in @tasks).join(' ')}\n\n"
+    for task in @tasks
+      s += task.toString() + "\n\n"
+    for _, target of @targets
+      s += target.toString() + "\n\n"
     return s
 
 
 class BaseRule
 
   constructor: (opts) ->
-    {@targetFile, @deps, @commands} = opts
+    {@filename, @deps, @commands} = opts
     if not @deps?
       @deps = []
 
   toString: ->
-    "#{@targetFile}: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
-
-
-class RuleTouch extends BaseRule
-  # For example, when the index template changes, index.coffee should be
-  # considered changed too
-
-  constructor: (touchThis, whenThisChanges) ->
-    super
-      targetFile: touchThis
-      deps: whenThisChanges
-      commands: ["touch #{touchThis}"]
-
-
-class Rule extends BaseRule
-
-  constructor: (opts) ->
-    {@target, deps, commands} = opts
-    super
-      targetFile: "build/#{@target}.tar"
-      deps: deps
-      commands: commands
+    "#{@filename}: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
 
 
 class Phony extends BaseRule
 
   constructor: (@name, commands) ->
-    @target = null
+    @phony = true
     super
-      targetFile: @name
+      filename: @name
       commands: commands
 
 
-class RulePrepareTar extends Rule
+class FileTouch extends BaseRule
+  # For example, when the index template changes, index.coffee should be
+  # considered changed too
+
+  constructor: (touchThis, whenThisChanges) ->
+    @forceLeaf = true
+    super
+      filename: touchThis
+      deps: whenThisChanges
+      commands: ["touch #{touchThis}"]
+
+
+class File extends BaseRule
 
   constructor: (opts) ->
-    {target, deps, resultDir, getLines, mounts} = opts
-    tmp = "tmp/#{target}"
+    {@archive, deps, commands} = opts
+    super
+      filename: "build/#{@archive}.tar"
+      deps: deps
+      commands: commands
+
+
+class TarFile extends File
+
+  constructor: (opts) ->
+    {archive, deps, resultDir, getLines, mounts} = opts
+    tmp = "tmp/#{archive}"
 
     mounts = [] if not mounts?
     resultDir = '/' if not resultDir?
@@ -92,50 +116,50 @@ class RulePrepareTar extends Rule
       mountLines.push "tar xf build/#{source}.tar -C #{tmp}#{root}"
 
     super
-      target: target
+      archive: archive
       deps: deps
       commands: ["rm -rf #{tmp}", "mkdir #{tmp}"]
         .concat mountLines
         .concat(commandsFromLines getLines(tmp))
-        .concat ["tar cf build/#{target}.tar -C #{tmp}#{resultDir} ."]
+        .concat ["tar cf build/#{archive}.tar -C #{tmp}#{resultDir} ."]
 
 
-class RuleCopyFromArchive extends Rule
+class CopiedFromArchive extends File
 
   constructor: (name) ->
     source = "_site/archive/#{name}.tar"
     super
-      target: "archive-#{name}"
+      archive: "archive-#{name}"
       deps: [source]
       commands: ["cp -R #{source} build/archive-#{name}.tar"]
 
 
-class RuleCheckout extends Rule
+class GitCheckout extends File
 
   constructor: (name, refFile) ->
     super
-      target: "checkouts-#{name}"
+      archive: "checkouts-#{name}"
       deps: [refFile]
       commands: ["git --git-dir .git archive $(shell cat #{refFile}) > build/checkouts-#{name}.tar"]
 
 
-class RuleCheckoutBranch extends RuleCheckout
+class GitCheckoutBranch extends GitCheckout
 
   constructor: (branch) ->
     super branch, ".git/refs/heads/#{branch}"
 
 
-class RuleCheckoutTag extends RuleCheckout
+class GitCheckoutTag extends GitCheckout
 
   constructor: (tag) ->
     super tag, ".git/refs/tags/#{tag}"
 
 
-class RuleCurrentSource extends Rule
+class CurrentSource extends File
 
   constructor: ->
     super
-      target: "current-source"
+      archive: "current-source"
       commands: commandsFromLines """
         git ls-files -o -i --exclude-standard > tmp/excludes
         rm -f build/current-source.tar
@@ -143,11 +167,11 @@ class RuleCurrentSource extends Rule
         tar cf build/current-source.tar --exclude build/current-source.tar --exclude-from=tmp/excludes .
       """
 
-class RuleNewSpec extends RulePrepareTar
+class NewSpec extends TarFile
 
   constructor: (source) ->
     super
-      target: "#{source}-xml2rfc"
+      archive: "#{source}-xml2rfc"
       deps: ["_site/spec.coffee"]
       mounts:
         '/': source
@@ -159,11 +183,11 @@ class RuleNewSpec extends RulePrepareTar
       """
 
 
-class RuleSphinx extends RulePrepareTar
+class PythonDocs extends TarFile
 
   constructor: (source) ->
     super
-      target: "#{source}-sphinx"
+      archive: "#{source}-sphinx"
       resultDir: '/python/out'
       deps: ["build/flask-sphinx-themes.tar"]
       mounts:
@@ -177,11 +201,11 @@ class RuleSphinx extends RulePrepareTar
       """
 
 
-class RuleInject extends RulePrepareTar
+class InjectedFile extends TarFile
 
   constructor: (source, args) ->
     super
-      target: "#{source}-inject"
+      archive: "#{source}-inject"
       deps: [
         "_site/inject.coffee"
         "node_modules"
@@ -192,23 +216,23 @@ class RuleInject extends RulePrepareTar
         find #{tmp} -iname \\*.html | xargs #{coffeeExec} _site/inject.coffee #{args}
       """
 
-class RuleDownloadZip extends RulePrepareTar
+class DownloadedZip extends TarFile
 
-  constructor: (target, url) ->
+  constructor: (archive, url) ->
     super
-      target: target
+      archive: archive
       resultDir: '/out'
       getLines: (tmp) -> """
-        wget #{url} -O #{tmp}/src-#{target}.zip
+        wget #{url} -O #{tmp}/src-#{archive}.zip
         mkdir #{tmp}/out
-        unzip #{tmp}/src-#{target}.zip -d #{tmp}/out
+        unzip #{tmp}/src-#{archive}.zip -d #{tmp}/out
       """
 
-class RuleDownloadFonts extends RulePrepareTar
+class GoogleFonts extends TarFile
 
   constructor: (googleUrl) ->
     super
-      target: 'fonts'
+      archive: 'fonts'
       resultDir: '/out'
       getLines: (tmp) -> """
         wget -O #{tmp}/index.css "#{googleUrl}"
@@ -219,20 +243,20 @@ class RuleDownloadFonts extends RulePrepareTar
         sed 's/http.*\\/\\(.*\\.ttf\\)/\"..\\/fonts\\/\\1\"/g' < #{tmp}/index.css > #{tmp}/out/index.css
       """
 
-class RuleDownload extends RulePrepareTar
+class FileDownload extends TarFile
 
   constructor: (filename, url) ->
     super
-      target: "download-#{filename}"
+      archive: "download-#{filename}"
       getLines: (tmp) -> """
         wget -O #{tmp}/#{filename} "#{url}"
       """
 
-class RuleNpmPackage extends RulePrepareTar
+class LocalNpmPackage extends TarFile
 
   constructor: (name) ->
     super
-      target: "npm-#{name}"
+      archive: "npm-#{name}"
       deps: ["node_modules/#{name}"]
       getLines: (tmp) -> """
         cp -R node_modules/#{name}/* #{tmp}
@@ -240,40 +264,43 @@ class RuleNpmPackage extends RulePrepareTar
 
 
 makefile = new Makefile()
+makefile.addTask "deploy", """
+  (cd tmp/site-inject \
+  && rsync -avz \
+  -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+  --progress . root@104.131.5.252:/root/teleport-json.org)
+"""
+makefile.addTask "clean", "rm -rf build/*", "rm -rf tmp/*"
 
 makefile.addRules [
-  new Phony "clean", ["rm -rf build/*", "rm -rf tmp/*"]
-  new Phony "deploy", commandsFromLines """
-      (cd tmp/site-inject && rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
-    """
 
   new BaseRule
-    targetFile: 'node_modules'
+    filename: 'node_modules'
     deps: ["package.json"]
     commands: ['npm install', 'touch node_modules']
 
-  downloadLumen = new RuleDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
+  downloadLumen = new FileDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
 
-  flaskSphinxThemes = new RuleDownloadZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
-  bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
+  flaskSphinxThemes = new DownloadedZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
+  bootstrapDist = new DownloadedZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
 
-  fonts = new RuleDownloadFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+  fonts = new GoogleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
 
-  new RuleTouch '_site/index.coffee', ['_site/templates/index.mustache']
-  new RuleTouch '_site/spec.coffee', ['_site/templates/spec.mustache']
-  new RuleTouch '_site/inject.coffee', ['_site/templates/navbar.mustache']
+  new FileTouch '_site/index.coffee', ['_site/templates/index.mustache']
+  new FileTouch '_site/spec.coffee', ['_site/templates/spec.mustache']
+  new FileTouch '_site/inject.coffee', ['_site/templates/navbar.mustache']
 
-  npmHighlight = new RuleNpmPackage 'highlight.js'
-  npmJquery = new RuleNpmPackage 'jquery'
+  npmHighlight = new LocalNpmPackage 'highlight.js'
+  npmJquery = new LocalNpmPackage 'jquery'
 
-  bootstrap = new RulePrepareTar
-    target: 'bootstrap'
+  bootstrap = new TarFile
+    archive: 'bootstrap'
     resultDir: '/dist'
     mounts:
-      '/': bootstrapDist.target
-      '/fonts': fonts.target
-      '/lumen': downloadLumen.target
-      '/highlight': npmHighlight.target
+      '/': bootstrapDist.archive
+      '/fonts': fonts.archive
+      '/lumen': downloadLumen.archive
+      '/highlight': npmHighlight.archive
     deps: [
       '_site/static/static.css'
     ]
@@ -295,43 +322,42 @@ makefile.addRules [
       #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
     """
 
-  master = new RuleCheckoutBranch 'master'
-  py01m = new RuleCheckoutBranch 'py-0.1-maintenance'
-  py02m = new RuleCheckoutBranch 'py-0.2-maintenance'
-  draft00 = new RuleCheckoutTag 'spec-draft-00'
-  oldSpec = new RuleCopyFromArchive 'spec-old'
-  currentSource = new RuleCurrentSource()
-  specLatest = new RuleNewSpec master.target
-  specDraft00 = new RuleNewSpec draft00.target
-  sphinxLatest = new RuleSphinx master.target
-  sphinx01 = new RuleSphinx py01m.target
-  sphinx02 = new RuleSphinx py02m.target
-  liveSphinx = new RuleSphinx currentSource.target
+  master = new GitCheckoutBranch 'master'
+  py01m = new GitCheckoutBranch 'py-0.1-maintenance'
+  py02m = new GitCheckoutBranch 'py-0.2-maintenance'
+  draft00 = new GitCheckoutTag 'spec-draft-00'
+  oldSpec = new CopiedFromArchive 'spec-old'
+  currentSource = new CurrentSource()
+  specLatest = new NewSpec master.archive
+  specDraft00 = new NewSpec draft00.archive
+  sphinxLatest = new PythonDocs master.archive
+  sphinx01 = new PythonDocs py01m.archive
+  sphinx02 = new PythonDocs py02m.archive
+  liveSphinx = new PythonDocs currentSource.archive
 
-  injectPyLatest = new RuleInject sphinxLatest.target, "--navbar python/latest --bs"
-  injectPy02 = new RuleInject sphinx02.target, "--navbar 'python/0.2' --bs"
-  injectPy01 = new RuleInject sphinx01.target, "--navbar 'python/0.1' --bs"
-  specLatest = new RuleInject specLatest.target, "--navbar 'spec/latest' --bs"
-  spacDraft00 = new RuleInject specDraft00.target, "--navbar 'spec/draft-00' --bs"
-  spec10 = new RuleInject oldSpec.target, "--navbar 'spec/1.0' --bs"
+  injectPyLatest = new InjectedFile sphinxLatest.archive, "--navbar python/latest --bs"
+  injectPy02 = new InjectedFile sphinx02.archive, "--navbar 'python/0.2' --bs"
+  injectPy01 = new InjectedFile sphinx01.archive, "--navbar 'python/0.1' --bs"
+  specLatest = new InjectedFile specLatest.archive, "--navbar 'spec/latest' --bs"
+  spacDraft00 = new InjectedFile specDraft00.archive, "--navbar 'spec/draft-00' --bs"
+  spec10 = new InjectedFile oldSpec.archive, "--navbar 'spec/1.0' --bs"
 
-  site = new RulePrepareTar
-    target: "site"
+  site = new TarFile
+    archive: "site"
     deps: [
       "_site/static"
       "_site/index.coffee"
     ]
     mounts:
       '/static/bootstrap': 'bootstrap'
-      '/python/latest': injectPyLatest.target
-      '/python/0.2': injectPy02.target
-      '/python/0.1': injectPy01.target
-      '/spec/latest': specLatest.target
-      '/spec/draft-00': spacDraft00.target
-      '/spec/1.0': spec10.target
-      '/npm-jquery': npmJquery.target
+      '/python/latest': injectPyLatest.archive
+      '/python/0.2': injectPy02.archive
+      '/python/0.1': injectPy01.archive
+      '/spec/latest': specLatest.archive
+      '/spec/draft-00': spacDraft00.archive
+      '/spec/1.0': spec10.archive
+      '/npm-jquery': npmJquery.archive
     getLines: (tmp) -> """
-      touch #{tmp}/.nojekyll
       cp -R _site/static #{tmp}
       cp #{tmp}/npm-jquery/dist/jquery* #{tmp}/static
       rm -rf #{tmp}/npm-jquery
@@ -340,15 +366,17 @@ makefile.addRules [
       #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
     """
 
-  new Phony 'site', ["#{coffeeExec} _site/live.coffee #{site.target}"]
-  new Phony 'py', ["#{coffeeExec} _site/live.coffee #{liveSphinx.target}"]
-
-  deploySite = new RuleInject site.target, "--analytics"
+  deploySite = new InjectedFile site.archive, "--analytics"
 ]
 
 main = ->
   fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
+  console.log makefile.getLeaves 'build/site-inject.tar'
 
 
 if require.main == module
   main()
+
+
+module.exports =
+  makefile: makefile

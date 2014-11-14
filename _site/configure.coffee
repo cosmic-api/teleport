@@ -173,7 +173,6 @@ class RuleInject extends RulePrepareTar
       target: "#{source}-inject"
       deps: [
         "_site/inject.coffee"
-        "_site/settings.coffee"
         "_site/templates/navbar.mustache"
         "node_modules"
       ]

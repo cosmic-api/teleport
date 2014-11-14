@@ -1,57 +1,100 @@
 fs = require 'fs'
 mustache = require 'mustache'
 parseArgs = require 'minimist'
-async = require 'async'
 hljs = require 'highlight.js'
 
 cheerio = require 'cheerio'
 he = require 'he'
 
-project = require './settings'
 
-argv = parseArgs process.argv.slice(2),
-  string: ['navbar']
-  boolean: ['jquery', 'bs']
-argv.jquery = true if argv.bs
-
-
-render = (file, context) ->
-  raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()
-  return mustache.render raw, context
+navbarTemplate = fs.readFileSync("#{__dirname}/templates/navbar.mustache").toString()
 
 
 main = ->
-  if argv._[0]?
-    console.log "Injecting #{argv._.length} files"
-    async.each argv._, injectFile, (err) ->
-      if err
-        console.log err
-      console.log "Finished injecting"
+  argv = parseArgs process.argv.slice(2),
+    string: ['navbar']
+    boolean: ['jquery', 'bs']
 
-  else
+  if argv._.length == 0
     console.log "No input files, doing nothing"
+    return
+
+  options =
+    navbar: argv.navbar
+    jquery: if argv.bs then true else argv.jquery
+    bs: argv.bs
+
+  console.log "Injecting #{argv._.length} files"
+  for filename in argv._
+    injectFile filename, options
 
 
-injectFile = (file, callback) ->
-  fs.readFile file, (err, buf) ->
+
+injectFile = (filename, options) ->
+  fs.readFile filename, (err, buf) ->
     if err
       throw err
 
-    inject buf.toString(), (errors, injectedHtml) ->
+    injectedHtml = inject buf.toString(), options
 
-      fs.writeFile file, injectedHtml, (err) ->
-        if err
-          throw err
-        console.log " * injected #{file}"
-        callback null
+    fs.writeFile filename, injectedHtml, (err) ->
+      if err
+        throw err
+      console.log " * injected #{filename}"
 
 
-inject = (html, callback) ->
+renderNavbar = (path) ->
+
+  if path == '/'
+    sec = 'home'
+    ver = undefined
+  else
+    [sec, ver] = path.split('/')
+
+  sections = {
+    home:
+      star: true
+      repoLink: true
+      subMenuShow: false
+    python:
+      star: true
+      repoLink: true
+      subMenuShow: true
+      subMenu: [
+        { version: 'latest' }
+        { divider: true }
+        { version: '0.2' }
+        { version: '0.1' }
+      ]
+    spec:
+      star: true
+      repoLink: true
+      subMenuShow: true
+      subMenu: [
+        { version: 'latest' }
+        { divider: true }
+        { version: '1.0' }
+      ]
+  }
+
+  return mustache.render navbarTemplate, {
+    menu:
+      about: sec == 'home'
+      docs: sec == 'python'
+      spec: sec == 'spec'
+    activeSectionId: sec
+    activeSection: sections[sec]
+    activeVersion: ver
+  }
+
+
+inject = (html, options) ->
+  {jquery, bs, navbar} = options
 
   $ = cheerio.load html
-  if argv.jquery
+  if jquery
     $('head').append '<script type="text/javascript" src="/static/jquery.min.js"></script>'
-  if argv.bs
+  if bs
     $('head').append """
       <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
       <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
@@ -81,24 +124,9 @@ inject = (html, callback) ->
       $(@).html hljs.highlight('python', $(@).text()).value
   $('pre.highlight-please').removeClass 'highlight-please'
 
-  if argv.navbar?
-    if argv.navbar == '/'
-      sec = 'home'
-      ver = undefined
-    else
-      [sec, ver] = argv.navbar.split('/')
-    $('body').prepend render "navbar.mustache", {
-      menu:
-        about: sec == 'home'
-        docs: sec == 'python'
-        spec: sec == 'spec'
-      activeSectionId: sec
-      activeSection: project.sections[sec]
-      activeVersion: ver
-    }
+  if navbar?
+    $('body').prepend renderNavbar navbar
 
-  html = $.html()
-
-  callback null, html
+  return $.html()
 
 main()

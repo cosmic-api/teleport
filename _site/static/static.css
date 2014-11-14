@@ -1,0 +1,40 @@
+/* front page */
+
+pre.front-page {
+    border: none !important;
+    background: none !important;
+    font-family: monospace !important;
+}
+
+.safe-mdash {
+    font-family: sans-serif;
+}
+
+/* spec page */
+
+.draft-container {
+    margin-left: auto;
+    margin-right: auto;
+    width: 555px;
+}
+
+.draft-container pre {
+    font-family: "Ubuntu Mono";
+    font-size: 15px;
+    padding: 0px !important;
+    border: none !important;
+    background: none !important;
+    color: #555555;
+}
+
+.draft-container pre .title {
+    font-weight: bold;
+}
+
+.draft-container pre .meta {
+    color: #999999;
+}
+
+.draft-container pre .page-stuff {
+    color: #999999;
+}

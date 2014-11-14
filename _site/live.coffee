@@ -66,8 +66,7 @@ main = ->
 
         headers =
           'Content-Type': mime.lookup path
-          # Live-reload should break the cache, otherwise all content is static!
-          'Cache-Control': 'max-age=6666'
+          'Cache-Control': 'max-age=0, no-cache, no-store'
 
         res.writeHead 200, headers
         res.write o

@@ -228,6 +228,16 @@ class RuleDownload extends RulePrepareTar
         wget -O #{tmp}/#{filename} "#{url}"
       """
 
+class RuleNpmPackage extends RulePrepareTar
+
+  constructor: (name) ->
+    super
+      target: "npm-#{name}"
+      deps: ["node_modules/#{name}"]
+      getLines: (tmp) -> """
+        cp -R node_modules/#{name}/* #{tmp}
+      """
+
 
 makefile = new Makefile()
 
@@ -236,8 +246,6 @@ makefile.addRules [
   new Phony "deploy", commandsFromLines """
       (cd tmp/site-inject && rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
     """
-  new Phony 'site', ["#{coffeeExec} _site/live.coffee site"]
-  new Phony 'py', ["#{coffeeExec} _site/live.coffee py"]
 
   new BaseRule
     targetFile: 'node_modules'
@@ -255,22 +263,35 @@ makefile.addRules [
   new RuleTouch '_site/spec.coffee', ['_site/templates/spec.mustache']
   new RuleTouch '_site/inject.coffee', ['_site/templates/navbar.mustache']
 
+  npmHighlight = new RuleNpmPackage 'highlight.js'
+  npmJquery = new RuleNpmPackage 'jquery'
+
   bootstrap = new RulePrepareTar
     target: 'bootstrap'
     resultDir: '/dist'
     mounts:
       '/': bootstrapDist.target
-      '/dist/fonts': fonts.target
+      '/fonts': fonts.target
       '/lumen': downloadLumen.target
-    deps: ['node_modules/highlight.js/styles/tomorrow.css']
+      '/highlight': npmHighlight.target
+    deps: [
+      '_site/static/static.css'
+    ]
     getLines: (tmp) -> """
-      namespace-css #{tmp}/lumen/bootstrap-lumen.css -s .bs -o #{tmp}/dist/css/bootstrap.css
-      namespace-css node_modules/highlight.js/styles/tomorrow.css -s .bs >> #{tmp}/dist/css/bootstrap.css
-      sed -i 's/\\.bs\\ body/\\.bs/g' #{tmp}/dist/css/bootstrap.css
-      sed -i '/googleapis/d' #{tmp}/dist/css/bootstrap.css
-      echo "" >> #{tmp}/dist/css/bootstrap.css
-      cat #{tmp}/dist/fonts/index.css >> #{tmp}/dist/css/bootstrap.css
-      rm #{tmp}/dist/fonts/index.css
+      # Concatenate CSS from multiple sources
+      cp #{tmp}/lumen/bootstrap-lumen.css #{tmp}/everything.css
+      cat #{tmp}/highlight/styles/tomorrow.css >> #{tmp}/everything.css
+      cat _site/static/static.css >> #{tmp}/everything.css
+      cat #{tmp}/fonts/index.css >> #{tmp}/everything.css
+      # Copy actual fonts
+      mkdir -p #{tmp}/dist/fonts
+      cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
+      # Make the css safe to mix with other css
+      namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
+      sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
+      # Remove google font API loads
+      sed -i '/googleapis/d' #{tmp}/everything-safe.css
+      cp #{tmp}/everything-safe.css #{tmp}/dist/css/bootstrap.css
       #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
     """
 
@@ -281,7 +302,7 @@ makefile.addRules [
   oldSpec = new RuleCopyFromArchive 'spec-old'
   currentSource = new RuleCurrentSource()
   specLatest = new RuleNewSpec master.target
-    specDraft00 = new RuleNewSpec draft00.target
+  specDraft00 = new RuleNewSpec draft00.target
   sphinxLatest = new RuleSphinx master.target
   sphinx01 = new RuleSphinx py01m.target
   sphinx02 = new RuleSphinx py02m.target
@@ -299,8 +320,6 @@ makefile.addRules [
     deps: [
       "_site/static"
       "_site/index.coffee"
-      "node_modules/jquery/dist/jquery.min.js"
-      "node_modules/jquery/dist/jquery.min.map"
     ]
     mounts:
       '/static/bootstrap': 'bootstrap'
@@ -310,15 +329,19 @@ makefile.addRules [
       '/spec/latest': specLatest.target
       '/spec/draft-00': spacDraft00.target
       '/spec/1.0': spec10.target
+      '/npm-jquery': npmJquery.target
     getLines: (tmp) -> """
       touch #{tmp}/.nojekyll
       cp -R _site/static #{tmp}
-      cp node_modules/jquery/dist/jquery.min.js #{tmp}/static
-      cp node_modules/jquery/dist/jquery.min.map #{tmp}/static
+      cp #{tmp}/npm-jquery/dist/jquery* #{tmp}/static
+      rm -rf #{tmp}/npm-jquery
 
       #{coffeeExec} _site/index.coffee > #{tmp}/index.html
       #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
     """
+
+  new Phony 'site', ["#{coffeeExec} _site/live.coffee #{site.target}"]
+  new Phony 'py', ["#{coffeeExec} _site/live.coffee #{liveSphinx.target}"]
 
   deploySite = new RuleInject site.target, "--analytics"
 ]

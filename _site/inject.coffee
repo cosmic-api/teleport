@@ -12,19 +12,15 @@ navbarTemplate = fs.readFileSync("#{__dirname}/templates/navbar.mustache").toStr
 main = ->
   argv = parseArgs process.argv.slice(2),
     string: ['navbar']
-    boolean: ['bs', 'highlight', 'highlight', 'analytics']
+    boolean: ['bs', 'highlight', 'analytics']
 
   if argv._.length == 0
     console.log "No input files, doing nothing"
     return
 
-  options =
-    navbar: argv.navbar
-    bs: argv.bs
-
-  console.log "Injecting #{argv._.length} files"
+  console.log "Injecting #{argv._.length} file(s)"
   for filename in argv._
-    injectFile filename, options
+    injectFile filename, argv
 
 
 
@@ -43,7 +39,7 @@ injectFile = (filename, options) ->
 
 
 inject = (html, options) ->
-  {bs, navbar, highlight, analytics} = options
+  {navbar, bs, highlight, analytics} = options
 
   $ = cheerio.load html
 
@@ -74,7 +70,7 @@ inject = (html, options) ->
         ga('send', 'pageview');
       </script>
     """
-
+  console.log highlight
   if highlight
     $('pre.highlight-please').each ->
       if $(@).hasClass 'python'

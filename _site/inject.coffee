@@ -12,7 +12,7 @@ navbarTemplate = fs.readFileSync("#{__dirname}/templates/navbar.mustache").toStr
 main = ->
   argv = parseArgs process.argv.slice(2),
     string: ['navbar']
-    boolean: ['jquery', 'bs']
+    boolean: ['bs', 'highlight', 'highlight', 'analytics']
 
   if argv._.length == 0
     console.log "No input files, doing nothing"
@@ -39,6 +39,53 @@ injectFile = (filename, options) ->
       if err
         throw err
       console.log " * injected #{filename}"
+
+
+
+inject = (html, options) ->
+  {bs, navbar, highlight, analytics} = options
+
+  $ = cheerio.load html
+
+  if bs
+    # Normalize jquery. Make sure there is one single jquery for every page.
+    $('script').each ->
+      src = $(@).attr('src')
+      if src? and new RegExp("jquery(\.min)?\.js").test src
+        $(@).remove()
+    $('head').prepend '<script type="text/javascript" src="/static/jquery.min.js"></script>'
+    $('head').append """
+      <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
+      <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
+      <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
+      <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
+
+    """
+
+  if analytics
+    $('head').append """
+      <script type="text/javascript">
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+        ga('create', 'UA-12144432-3', 'auto');
+        ga('send', 'pageview');
+      </script>
+    """
+
+  if highlight
+    $('pre.highlight-please').each ->
+      if $(@).hasClass 'python'
+        $(@).html hljs.highlight('python', $(@).text()).value
+    $('pre.highlight-please').removeClass 'highlight-please'
+
+  if navbar?
+    $('body').prepend renderNavbar navbar
+
+  return $.html()
+
 
 
 renderNavbar = (path) ->
@@ -86,51 +133,5 @@ renderNavbar = (path) ->
   }
 
 
-inject = (html, options) ->
-  {bs, navbar} = options
-
-  $ = cheerio.load html
-
-  # Normalize jquery. Make sure there is one single jquery for every page.
-  $('script').each ->
-    src = $(@).attr('src')
-    if src? and new RegExp("jquery(\.min)?\.js").test src
-      $(@).remove()
-  $('head').prepend '<script type="text/javascript" src="/static/jquery.min.js"></script>'
-
-  if bs
-    $('head').append """
-      <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
-      <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
-
-
-    """
-
-  $('head').prepend """
-    <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
-    <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
-  """
-
-  $('head').append """
-    <script type="text/javascript">
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-12144432-3', 'auto');
-      ga('send', 'pageview');
-    </script>
-  """
-
-  $('pre.highlight-please').each ->
-    if $(@).hasClass 'python'
-      $(@).html hljs.highlight('python', $(@).text()).value
-  $('pre.highlight-please').removeClass 'highlight-please'
-
-  if navbar?
-    $('body').prepend renderNavbar navbar
-
-  return $.html()
 
 main()

@@ -234,7 +234,7 @@ makefile = new Makefile()
 makefile.addRules [
   new Phony "clean", ["rm -rf build/*", "rm -rf tmp/*"]
   new Phony "deploy", commandsFromLines """
-      (cd tmp/site; rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
+      (cd tmp/site-inject && rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress . root@104.131.5.252:/root/teleport-json.org)
     """
   new Phony 'site', ["#{coffeeExec} _site/live.coffee site"]
   new Phony 'py', ["#{coffeeExec} _site/live.coffee py"]
@@ -299,9 +299,8 @@ makefile.addRules [
     deps: [
       "_site/static"
       "_site/index.coffee"
-      "build/bootstrap.tar"
-      "build/fonts.tar"
       "node_modules/jquery/dist/jquery.min.js"
+      "node_modules/jquery/dist/jquery.min.map"
     ]
     mounts:
       '/static/bootstrap': 'bootstrap'
@@ -315,10 +314,13 @@ makefile.addRules [
       touch #{tmp}/.nojekyll
       cp -R _site/static #{tmp}
       cp node_modules/jquery/dist/jquery.min.js #{tmp}/static
+      cp node_modules/jquery/dist/jquery.min.map #{tmp}/static
 
       #{coffeeExec} _site/index.coffee > #{tmp}/index.html
-      #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs
+      #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
     """
+
+  deploySite = new RuleInject site.target, "--analytics"
 ]
 
 main = ->

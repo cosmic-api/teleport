@@ -49,6 +49,7 @@ To clear cache:
 
 To deploy via rsync (private key):
 
+	make build/site-inject.tar
 	make deploy
 
 Live development mode:

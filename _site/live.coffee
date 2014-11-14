@@ -1,70 +1,84 @@
-grunt = require 'grunt'
-
-grunt.task.init = ->
-
-grunt.loadNpmTasks 'grunt-exec'
-grunt.loadNpmTasks 'grunt-contrib-watch'
-grunt.loadNpmTasks 'grunt-contrib-connect'
-
-grunt.initConfig
-  pkg: grunt.file.readJSON 'package.json'
-  exec:
-    configure:
-      command: './configure'
-    makeSite:
-      command: 'make build/site.tar'
-    makePy:
-      command: 'make build/current-source-sphinx.tar'
-  watch:
-    site:
-      options:
-        spawn: false
-      files: [
-        '_site/templates/**'
-        '_site/static/**'
-        '_site/inject.coffee'
-        '_spec/teleport.txt'
-        'package.json'
-      ]
-      tasks: ['exec:configure', 'exec:makeSite']
-    py:
-      options:
-        spawn: false
-      files: [
-        'python/teleport/**'
-        'python/docs/source/**'
-        'package.json'
-      ]
-      tasks: ['exec:configure', 'exec:makePy']
-  connect:
-    site:
-      options:
-        base: 'tmp/site'
-        livereload: true
-    py:
-      options:
-        base: 'tmp/current-source-sphinx'
-        livereload: true
+fs = require 'fs'
+mime = require 'mime'
+cheerio = require 'cheerio'
+tar = require 'tar-stream'
+connect = require 'connect'
+parseArgs = require 'minimist'
+http = require 'http'
 
 
-  grunt.registerTask 'live:site', [
-    'exec:configure'
-    'exec:makeSite'
-    'connect:site'
-    'watch:site'
-  ]
 
-  grunt.registerTask 'live:py', [
-    'exec:configure'
-    'exec:makePy'
-    'connect:py'
-    'watch:py'
-  ]
 
-argv = require('optimist').argv
+loadTar = (file, next) ->
+  objects = {}
 
-if argv._[0] == 'site'
-  grunt.tasks ['live:site'], {}
-else if argv._[0] == 'py'
-  grunt.tasks ['live:py'], {}
+  extract = tar.extract()
+  extract.on 'entry', (header, stream, callback) ->
 
+    if header.type == 'file'
+      objects[header.name] = ''
+
+      stream.on 'data', (chunk) ->
+        objects[header.name] += chunk.toString()
+
+      stream.on 'end', ->
+        callback()
+
+      stream.resume()
+
+    else if header.type == 'directory'
+      objects[header.name] = null
+      callback()
+
+  extract.on 'finish', ->
+    next null, objects
+
+  fs.createReadStream(file).pipe extract
+
+processHtml = (html) ->
+  $ = cheerio.load html
+
+  # Github buttons are annoying in develoment
+  $('iframe').each ->
+    if new RegExp("ghbtns").test $(@).attr('src')
+      $(@).remove()
+
+  return $.html()
+
+
+main = ->
+  argv = parseArgs process.argv.slice(2)
+  if argv._.length == 0
+    throw "missing argument"
+
+  loadTar "#{__dirname}/../build/#{argv._[0]}.tar", (err, objects) ->
+
+    app = connect()
+    app.use (req, res, next) ->
+      path = '.' + req.url
+      o = objects[path]
+
+      if o == null
+        path += 'index.html'
+        o = processHtml objects[path]
+
+      if o != null and o != undefined
+
+        headers =
+          'Content-Type': mime.lookup path
+          # Live-reload should break the cache, otherwise all content is static!
+          'Cache-Control': 'max-age=6666'
+
+        res.writeHead 200, headers
+        res.write o
+        res.end()
+
+      res.writeHead 404
+      res.end()
+
+    console.log 'Listening on 8000'
+    http.createServer(app).listen(8000)
+
+
+if require.main == module
+  main()

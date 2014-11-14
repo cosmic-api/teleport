@@ -1,99 +1,116 @@
 fs = require 'fs'
-find = require 'find'
 mustache = require 'mustache'
+parseArgs = require 'minimist'
+async = require 'async'
 
 jsdom = require 'jsdom'
 he = require 'he'
 
 project = require './settings'
-argv = require('optimist').argv
+
+argv = parseArgs process.argv.slice(2),
+  string: ['navbar']
+  boolean: ['jquery', 'nobs']
+
 jquerySrc = fs.readFileSync "#{__dirname}/static/jquery.min.js", "utf-8"
+prettySrc = fs.readFileSync "#{__dirname}/static/google-code-prettify/prettify.js", "utf-8"
 
 render = (file, context) ->
   raw = fs.readFileSync("#{__dirname}/templates/#{file}").toString()
   return mustache.render raw, context
 
-makeScriptElement = (doc, url) ->
-  script = doc.createElement 'script'
-  script.type  = "text/javascript"
-  script.src = url
-  return script
-
-dir = argv.dir
-file = argv.file
-sec = argv.section
-ver = argv.version
 
 main = ->
-  if file?
-    injectFile file
+  if argv._[0]?
+    console.log "Injecting #{argv._.length} files"
+    async.each argv._, injectFile, (err) ->
+      if err
+        console.log err
+      console.log "Finished injecting"
 
-  if dir?
-    find.eachfile /.html$/, dir, (file) ->
-      injectFile file
-
-
-injectFile = (file) ->
-  html = (fs.readFileSync file).toString()
-
-  inject html, (errors, injectedHtml) ->
-
-    fs.writeFileSync file, injectedHtml
-    console.log "Injected content into #{file}"
+  else
+    console.log "No input files, doing nothing"
 
 
-activeSection = project.sections[sec]
+injectFile = (file, callback) ->
+  fs.readFile file, (err, buf) ->
+    if err
+      throw err
 
-nav = render "navbar.mustache", {
-  menu:
-    about: sec == 'home'
-    docs: sec == 'python'
-    spec: sec == 'spec'
-  activeSectionId: sec
-  activeSection: activeSection
-  activeVersion: ver
-}
+    inject buf.toString(), (errors, injectedHtml) ->
+
+      fs.writeFile file, injectedHtml, (err) ->
+        if err
+          throw err
+        console.log " * injected #{file}"
+        callback null
 
 
 cleanEntities = (html) ->
   # jsdom renders some HTML entities into unicode which causes problems
   he.encode html, allowUnsafeSymbols: true
 
+
 inject = (html, callback) ->
 
-  jsdom.env html, src: [jquerySrc], (errors, window) ->
+  scripts = []
+  if argv.jquery
+    scripts.push "/static/jquery.min.js"
+  if not argv.nobs
+    scripts.push "/static/bootstrap/js/bootstrap.min.js"
+
+  opts =
+    src: [jquerySrc, prettySrc]
+    features:
+      SkipExternalResources: new RegExp("static")
+
+  jsdom.env html, scripts, opts, (errors, window) ->
     if errors
-      callback errors
+      console.log errors
+      throw errors
 
-    if argv.jquery
-      window.document.head.appendChild makeScriptElement window.document, "/static/jquery.min.js"
+    if argv.navbar?
+      if argv.navbar == '/'
+        sec = 'home'
+        ver = undefined
+      else
+        [sec, ver] = argv.navbar.split('/')
+      nav = render "navbar.mustache", {
+        menu:
+          about: sec == 'home'
+          docs: sec == 'python'
+          spec: sec == 'spec'
+        activeSectionId: sec
+        activeSection: project.sections[sec]
+        activeVersion: ver
+      }
+      window.$('body').prepend nav
 
-    window.$('body').prepend nav
     window.$('head').prepend """
       <link rel="icon" href="/static/favicon-32.png" sizes="32x32">
       <link rel="apple-touch-icon-precomposed" href="/static/favicon-152.png">
     """
 
-    ga = window.document.createElement 'script'
-    ga.type  = "text/javascript"
-    ga.text = """
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    window.$('head').append """
+      <script type="text/javascript">
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-      ga('create', 'UA-12144432-3', 'auto');
-      ga('send', 'pageview');
-    """
-    window.document.head.appendChild ga
+        ga('create', 'UA-12144432-3', 'auto');
+        ga('send', 'pageview');
+      </script>
+      """
 
     if not argv.nobs
-      window.document.head.appendChild makeScriptElement window.document, "/static/bootstrap/js/bootstrap.min.js"
       window.$('head').append """
         <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
       """
 
     window.$('head').append "\n\n"
+
+    window.prettyPrint()
 
     callback null, cleanEntities window.document.documentElement.outerHTML
 

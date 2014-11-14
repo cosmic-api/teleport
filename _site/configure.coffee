@@ -178,7 +178,7 @@ class RuleInject extends RulePrepareTar
       mounts:
         '/': source
       getLines: (tmp) -> """
-        #{coffeeExec} _site/inject.coffee --dir #{tmp} #{args}
+        find #{tmp} -iname \\*.html | xargs #{coffeeExec} _site/inject.coffee #{args}
       """
 
 class RuleDownloadZip extends RulePrepareTar
@@ -264,12 +264,12 @@ makefile.addRules [
   sphinx02 = new RuleSphinx py02m.target
   liveSphinx = new RuleSphinx currentSource.target
 
-  injectPyLatest = new RuleInject sphinxLatest.target, "--section python --version latest --jquery"
-  injectPy02 = new RuleInject sphinx02.target, "--section python --version '0.2' --jquery"
-  injectPy01 = new RuleInject sphinx01.target, "--section python --version '0.1' --jquery"
-  specLatest = new RuleInject specLatest.target, "--section spec --version latest --nobs"
-  spacDraft00 = new RuleInject specDraft00.target, "--section spec --version 'draft-00' --nobs"
-  spec10 = new RuleInject oldSpec.target, "--section spec --version '1.0' --jquery"
+  injectPyLatest = new RuleInject sphinxLatest.target, "--navbar python/latest --jquery"
+  injectPy02 = new RuleInject sphinx02.target, "--navbar 'python/0.2' --jquery"
+  injectPy01 = new RuleInject sphinx01.target, "--navbar 'python/0.1' --jquery"
+  specLatest = new RuleInject specLatest.target, "--navbar 'spec/latest' --nobs"
+  spacDraft00 = new RuleInject specDraft00.target, "--navbar 'spec/draft-00' --nobs"
+  spec10 = new RuleInject oldSpec.target, "--navbar 'spec/1.0' --jquery"
 
   site = new RulePrepareTar
     target: "site"
@@ -292,8 +292,8 @@ makefile.addRules [
       touch #{tmp}/.nojekyll
       cp -R _site/static #{tmp}
 
-      #{coffeeExec} _site/index.coffee > tmp/site/index.html
-      #{coffeeExec} _site/inject.coffee --file tmp/site/index.html --section home --nobs
+      #{coffeeExec} _site/index.coffee > #{tmp}/index.html
+      #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --nobs
     """
 ]
 

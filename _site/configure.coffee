@@ -205,7 +205,7 @@ class RuleDownloadFonts extends RulePrepareTar
         (cd #{tmp} && xargs -i wget '{}' < download.list)
         mkdir #{tmp}/out
         cp #{tmp}/*.ttf #{tmp}/out
-        sed 's/http.*\\/\\(.*\\.ttf\\)/\\1/g' < #{tmp}/index.css > #{tmp}/out/index.css
+        sed 's/http.*\\/\\(.*\\.ttf\\)/\"..\\/fonts\\/\\1\"/g' < #{tmp}/index.css > #{tmp}/out/index.css
       """
 
 
@@ -232,23 +232,28 @@ makefile.addRules [
   flaskSphinxThemes = new RuleDownloadZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
   bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
 
+  fonts = new RuleDownloadFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+
   bootstrap = new RulePrepareTar
     target: 'bootstrap'
-    resultDir: '/'
+    resultDir: '/dist'
     deps: ["build/bootstrap-lumen.css"]
     mounts:
       '/': bootstrapDist.target
+      '/dist/fonts': fonts.target
     getLines: (tmp) -> """
-      namespace-css build/bootstrap-lumen.css -s .bs -o #{tmp}/css/bootstrap.css
-      sed -i 's/\\\\.bs\\ body/\\\\.bs/g' #{tmp}/css/bootstrap.css
-      cp #{tmp}/css/bootstrap.css #{tmp}/css/bootstrap.min.css
+      namespace-css build/bootstrap-lumen.css -s .bs -o #{tmp}/dist/css/bootstrap.css
+      sed -i 's/\\.bs\\ body/\\.bs/g' #{tmp}/dist/css/bootstrap.css
+      sed -i '/googleapis/d' #{tmp}/dist/css/bootstrap.css
+      echo "" >> #{tmp}/dist/css/bootstrap.css
+      cat #{tmp}/dist/fonts/index.css >> #{tmp}/dist/css/bootstrap.css
+      rm #{tmp}/dist/fonts/index.css
+      cp #{tmp}/dist/css/bootstrap.css #{tmp}/dist/css/bootstrap.min.css
     """
 
-  fonts = new RuleDownloadFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
-
   master = new RuleCheckoutBranch 'master'
-  py01m = new RuleCheckoutBranch '0.1-maintenance'
-  py02m = new RuleCheckoutBranch '0.2-maintenance'
+  py01m = new RuleCheckoutBranch 'py-0.1-maintenance'
+  py02m = new RuleCheckoutBranch 'py-0.2-maintenance'
   draft00 = new RuleCheckoutTag 'spec-draft-00'
   oldSpec = new RuleCopyFromArchive 'spec-old'
   currentSource = new RuleCurrentSource()
@@ -258,6 +263,14 @@ makefile.addRules [
   sphinx01 = new RuleSphinx py01m.target
   sphinx02 = new RuleSphinx py02m.target
   liveSphinx = new RuleSphinx currentSource.target
+
+  injectPyLatest = new RuleInject sphinxLatest.target, "--section python --version latest --jquery"
+  injectPy02 = new RuleInject sphinx02.target, "--section python --version '0.2' --jquery"
+  injectPy01 = new RuleInject sphinx01.target, "--section python --version '0.1' --jquery"
+  specLatest = new RuleInject specLatest.target, "--section spec --version latest --nobs"
+  spacDraft00 = new RuleInject specDraft00.target, "--section spec --version 'draft-00' --nobs"
+  spec10 = new RuleInject oldSpec.target, "--section spec --version '1.0' --jquery"
+
   site = new RulePrepareTar
     target: "site"
     deps: [
@@ -269,13 +282,12 @@ makefile.addRules [
     resultDir: '/'
     mounts:
       '/static/bootstrap': 'bootstrap'
-      '/static/fonts': 'fonts'
-      '/python/latest': new RuleInject(sphinxLatest.target, "--section python --version latest --jquery").target
-      '/python/0.2': new RuleInject(sphinx02.target, "--section python --version '0.2' --jquery").target
-      '/python/0.1': new RuleInject(sphinx01.target, "--section python --version '0.1' --jquery").target
-      '/spec/latest': new RuleInject(specLatest.target, "--section spec --version latest --nobs").target
-      '/spec/draft-00': new RuleInject(specDraft00.target, "--section spec --version 'draft-00' --nobs").target
-      '/spec/1.0': new RuleInject(oldSpec.target, "--section spec --version '1.0' --jquery").target
+      '/python/latest': injectPyLatest.target
+      '/python/0.2': injectPy02.target
+      '/python/0.1': injectPy01.target
+      '/spec/latest': specLatest.target
+      '/spec/draft-00': spacDraft00.target
+      '/spec/1.0': spec10.target
     getLines: (tmp) -> """
       touch #{tmp}/.nojekyll
       cp -R _site/static #{tmp}

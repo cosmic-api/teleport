@@ -21,7 +21,6 @@ main = ->
 
   options =
     navbar: argv.navbar
-    jquery: if argv.bs then true else argv.jquery
     bs: argv.bs
 
   console.log "Injecting #{argv._.length} files"
@@ -89,11 +88,17 @@ renderNavbar = (path) ->
 
 
 inject = (html, options) ->
-  {jquery, bs, navbar} = options
+  {bs, navbar} = options
 
   $ = cheerio.load html
-  if jquery
-    $('head').append '<script type="text/javascript" src="/static/jquery.min.js"></script>'
+
+  # Normalize jquery. Make sure there is one single jquery for every page.
+  $('script').each ->
+    src = $(@).attr('src')
+    if src? and new RegExp("jquery(\.min)?\.js").test src
+      $(@).remove()
+  $('head').prepend '<script type="text/javascript" src="/static/jquery.min.js"></script>'
+
   if bs
     $('head').append """
       <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>

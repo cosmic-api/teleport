@@ -301,6 +301,7 @@ makefile.addRules [
       "_site/index.coffee"
       "build/bootstrap.tar"
       "build/fonts.tar"
+      "node_modules/jquery/dist/jquery.min.js"
     ]
     mounts:
       '/static/bootstrap': 'bootstrap'
@@ -313,6 +314,7 @@ makefile.addRules [
     getLines: (tmp) -> """
       touch #{tmp}/.nojekyll
       cp -R _site/static #{tmp}
+      cp node_modules/jquery/dist/jquery.min.js #{tmp}/static
 
       #{coffeeExec} _site/index.coffee > #{tmp}/index.html
       #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs

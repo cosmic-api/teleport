@@ -3,6 +3,7 @@ fs = require 'fs'
 
 # Executables
 coffeeExec = "node_modules/.bin/coffee"
+bin = "node_modules/.bin"
 
 
 commandsFromLines = (lines) ->
@@ -69,6 +70,8 @@ class RulePrepareTar extends Rule
     tmp = "tmp/#{target}"
 
     mounts = [] if not mounts?
+    resultDir = '/' if not resultDir?
+    deps = [] if not deps?
 
     mountLines = []
     for root, source of mounts
@@ -168,7 +171,6 @@ class RuleInject extends RulePrepareTar
   constructor: (source, args) ->
     super
       target: "#{source}-inject"
-      resultDir: '/'
       deps: [
         "_site/inject.coffee"
         "_site/settings.coffee"
@@ -208,6 +210,14 @@ class RuleDownloadFonts extends RulePrepareTar
         sed 's/http.*\\/\\(.*\\.ttf\\)/\"..\\/fonts\\/\\1\"/g' < #{tmp}/index.css > #{tmp}/out/index.css
       """
 
+class RuleDownload extends RulePrepareTar
+
+  constructor: (filename, url) ->
+    super
+      target: "download-#{filename}"
+      getLines: (tmp) -> """
+        wget -O #{tmp}/#{filename} "#{url}"
+      """
 
 
 makefile = new Makefile()
@@ -225,9 +235,8 @@ makefile.addRules [
     deps: ["package.json"]
     commands: ['npm install']
 
-  new BaseRule
-    targetFile: 'build/bootstrap-lumen.css'
-    commands: ["wget http://bootswatch.com/lumen/bootstrap.css -O build/bootstrap-lumen.css"]
+  downloadLumen = new RuleDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
+  downloadTomorrow = new RuleDownload 'prettify-tomorrow.css', 'http://jmblog.github.io/color-themes-for-google-code-prettify/css/themes/tomorrow.css'
 
   flaskSphinxThemes = new RuleDownloadZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
   bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
@@ -237,18 +246,20 @@ makefile.addRules [
   bootstrap = new RulePrepareTar
     target: 'bootstrap'
     resultDir: '/dist'
-    deps: ["build/bootstrap-lumen.css"]
     mounts:
       '/': bootstrapDist.target
       '/dist/fonts': fonts.target
+      '/lumen': downloadLumen.target
+      '/tomorrow': downloadTomorrow.target
     getLines: (tmp) -> """
-      namespace-css build/bootstrap-lumen.css -s .bs -o #{tmp}/dist/css/bootstrap.css
+      namespace-css #{tmp}/lumen/bootstrap-lumen.css -s .bs -o #{tmp}/dist/css/bootstrap.css
+      namespace-css #{tmp}/tomorrow/prettify-tomorrow.css -s .bs >> #{tmp}/dist/css/bootstrap.css
       sed -i 's/\\.bs\\ body/\\.bs/g' #{tmp}/dist/css/bootstrap.css
       sed -i '/googleapis/d' #{tmp}/dist/css/bootstrap.css
       echo "" >> #{tmp}/dist/css/bootstrap.css
       cat #{tmp}/dist/fonts/index.css >> #{tmp}/dist/css/bootstrap.css
       rm #{tmp}/dist/fonts/index.css
-      cp #{tmp}/dist/css/bootstrap.css #{tmp}/dist/css/bootstrap.min.css
+      #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
     """
 
   master = new RuleCheckoutBranch 'master'
@@ -264,12 +275,12 @@ makefile.addRules [
   sphinx02 = new RuleSphinx py02m.target
   liveSphinx = new RuleSphinx currentSource.target
 
-  injectPyLatest = new RuleInject sphinxLatest.target, "--navbar python/latest --jquery"
-  injectPy02 = new RuleInject sphinx02.target, "--navbar 'python/0.2' --jquery"
-  injectPy01 = new RuleInject sphinx01.target, "--navbar 'python/0.1' --jquery"
-  specLatest = new RuleInject specLatest.target, "--navbar 'spec/latest' --nobs"
-  spacDraft00 = new RuleInject specDraft00.target, "--navbar 'spec/draft-00' --nobs"
-  spec10 = new RuleInject oldSpec.target, "--navbar 'spec/1.0' --jquery"
+  injectPyLatest = new RuleInject sphinxLatest.target, "--navbar python/latest --bs"
+  injectPy02 = new RuleInject sphinx02.target, "--navbar 'python/0.2' --bs"
+  injectPy01 = new RuleInject sphinx01.target, "--navbar 'python/0.1' --bs"
+  specLatest = new RuleInject specLatest.target, "--navbar 'spec/latest' --bs"
+  spacDraft00 = new RuleInject specDraft00.target, "--navbar 'spec/draft-00' --bs"
+  spec10 = new RuleInject oldSpec.target, "--navbar 'spec/1.0' --bs"
 
   site = new RulePrepareTar
     target: "site"
@@ -279,7 +290,6 @@ makefile.addRules [
       "build/bootstrap.tar"
       "build/fonts.tar"
     ]
-    resultDir: '/'
     mounts:
       '/static/bootstrap': 'bootstrap'
       '/python/latest': injectPyLatest.target
@@ -293,7 +303,7 @@ makefile.addRules [
       cp -R _site/static #{tmp}
 
       #{coffeeExec} _site/index.coffee > #{tmp}/index.html
-      #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --nobs
+      #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs
     """
 ]
 

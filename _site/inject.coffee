@@ -4,13 +4,15 @@ parseArgs = require 'minimist'
 async = require 'async'
 
 jsdom = require 'jsdom'
+cheerio = require 'cheerio'
 he = require 'he'
 
 project = require './settings'
 
 argv = parseArgs process.argv.slice(2),
   string: ['navbar']
-  boolean: ['jquery', 'nobs']
+  boolean: ['jquery', 'bs']
+argv.jquery = true if argv.bs
 
 jquerySrc = fs.readFileSync "#{__dirname}/static/jquery.min.js", "utf-8"
 prettySrc = fs.readFileSync "#{__dirname}/static/google-code-prettify/prettify.js", "utf-8"
@@ -53,18 +55,18 @@ cleanEntities = (html) ->
 
 inject = (html, callback) ->
 
-  scripts = []
+  $ = cheerio.load html
   if argv.jquery
-    scripts.push "/static/jquery.min.js"
-  if not argv.nobs
-    scripts.push "/static/bootstrap/js/bootstrap.min.js"
+    $('head').append '<script type="text/javascript" src="/static/jquery.min.js"></script>'
+  if argv.bs
+    $('head').append '<script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>'
+
+  html = $.html()
 
   opts =
     src: [jquerySrc, prettySrc]
-    features:
-      SkipExternalResources: new RegExp("static")
 
-  jsdom.env html, scripts, opts, (errors, window) ->
+  jsdom.env html, [], opts, (errors, window) ->
     if errors
       console.log errors
       throw errors
@@ -103,7 +105,7 @@ inject = (html, callback) ->
       </script>
       """
 
-    if not argv.nobs
+    if argv.bs
       window.$('head').append """
         <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css"/>
       """

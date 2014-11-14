@@ -26,23 +26,21 @@ class Makefile
     for target in targets
       @addRule target
 
-  getLeaves: (vertex) ->
-    leaves = []
+  gatherNodes: (node) ->
+    nodes = []
 
-    gatherLeaves = (vertex) =>
-      return if vertex in leaves
-      if @dag[vertex].length == 0
-        leaves.push vertex
-      else
-        for d in @dag[vertex]
-          continue if d in leaves
-          if @dag[d]?
-            gatherLeaves d
-          else
-            leaves.push d
+    gatherNodes = (node) =>
+      return if node in nodes
+      nodes.push node
+      for dep in @dag[node]
+        continue if dep in nodes
+        if @dag[dep]?
+          gatherNodes dep
+        else
+          nodes.push dep
 
-    gatherLeaves vertex
-    return leaves
+    gatherNodes node
+    return nodes
 
   addTask: (name, lines) ->
     @tasks.push new Phony name, commandsFromLines lines
@@ -371,7 +369,7 @@ makefile.addRules [
 
 main = ->
   fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
-  console.log makefile.getLeaves 'build/site-inject.tar'
+  console.log makefile.gatherNodes 'build/site-inject.tar'
 
 
 if require.main == module

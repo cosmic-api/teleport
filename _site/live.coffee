@@ -5,10 +5,8 @@ tar = require 'tar-stream'
 connect = require 'connect'
 parseArgs = require 'minimist'
 http = require 'http'
-request = require 'request'
 
 tinylr = require 'tiny-lr'
-watch = require 'node-watch'
 spawn = require('child_process').spawn
 
 {makefile} = require './configure'
@@ -16,18 +14,40 @@ spawn = require('child_process').spawn
 lrport = 35729
 
 
+print = ->
+  console.log "| +", arguments...
+print2 = ->
+  console.log "|   -", arguments...
+hr = ->
+  console.log '+-------------------------------'
+
+
+
 triggerReload = (callback) ->
-  request.post("http://127.0.0.1:#{lrport}/changed?files=*").on 'response', (response) ->
+  print "triggering reload"
+
+  options =
+    hostname: '127.0.0.1'
+    port: lrport
+    path: '/changed?files=*'
+    method: 'POST'
+
+  req = http.request options, (response) ->
     success = response.statusCode == 200
-    console.log " trigger reload -> #{if success then 'OK' else 'FAIL'}"
-    if callback?
-      if success then callback null else callback response
+    data = ""
+    response.on 'data', (chunk) -> data += chunk.toString()
+    response.on 'end', ->
+      data = JSON.parse data
+      print2 "#{data.clients.length} client(s)"
+      if callback?
+        if success then callback null else callback response
+  req.end()
 
 
 runLiveReload = (callback) ->
   server = tinylr()
   server.listen lrport, ->
-    console.log " LiveReload running on #{lrport} ..."
+    print "LiveReload running on #{lrport} ..."
     callback null, server
 
 
@@ -76,7 +96,6 @@ processHtml = (html) ->
 objects = null
 
 
-
 main = ->
   argv = parseArgs process.argv.slice(2)
   if argv._.length == 0
@@ -116,29 +135,35 @@ main = ->
 
     runLiveReload (err, server) ->
       http.createServer(app).listen 8000, ->
-        console.log " Serving build/#{archive}.tar on 8000"
+        print "Serving build/#{archive}.tar on 8000"
 
-        leaves = makefile.getLeaves "build/#{archive}.tar"
+        leaves = makefile.gatherNodes "build/#{archive}.tar"
         leaves.sort()
-        console.log " Watching files:"
-        console.log leaves
+        print "Watching files:"
+        for file in leaves
+          print2 file
+        hr()
 
         buildMode = false
 
         for leaf in leaves
-          watch leaf, {recursive: false}, (filename) ->
+          fs.watch leaf, (event, filename) ->
             return if buildMode
-
-            console.log " #{filename} changed, entering build mode"
             buildMode = true
 
+            print "#{filename} changed, running 'make build/#{archive}.tar'"
+
+            hr()
             make = spawn 'make', ["build/#{archive}.tar"]
             make.stdout.pipe process.stdout
             make.stderr.pipe process.stderr
             make.on 'close', (code, signal) ->
-              console.log code, signal
               buildMode = false
-              console.log " reloading browser"
+              hr()
+
+              if code?
+                print "make returned #{code}"
+
               triggerReload()
 
 

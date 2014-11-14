@@ -70,7 +70,6 @@ inject = (html, options) ->
         ga('send', 'pageview');
       </script>
     """
-  console.log highlight
   if highlight
     $('pre.highlight-please').each ->
       if $(@).hasClass 'python'

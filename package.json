@@ -17,11 +17,9 @@
     "jquery": "2.1.1",
     "highlight.js": "8.3.0",
     "mime": "1.2.11",
-    "node-watch": "0.3.4",
     "zip-stream": "0.4.1",
     "connect": "3.3.3",
     "tiny-lr": "0.1.4",
-    "dag": "0.0.1",
-    "request": "2.48.0"
+    "dag": "0.0.1"
   }
 }

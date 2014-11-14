@@ -206,7 +206,6 @@ class InjectedFile extends TarFile
       archive: "#{source}-inject"
       deps: [
         "_site/inject.coffee"
-        "node_modules"
       ]
       mounts:
         '/': source
@@ -255,7 +254,7 @@ class LocalNpmPackage extends TarFile
   constructor: (name) ->
     super
       archive: "npm-#{name}"
-      deps: ["node_modules/#{name}"]
+      deps: ["node_modules/#{name}/package.json"]
       getLines: (tmp) -> """
         cp -R node_modules/#{name}/* #{tmp}
       """
@@ -307,17 +306,18 @@ makefile.addRules [
       cp #{tmp}/lumen/bootstrap-lumen.css #{tmp}/everything.css
       cat #{tmp}/highlight/styles/tomorrow.css >> #{tmp}/everything.css
       cat _site/static/static.css >> #{tmp}/everything.css
-      cat #{tmp}/fonts/index.css >> #{tmp}/everything.css
-      # Copy actual fonts
-      mkdir -p #{tmp}/dist/fonts
-      cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
       # Make the css safe to mix with other css
       namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
       sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
       # Remove google font API loads
       sed -i '/googleapis/d' #{tmp}/everything-safe.css
+      # Fonts get added last
+      cat #{tmp}/fonts/index.css >> #{tmp}/everything-safe.css
       cp #{tmp}/everything-safe.css #{tmp}/dist/css/bootstrap.css
       #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
+      # Copy fonts
+      mkdir -p #{tmp}/dist/fonts
+      cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
     """
 
   master = new GitCheckoutBranch 'master'
@@ -369,7 +369,6 @@ makefile.addRules [
 
 main = ->
   fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
-  console.log makefile.gatherNodes 'build/site-inject.tar'
 
 
 if require.main == module
@@ -378,3 +377,4 @@ if require.main == module
 
 module.exports =
   makefile: makefile
+  writeMakefileSync: main

@@ -4,7 +4,6 @@ parseArgs = require 'minimist'
 hljs = require 'highlight.js'
 
 cheerio = require 'cheerio'
-he = require 'he'
 
 
 navbarTemplate = fs.readFileSync("#{__dirname}/templates/navbar.mustache").toString()

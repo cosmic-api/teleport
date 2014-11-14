@@ -321,9 +321,9 @@ makefile.addRules [
     """
 ]
 
+main = ->
+  fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
 
 
-module.exports =
-  makefile: makefile.toString()
-  main: ->
-    fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
+if require.main == module
+  main()

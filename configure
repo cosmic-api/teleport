@@ -1,4 +1,3 @@
-#!/usr/bin/env node
+#!/usr/bin/env sh
 
-require('coffee-script').register();
-require('./_site/configure.coffee').main();
+node_modules/.bin/coffee _site/configure.coffee

@@ -44,6 +44,17 @@ class BaseRule
     "#{@targetFile}: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
 
 
+class RuleTouch extends BaseRule
+  # For example, when the index template changes, index.coffee should be
+  # considered changed too
+
+  constructor: (touchThis, whenThisChanges) ->
+    super
+      targetFile: touchThis
+      deps: whenThisChanges
+      commands: ["touch #{touchThis}"]
+
+
 class Rule extends BaseRule
 
   constructor: (opts) ->
@@ -137,7 +148,7 @@ class RuleNewSpec extends RulePrepareTar
   constructor: (source) ->
     super
       target: "#{source}-xml2rfc"
-      deps: ["_site/spec.coffee", "_site/templates/spec.mustache"]
+      deps: ["_site/spec.coffee"]
       mounts:
         '/': source
       resultDir: '/out'
@@ -173,7 +184,6 @@ class RuleInject extends RulePrepareTar
       target: "#{source}-inject"
       deps: [
         "_site/inject.coffee"
-        "_site/templates/navbar.mustache"
         "node_modules"
       ]
       mounts:
@@ -232,7 +242,7 @@ makefile.addRules [
   new BaseRule
     targetFile: 'node_modules'
     deps: ["package.json"]
-    commands: ['npm install']
+    commands: ['npm install', 'touch node_modules']
 
   downloadLumen = new RuleDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
 
@@ -240,6 +250,10 @@ makefile.addRules [
   bootstrapDist = new RuleDownloadZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
 
   fonts = new RuleDownloadFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+
+  new RuleTouch '_site/index.coffee', ['_site/templates/index.mustache']
+  new RuleTouch '_site/spec.coffee', ['_site/templates/spec.mustache']
+  new RuleTouch '_site/inject.coffee', ['_site/templates/navbar.mustache']
 
   bootstrap = new RulePrepareTar
     target: 'bootstrap'

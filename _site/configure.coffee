@@ -204,9 +204,7 @@ class InjectedFile extends TarFile
   constructor: (source, args) ->
     super
       archive: "#{source}-inject"
-      deps: [
-        "_site/inject.coffee"
-      ]
+      deps: ["_site/inject.coffee"]
       mounts:
         '/': source
       getLines: (tmp) -> """
@@ -311,9 +309,10 @@ makefile.addRules [
       sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
       # Remove google font API loads
       sed -i '/googleapis/d' #{tmp}/everything-safe.css
-      # Fonts get added last
-      cat #{tmp}/fonts/index.css >> #{tmp}/everything-safe.css
-      cp #{tmp}/everything-safe.css #{tmp}/dist/css/bootstrap.css
+      rm -r #{tmp}/dist/css/*
+      # Fonts get prepended
+      cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css
+      cat #{tmp}/everything-safe.css >> #{tmp}/dist/css/bootstrap.css
       #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
       # Copy fonts
       mkdir -p #{tmp}/dist/fonts

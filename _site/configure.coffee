@@ -5,76 +5,11 @@ fs = require 'fs'
 coffeeExec = "node_modules/.bin/coffee"
 bin = "node_modules/.bin"
 
-
-commandsFromLines = (lines) ->
-  lines = (line.trim() for line in lines.split '\n')
-  return _.filter lines, (line) -> line != ''
+obnoxygen = require 'obnoxygen'
+{ Makefile, commandsFromLines, BaseRule, File, TarFile } = require 'obnoxygen'
 
 
-class Makefile
-
-  constructor: ->
-    @targets = {}
-    @tasks = []
-    @dag = {}
-
-  addRule: (target) ->
-    @targets[target.filename] = target
-    @dag[target.filename] = target.deps
-
-  addRules: (targets) ->
-    for target in targets
-      @addRule target
-
-  gatherNodes: (node) ->
-    nodes = []
-
-    gatherNodes = (node) =>
-      return if node in nodes
-      nodes.push node
-      for dep in @dag[node]
-        continue if dep in nodes
-        if @dag[dep]?
-          gatherNodes dep
-        else
-          nodes.push dep
-
-    gatherNodes node
-    return nodes
-
-  addTask: (name, lines) ->
-    @tasks.push new Phony name, commandsFromLines lines
-
-  toString: ->
-    s = ".PHONY: #{(task.name for task in @tasks).join(' ')}\n\n"
-    for task in @tasks
-      s += task.toString() + "\n\n"
-    for _, target of @targets
-      s += target.toString() + "\n\n"
-    return s
-
-
-class BaseRule
-
-  constructor: (opts) ->
-    {@filename, @deps, @commands} = opts
-    if not @deps?
-      @deps = []
-
-  toString: ->
-    "#{@filename}: #{@deps.join(' ')}\n\t#{@commands.join('\n\t')}"
-
-
-class Phony extends BaseRule
-
-  constructor: (@name, commands) ->
-    @phony = true
-    super
-      filename: @name
-      commands: commands
-
-
-class FileTouch extends BaseRule
+class FileTouch extends obnoxygen.BaseRule
   # For example, when the index template changes, index.coffee should be
   # considered changed too
 
@@ -86,43 +21,7 @@ class FileTouch extends BaseRule
       commands: ["touch #{touchThis}"]
 
 
-class File extends BaseRule
-
-  constructor: (opts) ->
-    {@archive, deps, commands} = opts
-    super
-      filename: "build/#{@archive}.tar"
-      deps: deps
-      commands: commands
-
-
-class TarFile extends File
-
-  constructor: (opts) ->
-    {archive, deps, resultDir, getLines, mounts} = opts
-    tmp = "tmp/#{archive}"
-
-    mounts = [] if not mounts?
-    resultDir = '/' if not resultDir?
-    deps = [] if not deps?
-
-    mountLines = []
-    for root, source of mounts
-      # Since we're mounting it, we must be dependent on it
-      deps.push "build/#{source}.tar"
-      mountLines.push "mkdir -p #{tmp}#{root}"
-      mountLines.push "tar xf build/#{source}.tar -C #{tmp}#{root}"
-
-    super
-      archive: archive
-      deps: deps
-      commands: ["rm -rf #{tmp}", "mkdir #{tmp}"]
-        .concat mountLines
-        .concat(commandsFromLines getLines(tmp))
-        .concat ["tar cf build/#{archive}.tar -C #{tmp}#{resultDir} ."]
-
-
-class CopiedFromArchive extends File
+class CopiedFromArchive extends obnoxygen.File
 
   constructor: (name) ->
     source = "_site/archive/#{name}.tar"
@@ -132,28 +31,7 @@ class CopiedFromArchive extends File
       commands: ["cp -R #{source} build/archive-#{name}.tar"]
 
 
-class GitCheckout extends File
-
-  constructor: (name, refFile) ->
-    super
-      archive: "checkouts-#{name}"
-      deps: [refFile]
-      commands: ["git --git-dir .git archive $(shell cat #{refFile}) > build/checkouts-#{name}.tar"]
-
-
-class GitCheckoutBranch extends GitCheckout
-
-  constructor: (branch) ->
-    super branch, ".git/refs/heads/#{branch}"
-
-
-class GitCheckoutTag extends GitCheckout
-
-  constructor: (tag) ->
-    super tag, ".git/refs/tags/#{tag}"
-
-
-class CurrentSource extends File
+class CurrentSource extends obnoxygen.File
 
   constructor: ->
     super
@@ -165,7 +43,7 @@ class CurrentSource extends File
         tar cf build/current-source.tar --exclude build/current-source.tar --exclude-from=tmp/excludes .
       """
 
-class NewSpec extends TarFile
+class NewSpec extends obnoxygen.TarFile
 
   constructor: (source) ->
     super
@@ -181,7 +59,7 @@ class NewSpec extends TarFile
       """
 
 
-class PythonDocs extends TarFile
+class PythonDocs extends obnoxygen.TarFile
 
   constructor: (source) ->
     super
@@ -199,7 +77,7 @@ class PythonDocs extends TarFile
       """
 
 
-class InjectedFile extends TarFile
+class InjectedFile extends obnoxygen.TarFile
 
   constructor: (source, args) ->
     super
@@ -211,7 +89,7 @@ class InjectedFile extends TarFile
         find #{tmp} -iname \\*.html | xargs #{coffeeExec} _site/inject.coffee #{args}
       """
 
-class DownloadedZip extends TarFile
+class DownloadedZip extends obnoxygen.TarFile
 
   constructor: (archive, url) ->
     super
@@ -223,40 +101,6 @@ class DownloadedZip extends TarFile
         unzip #{tmp}/src-#{archive}.zip -d #{tmp}/out
       """
 
-class GoogleFonts extends TarFile
-
-  constructor: (googleUrl) ->
-    super
-      archive: 'fonts'
-      resultDir: '/out'
-      getLines: (tmp) -> """
-        wget -O #{tmp}/index.css "#{googleUrl}"
-        cat #{tmp}/index.css | grep -o -e "http.*ttf" > #{tmp}/download.list
-        (cd #{tmp} && xargs -i wget '{}' < download.list)
-        mkdir #{tmp}/out
-        cp #{tmp}/*.ttf #{tmp}/out
-        sed 's/http.*\\/\\(.*\\.ttf\\)/\"..\\/fonts\\/\\1\"/g' < #{tmp}/index.css > #{tmp}/out/index.css
-      """
-
-class FileDownload extends TarFile
-
-  constructor: (filename, url) ->
-    super
-      archive: "download-#{filename}"
-      getLines: (tmp) -> """
-        wget -O #{tmp}/#{filename} "#{url}"
-      """
-
-class LocalNpmPackage extends TarFile
-
-  constructor: (name) ->
-    super
-      archive: "npm-#{name}"
-      deps: ["node_modules/#{name}/package.json"]
-      getLines: (tmp) -> """
-        cp -R node_modules/#{name}/* #{tmp}
-      """
-
 
 makefile = new Makefile()
 makefile.addTask "deploy", """
@@ -266,7 +110,6 @@ makefile.addTask "deploy", """
   --progress . root@104.131.5.252:/root/teleport-json.org)
 """
 makefile.addTask "clean", "rm -rf build/*", "rm -rf tmp/*"
-
 makefile.addRules [
 
   new BaseRule
@@ -274,19 +117,19 @@ makefile.addRules [
     deps: ["package.json"]
     commands: ['npm install', 'touch node_modules']
 
-  downloadLumen = new FileDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
+  downloadLumen = new obnoxygen.FileDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
 
-  flaskSphinxThemes = new DownloadedZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
-  bootstrapDist = new DownloadedZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
+  flaskSphinxThemes = new obnoxygen.TarFromZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
+  bootstrapDist = new obnoxygen.TarFromZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
 
-  fonts = new GoogleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+  fonts = new obnoxygen.GoogleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
 
   new FileTouch '_site/index.coffee', ['_site/templates/index.mustache']
   new FileTouch '_site/spec.coffee', ['_site/templates/spec.mustache']
   new FileTouch '_site/inject.coffee', ['_site/templates/navbar.mustache']
 
-  npmHighlight = new LocalNpmPackage 'highlight.js'
-  npmJquery = new LocalNpmPackage 'jquery'
+  npmHighlight = new obnoxygen.LocalNpmPackage 'highlight.js'
+  npmJquery = new obnoxygen.LocalNpmPackage 'jquery'
 
   bootstrap = new TarFile
     archive: 'bootstrap'
@@ -319,10 +162,10 @@ makefile.addRules [
       cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
     """
 
-  master = new GitCheckoutBranch 'master'
-  py01m = new GitCheckoutBranch 'py-0.1-maintenance'
-  py02m = new GitCheckoutBranch 'py-0.2-maintenance'
-  draft00 = new GitCheckoutTag 'spec-draft-00'
+  master = new obnoxygen.GitCheckoutBranch 'master'
+  py01m = new obnoxygen.GitCheckoutBranch 'py-0.1-maintenance'
+  py02m = new obnoxygen.GitCheckoutBranch 'py-0.2-maintenance'
+  draft00 = new obnoxygen.GitCheckoutTag 'spec-draft-00'
   oldSpec = new CopiedFromArchive 'spec-old'
   currentSource = new CurrentSource()
   specLatest = new NewSpec master.archive

@@ -1,90 +1,72 @@
 _ = require 'underscore'
 fs = require 'fs'
 
+obnoxygen = require 'obnoxygen'
+
+
 # Executables
 coffeeExec = "node_modules/.bin/coffee"
 bin = "node_modules/.bin"
 
-obnoxygen = require 'obnoxygen'
-{ Makefile, commandsFromLines, BaseRule, File, TarFile } = require 'obnoxygen'
 
 
-class CopiedFromArchive extends obnoxygen.File
-
-  constructor: (name) ->
-    source = "_site/archive/#{name}.tar"
-    super
-      archive: "archive-#{name}"
-      deps: [source]
-      commands: ["cp -R #{source} build/archive-#{name}.tar"]
+copyFromArchive = (name) ->
+  source = "_site/archive/#{name}.tar"
+  new obnoxygen.Rule
+    archive: "archive-#{name}"
+    deps: [source]
+    commands: ["cp -R #{source} build/archive-#{name}.tar"]
 
 
-class NewSpec extends obnoxygen.TarFile
-
-  constructor: (source) ->
-    super
-      archive: "#{source}-xml2rfc"
-      deps: [
-        "_site/spec.coffee"
-        "_site/templates/spec.mustache"
-      ]
-      mounts:
-        '/': source
-      resultDir: '/out'
-      getLines: (tmp) -> """
-        (cd #{tmp}/_spec; xml2rfc teleport.xml --text)
-        mkdir #{tmp}/out
-        #{coffeeExec} _site/spec.coffee < #{tmp}/_spec/teleport.txt > #{tmp}/out/index.html
-      """
+pythonDocs = (src) ->
+  obnoxygen.tarFile
+    archive: "#{src.archive}-sphinx"
+    resultDir: '/python/out'
+    mounts:
+      '/': src
+      '/python/flask-sphinx-themes': obnoxygen.tarFromZip
+        name: "flask-sphinx-themes"
+        url: "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
+    getCommands: (tmp) -> """
+      echo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{tmp}/python/docs/source/conf.py
+      echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
+      (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
+    """
 
 
-class PythonDocs extends obnoxygen.TarFile
-
-  constructor: (source) ->
-    super
-      archive: "#{source}-sphinx"
-      resultDir: '/python/out'
-      deps: ["build/flask-sphinx-themes.tar"]
-      mounts:
-        '/': source
-      getLines: (tmp) -> """
-        mkdir #{tmp}/python/flask-sphinx-themes
-        tar xf build/flask-sphinx-themes.tar -C #{tmp}/python/flask-sphinx-themes
-        echo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{tmp}/python/docs/source/conf.py
-        echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
-        (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
-      """
-
-
-class InjectedFile extends obnoxygen.TarFile
-
-  constructor: (source, args) ->
-    super
-      archive: "#{source}-inject"
-      deps: [
-        "_site/inject.coffee"
-        "_site/templates/navbar.mustache"
-      ]
-      mounts:
-        '/': source
-      getLines: (tmp) -> """
-        find #{tmp} -iname \\*.html | xargs #{coffeeExec} _site/inject.coffee #{args}
-      """
-
-class DownloadedZip extends obnoxygen.TarFile
-
-  constructor: (archive, url) ->
-    super
-      archive: archive
-      resultDir: '/out'
-      getLines: (tmp) -> """
-        wget #{url} -O #{tmp}/src-#{archive}.zip
-        mkdir #{tmp}/out
-        unzip #{tmp}/src-#{archive}.zip -d #{tmp}/out
-      """
+newSpec = (src) ->
+  obnoxygen.tarFile
+    archive: "#{src.archive}-xml2rfc"
+    deps: [
+      "_site/spec.coffee"
+      "_site/templates/spec.mustache"
+    ]
+    mounts:
+      '/': src
+    resultDir: '/out'
+    getCommands: (tmp) -> """
+      (cd #{tmp}/_spec; xml2rfc teleport.xml --text)
+      mkdir #{tmp}/out
+      #{coffeeExec} _site/spec.coffee < #{tmp}/_spec/teleport.txt > #{tmp}/out/index.html
+    """
 
 
-makefile = new Makefile()
+inject = (options) ->
+  {src, args} = options
+  obnoxygen.tarFile
+    archive: "#{src.archive}-inject"
+    deps: [
+      "_site/inject.coffee"
+      "_site/templates/navbar.mustache"
+    ]
+    mounts:
+      '/': src
+    getCommands: (tmp) -> """
+      find #{tmp} -iname \\*.html | xargs #{coffeeExec} _site/inject.coffee #{args}
+    """
+
+
+makefile = new obnoxygen.Makefile()
 makefile.addTask "deploy", """
   (cd tmp/site-inject \
   && rsync -avz \
@@ -92,103 +74,95 @@ makefile.addTask "deploy", """
   --progress . root@104.131.5.252:/root/teleport-json.org)
 """
 makefile.addTask "clean", "rm -rf build/*", "rm -rf tmp/*"
-makefile.addRules [
 
-  new BaseRule
-    filename: 'node_modules'
-    deps: ["package.json"]
-    commands: ['npm install', 'touch node_modules']
+makefile.addRule new obnoxygen.Rule
+  filename: 'node_modules'
+  deps: ["package.json"]
+  commands: ['npm install', 'touch node_modules']
 
-  downloadLumen = new obnoxygen.FileDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
+bootstrap = obnoxygen.tarFile
+  archive: 'bootstrap'
+  resultDir: '/dist'
+  mounts:
+    '/': obnoxygen.tarFromZip
+      name: "bootstrap-dist"
+      url: "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
+    '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+    '/lumen': obnoxygen.fileDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
+    '/highlight': obnoxygen.localNpmPackage 'highlight.js'
+  deps: [
+    '_site/static/static.css'
+  ]
+  getCommands: (tmp) -> """
+    # Concatenate CSS from multiple sources
+    cp #{tmp}/lumen/bootstrap-lumen.css #{tmp}/everything.css
+    cat #{tmp}/highlight/styles/tomorrow.css >> #{tmp}/everything.css
+    cat _site/static/static.css >> #{tmp}/everything.css
+    # Make the css safe to mix with other css
+    namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
+    sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
+    # Remove google font API loads
+    sed -i '/googleapis/d' #{tmp}/everything-safe.css
+    rm -r #{tmp}/dist/css/*
+    # Fonts get prepended
+    cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css
+    cat #{tmp}/everything-safe.css >> #{tmp}/dist/css/bootstrap.css
+    #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
+    # Copy fonts
+    mkdir -p #{tmp}/dist/fonts
+    cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
+  """
 
-  flaskSphinxThemes = new obnoxygen.TarFromZip "flask-sphinx-themes", "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
-  bootstrapDist = new obnoxygen.TarFromZip "bootstrap-dist", "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
+master = obnoxygen.gitCheckoutBranch 'master'
 
-  fonts = new obnoxygen.GoogleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+site = obnoxygen.tarFile
+  archive: "site"
+  deps: [
+    "_site/static"
+    "_site/index.coffee"
+    "_site/templates/index.mustache"
+    "_site/inject.coffee"
+    "_site/templates/navbar.mustache"
+  ]
+  mounts:
+    '/static/bootstrap': 'bootstrap'
+    '/python/latest': inject
+      src: pythonDocs master
+      args: "--navbar python/latest --bs"
+    '/python/0.2': inject
+      src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.2-maintenance'
+      args: "--navbar 'python/0.2' --bs"
+    '/python/0.1': inject
+      src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.1-maintenance'
+      args: "--navbar 'python/0.1' --bs"
+    '/spec/latest': inject
+      src: newSpec master
+      args: "--navbar 'spec/latest' --bs"
+    '/spec/draft-00': inject
+      src: newSpec obnoxygen.gitCheckoutTag 'spec-draft-00'
+      args: "--navbar 'spec/draft-00' --bs"
+    '/spec/1.0': inject
+      src: copyFromArchive 'spec-old'
+      args: "--navbar 'spec/1.0' --bs"
+    '/npm-jquery': obnoxygen.localNpmPackage 'jquery'
+  getCommands: (tmp) -> """
+    cp -R _site/static #{tmp}
+    cp #{tmp}/npm-jquery/dist/jquery* #{tmp}/static
+    rm -rf #{tmp}/npm-jquery
 
-  npmHighlight = new obnoxygen.LocalNpmPackage 'highlight.js'
-  npmJquery = new obnoxygen.LocalNpmPackage 'jquery'
+    #{coffeeExec} _site/index.coffee > #{tmp}/index.html
+    #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
+  """
 
-  bootstrap = new TarFile
-    archive: 'bootstrap'
-    resultDir: '/dist'
-    mounts:
-      '/': bootstrapDist.archive
-      '/fonts': fonts.archive
-      '/lumen': downloadLumen.archive
-      '/highlight': npmHighlight.archive
-    deps: [
-      '_site/static/static.css'
-    ]
-    getLines: (tmp) -> """
-      # Concatenate CSS from multiple sources
-      cp #{tmp}/lumen/bootstrap-lumen.css #{tmp}/everything.css
-      cat #{tmp}/highlight/styles/tomorrow.css >> #{tmp}/everything.css
-      cat _site/static/static.css >> #{tmp}/everything.css
-      # Make the css safe to mix with other css
-      namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
-      sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
-      # Remove google font API loads
-      sed -i '/googleapis/d' #{tmp}/everything-safe.css
-      rm -r #{tmp}/dist/css/*
-      # Fonts get prepended
-      cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css
-      cat #{tmp}/everything-safe.css >> #{tmp}/dist/css/bootstrap.css
-      #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
-      # Copy fonts
-      mkdir -p #{tmp}/dist/fonts
-      cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
-    """
+makefile.addRule pythonDocs obnoxygen.workingTree
+  name: 'current-source'
+  deps: []
 
-  master = new obnoxygen.GitCheckoutBranch 'master'
-  py01m = new obnoxygen.GitCheckoutBranch 'py-0.1-maintenance'
-  py02m = new obnoxygen.GitCheckoutBranch 'py-0.2-maintenance'
-  draft00 = new obnoxygen.GitCheckoutTag 'spec-draft-00'
-  oldSpec = new CopiedFromArchive 'spec-old'
-  currentSource = new obnoxygen.CurrentSourceGit()
-  specLatest = new NewSpec master.archive
-  specDraft00 = new NewSpec draft00.archive
-  sphinxLatest = new PythonDocs master.archive
-  sphinx01 = new PythonDocs py01m.archive
-  sphinx02 = new PythonDocs py02m.archive
-  liveSphinx = new PythonDocs currentSource.archive
 
-  injectPyLatest = new InjectedFile sphinxLatest.archive, "--navbar python/latest --bs"
-  injectPy02 = new InjectedFile sphinx02.archive, "--navbar 'python/0.2' --bs"
-  injectPy01 = new InjectedFile sphinx01.archive, "--navbar 'python/0.1' --bs"
-  specLatest = new InjectedFile specLatest.archive, "--navbar 'spec/latest' --bs"
-  spacDraft00 = new InjectedFile specDraft00.archive, "--navbar 'spec/draft-00' --bs"
-  spec10 = new InjectedFile oldSpec.archive, "--navbar 'spec/1.0' --bs"
-
-  site = new TarFile
-    archive: "site"
-    deps: [
-      "_site/static"
-      "_site/index.coffee"
-      "_site/templates/index.mustache"
-      "_site/inject.coffee"
-      "_site/templates/navbar.mustache"
-    ]
-    mounts:
-      '/static/bootstrap': 'bootstrap'
-      '/python/latest': injectPyLatest.archive
-      '/python/0.2': injectPy02.archive
-      '/python/0.1': injectPy01.archive
-      '/spec/latest': specLatest.archive
-      '/spec/draft-00': spacDraft00.archive
-      '/spec/1.0': spec10.archive
-      '/npm-jquery': npmJquery.archive
-    getLines: (tmp) -> """
-      cp -R _site/static #{tmp}
-      cp #{tmp}/npm-jquery/dist/jquery* #{tmp}/static
-      rm -rf #{tmp}/npm-jquery
-
-      #{coffeeExec} _site/index.coffee > #{tmp}/index.html
-      #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
-    """
-
-  deploySite = new InjectedFile site.archive, "--analytics"
-]
+makefile.addRule site
+makefile.addRule inject
+  src: site
+  args: "--analytics"
 
 
 if require.main == module
@@ -197,5 +171,6 @@ if require.main == module
 
 module.exports =
   makefile: makefile
+
 
 

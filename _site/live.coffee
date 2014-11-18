@@ -1,3 +1,4 @@
+path = require 'path'
 parseArgs = require 'minimist'
 
 {makefile} = require './configure'
@@ -12,7 +13,7 @@ main = ->
   archive = argv._[0]
 
   runWithOptions
-    rootDir: "#{__dirname}/.."
+    rootDir: path.join __dirname, ".."
     archive: archive
     makefile: makefile
 

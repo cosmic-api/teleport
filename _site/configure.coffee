@@ -9,18 +9,6 @@ obnoxygen = require 'obnoxygen'
 { Makefile, commandsFromLines, BaseRule, File, TarFile } = require 'obnoxygen'
 
 
-class FileTouch extends obnoxygen.BaseRule
-  # For example, when the index template changes, index.coffee should be
-  # considered changed too
-
-  constructor: (touchThis, whenThisChanges) ->
-    @forceLeaf = true
-    super
-      filename: touchThis
-      deps: whenThisChanges
-      commands: ["touch #{touchThis}"]
-
-
 class CopiedFromArchive extends obnoxygen.File
 
   constructor: (name) ->
@@ -31,24 +19,15 @@ class CopiedFromArchive extends obnoxygen.File
       commands: ["cp -R #{source} build/archive-#{name}.tar"]
 
 
-class CurrentSource extends obnoxygen.File
-
-  constructor: ->
-    super
-      archive: "current-source"
-      commands: commandsFromLines """
-        git ls-files -o -i --exclude-standard > tmp/excludes
-        rm -f build/current-source.tar
-        # We are excluding build/current-source.tar so tar doesn't complain about recursion
-        tar cf build/current-source.tar --exclude build/current-source.tar --exclude-from=tmp/excludes .
-      """
-
 class NewSpec extends obnoxygen.TarFile
 
   constructor: (source) ->
     super
       archive: "#{source}-xml2rfc"
-      deps: ["_site/spec.coffee"]
+      deps: [
+        "_site/spec.coffee"
+        "_site/templates/spec.mustache"
+      ]
       mounts:
         '/': source
       resultDir: '/out'
@@ -82,7 +61,10 @@ class InjectedFile extends obnoxygen.TarFile
   constructor: (source, args) ->
     super
       archive: "#{source}-inject"
-      deps: ["_site/inject.coffee"]
+      deps: [
+        "_site/inject.coffee"
+        "_site/templates/navbar.mustache"
+      ]
       mounts:
         '/': source
       getLines: (tmp) -> """
@@ -124,10 +106,6 @@ makefile.addRules [
 
   fonts = new obnoxygen.GoogleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
 
-  new FileTouch '_site/index.coffee', ['_site/templates/index.mustache']
-  new FileTouch '_site/spec.coffee', ['_site/templates/spec.mustache']
-  new FileTouch '_site/inject.coffee', ['_site/templates/navbar.mustache']
-
   npmHighlight = new obnoxygen.LocalNpmPackage 'highlight.js'
   npmJquery = new obnoxygen.LocalNpmPackage 'jquery'
 
@@ -167,7 +145,7 @@ makefile.addRules [
   py02m = new obnoxygen.GitCheckoutBranch 'py-0.2-maintenance'
   draft00 = new obnoxygen.GitCheckoutTag 'spec-draft-00'
   oldSpec = new CopiedFromArchive 'spec-old'
-  currentSource = new CurrentSource()
+  currentSource = new obnoxygen.CurrentSourceGit()
   specLatest = new NewSpec master.archive
   specDraft00 = new NewSpec draft00.archive
   sphinxLatest = new PythonDocs master.archive
@@ -187,6 +165,9 @@ makefile.addRules [
     deps: [
       "_site/static"
       "_site/index.coffee"
+      "_site/templates/index.mustache"
+      "_site/inject.coffee"
+      "_site/templates/navbar.mustache"
     ]
     mounts:
       '/static/bootstrap': 'bootstrap'
@@ -209,14 +190,12 @@ makefile.addRules [
   deploySite = new InjectedFile site.archive, "--analytics"
 ]
 
-main = ->
-  fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
-
 
 if require.main == module
-  main()
+  fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
 
 
 module.exports =
   makefile: makefile
-  writeMakefileSync: main
+
+

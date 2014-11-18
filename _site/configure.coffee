@@ -2,7 +2,7 @@ _ = require 'underscore'
 fs = require 'fs'
 
 obnoxygen = require 'obnoxygen'
-
+glob = require "glob"
 
 # Executables
 coffeeExec = "node_modules/.bin/coffee"
@@ -156,7 +156,8 @@ site = obnoxygen.tarFile
 
 makefile.addRule pythonDocs obnoxygen.workingTree
   name: 'current-source'
-  deps: []
+  deps: glob.sync "python/docs/source/**"
+    .concat glob.sync "python/teleport/**"
 
 
 makefile.addRule site

@@ -12,10 +12,11 @@ bin = "node_modules/.bin"
 
 copyFromArchive = (name) ->
   source = "_site/archive/#{name}.tar"
+  archive = "archive-#{name}"
   new obnoxygen.Rule
-    archive: "archive-#{name}"
+    archive: archive
     deps: [source]
-    commands: ["cp -R #{source} build/archive-#{name}.tar"]
+    commands: ["cp -R #{source} #{obnoxygen.archiveFile archive}"]
 
 
 pythonDocs = (src) ->
@@ -73,7 +74,7 @@ makefile.addTask "deploy", """
   -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
   --progress . root@104.131.5.252:/root/teleport-json.org)
 """
-makefile.addTask "clean", "rm -rf build/*", "rm -rf tmp/*"
+makefile.addTask "clean", "rm -rf build/*"
 
 makefile.addRule new obnoxygen.Rule
   filename: 'node_modules'

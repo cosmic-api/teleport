@@ -1,8 +1,10 @@
-path = require 'path'
 parseArgs = require 'minimist'
 
 {makefile} = require './configure'
-{runWithOptions} = require('obnoxygen').live
+obnoxygen = require 'obnoxygen'
+
+{LiveAgent} = obnoxygen.live
+{archiveFile} = obnoxygen
 
 main = ->
 
@@ -12,10 +14,11 @@ main = ->
 
   archive = argv._[0]
 
-  runWithOptions
-    rootDir: path.join __dirname, ".."
-    archive: archive
+  agent = new LiveAgent
     makefile: makefile
+    tarball: archiveFile(archive)
+
+  agent.run()
 
 
 if require.main == module

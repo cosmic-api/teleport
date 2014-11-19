@@ -1,4 +1,5 @@
 _ = require 'underscore'
+path = require 'path'
 fs = require 'fs'
 
 obnoxygen = require 'obnoxygen'
@@ -67,7 +68,9 @@ inject = (options) ->
     """
 
 
-makefile = new obnoxygen.Makefile()
+rootDir = path.join __dirname, ".."
+
+makefile = new obnoxygen.Makefile rootDir
 makefile.addTask "deploy", """
   (cd tmp/site-inject \
   && rsync -avz \

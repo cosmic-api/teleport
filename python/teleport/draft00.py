@@ -190,8 +190,17 @@ class FloatType(ConcreteType):
 
 
 class StringType(ConcreteType):
-    def contains(self, value):
-        return type(value) == unicode
+
+    def from_json(self, value):
+        if type(value) == str:
+            try:
+                return unicode(value)
+            except UnicodeDecodeError:
+                raise Undefined()
+        elif type(value) == unicode:
+            return value
+        else:
+            raise Undefined()
 
 
 class BooleanType(ConcreteType):

@@ -131,13 +131,16 @@ Uses instances of :class:`float` in both the JSON form and the native form.
 String
 ^^^^^^
 
-Uses instances of :class:`unicode` in both the JSON form and the native form.
+Uses instances of :class:`unicode` and ASCII strings of type :class:`str` in
+both the JSON form and the native form.
 
 .. code-block:: python
 
     >>> t("String").contains(u"hello world")
     True
     >>> t("String").contains("hello world")
+    True
+    >>> t("String").contains("hello" + chr(225))
     False
 
 Boolean

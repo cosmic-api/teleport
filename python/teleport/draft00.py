@@ -6,29 +6,64 @@ class Undefined(Exception):
 
 
 class Type(object):
+    """Conceptually, an instance of this class is a value space, a set of
+    JSON values. As such, the only method defined by the Teleport specification
+    is :meth:`contains`, everything else is extentions made by this
+    implementation.
 
-    def __init__(self, t):
-        self.t = t
+    """
 
-    def __contains__(self, value):
+    def contains(self, json_value):
+        """
+        Returns :data:`True` if *json_value* is a member of this type's value
+        space and :data:`False` if it is not.
+
+        .. code-block:: python
+
+            >>> t("DateTime").contains(u"2015-04-05T14:30")
+            True
+            >>> t("DateTime").contains(u"2007-04-05T14:30 DROP TABLE users;")
+            False
+        """
         try:
-            self.from_json(value)
+            self.from_json(json_value)
             return True
         except Undefined:
             return False
 
-    def from_json(self, value):
-        if value in self:
-            return value
+    def from_json(self, json_value):
+        """Convert JSON value to native value. Raises :exc:`Undefined` if
+        *json_value* is not a member of this type.
+
+        .. code-block:: python
+
+            >>> t("DateTime").from_json(u"2015-04-05T14:30")
+            datetime.datetime(2015, 4, 5, 14, 30)
+        """
+        if self.contains(json_value):
+            return json_value
         else:
             raise Undefined()
 
-    def to_json(self, value):
-        return value
+    def to_json(self, native_value):
+        """Convert valid native value to JSON value.
+
+        .. code-block:: python
+
+            >>> t("DateTime").to_json(datetime.datetime(2015, 4, 5, 14, 30))
+            u"2015-04-05T14:30"
+
+
+        """
+        return native_value
+
 
 
 class ConcreteType(Type):
-    pass
+
+    def __init__(self, t):
+        self.t = t
+
 
 
 class GenericType(Type):
@@ -40,7 +75,7 @@ class GenericType(Type):
     def process_param(self, param):
         self.param = param
 
-    def __contains__(self, value):
+    def contains(self, value):
         try:
             self.from_json(value)
             return True
@@ -140,27 +175,27 @@ class StructType(GenericType):
 
 
 class JSONType(ConcreteType):
-    def __contains__(self, value):
+    def contains(self, value):
         return True
 
 
 class IntegerType(ConcreteType):
-    def __contains__(self, value):
+    def contains(self, value):
         return type(value) in (int, long)
 
 
 class FloatType(ConcreteType):
-    def __contains__(self, value):
+    def contains(self, value):
         return type(value) == float
 
 
 class StringType(ConcreteType):
-    def __contains__(self, value):
+    def contains(self, value):
         return type(value) == unicode
 
 
 class BooleanType(ConcreteType):
-    def __contains__(self, value):
+    def contains(self, value):
         return type(value) == bool
 
 
@@ -178,7 +213,7 @@ class DateTimeType(ConcreteType):
 
 class SchemaType(ConcreteType):
 
-    def __contains__(self, value):
+    def contains(self, value):
         try:
             t(value)
             return True

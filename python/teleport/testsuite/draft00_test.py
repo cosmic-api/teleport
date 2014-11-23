@@ -1,7 +1,9 @@
+import re
+
 from unittest2 import TestCase
 from datetime import datetime
 
-from teleport.draft00 import t
+from teleport.draft00 import t, Teleport, ConcreteType, GenericType
 
 
 
@@ -73,3 +75,23 @@ class StructTest(T, TestCase):
         "required": {"a": "DateTime"},
         "optional": {"b": "Integer"}}}
     pairs = [({"a": ds, "b": 1}, {"a": dn, "b": 1}), ({"a": ds}, {"a": dn})]
+
+
+
+class ExtendingTest(TestCase):
+
+    def test_extend(self):
+        t = Teleport()
+
+        @t.register("Color")
+        class ColorType(ConcreteType):
+
+            def contains(self, value):
+                if not t("String").contains(value):
+                    return False
+                return re.compile('^#[0-9a-f]{6}$').match(value) is not None
+
+        self.assertTrue(t("Color").contains('#ffffff'))
+        self.assertFalse(t("Color").contains('yellow'))
+        self.assertTrue(t({"Array": "Color"}).contains(['#ffffff', '#000000']))
+

@@ -1,7 +1,7 @@
 Python Interface
 ================
 
-.. currentmodule:: teleport.draft00
+.. currentmodule:: teleport
 
 Installation
 ------------
@@ -61,18 +61,18 @@ methods: :meth:`from_json` and :meth:`to_json`:
 
 .. code-block:: python
 
-    >>> t("DateTime").from_json(u"2015-04-05T14:30")
+    >>> t("DateTime").from_json("2015-04-05T14:30")
     datetime.datetime(2015, 4, 5, 14, 30)
-    >>> t("String").from_json(u"2015-04-05T14:30")
+    >>> t("String").from_json("2015-04-05T14:30")
     u"2015-04-05T14:30"
 
 .. admonition:: Implementation notes
 
     Serialization is not mentioned in the Teleport spec because it cannot be
-    defined in a language-agnostic way. The upside to this is that implementations
-    have the freedom to define serialization logic that fits their programming
-    language perfectly. The downside is that this functionality cannot be tested by
-    the common test suite.
+    defined in a language-agnostic way. Implementations have the freedom to
+    define serialization logic that fits their programming language perfectly,
+    but unfortunately, this functionality cannot be tested by the common test
+    suite.
 
 Concrete and Generic Types
 --------------------------
@@ -86,7 +86,7 @@ definition into :func:`t`, you get an instance of the Boolean type:
 .. code-block:: python
 
     >>> t("Boolean")
-    <teleport.draft00.BooleanType at 0x7f56c5183b90>
+    <teleport.BooleanType at 0x7f56c5183b90>
 
 A generic type's definition encodes an additional piece of data, a parameter
 which will be used by :func:`t` to create a type instance. For example, the
@@ -96,7 +96,7 @@ every element:
 .. code-block:: python
 
     >>> t({"Array": "Boolean"})
-    <teleport.draft00.ArrayType at 0x7f56c5194110>
+    <teleport.ArrayType at 0x7f56c5194110>
 
 Built-in Types
 --------------
@@ -263,6 +263,48 @@ Like Array and Map, Struct performs recursive serialization:
      u'task': u'Return videotapes'}
 
 
+Custom Types
+------------
+
+Teleport's specification does not define the totality of the :func:`t`
+function, just provides some instances of its inputs and outputs. Any
+implementation is allowed to extend it with new instances, inventing new
+concrete types, new generic types or other higher-level constructs.
+
+This implementation provides the following conveniences for defining concrete
+and generic types. Firstly, in order to keep the global namespace clean, make
+your own personal instance of the :func:`t` function:
+
+.. code-block:: python
+
+    from teleport import Teleport, ConcreteType, GenericType
+
+    t = Teleport()
+
+Let's add a concrete type that matches all hex-encoded colors:
+
+.. code-block:: python
+
+    @t.register("Color")
+    class ColorType(ConcreteType):
+
+        def contains(self, value):
+            if not t("String").contains(value):
+                return False
+            return re.compile('^#[0-9a-f]{6}$').match(value) is not None
+
+Once we have called :meth:`~teleport.Teleport.register`, we can use it as a
+first-class citizen:
+
+.. code-block:: python
+
+    >>> t("Color").contains('#ffffff')
+    True
+    >>> t("Color").contains('yellow')
+    False
+    >>> t({"Array": "Color"}).contains(['#ffffff', '#000000']))
+    True
+
 API
 ---
 
@@ -270,8 +312,9 @@ API
    :members:
    :undoc-members:
 
-Exceptions
-----------
+.. autoclass:: Teleport
+   :members:
+   :undoc-members:
 
 .. autoclass:: Undefined
    :members:

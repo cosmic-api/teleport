@@ -230,33 +230,63 @@ class SchemaType(ConcreteType):
             return False
 
 
-class Draft00(object):
-    types_concrete = {
-        u"JSON": JSONType,
-        u"Integer": IntegerType,
-        u"Float": FloatType,
-        u"String": StringType,
-        u"Boolean": BooleanType,
-        u"DateTime": DateTimeType,
-        u"Schema": SchemaType
-    }
-    types_generic = {
-        u"Array": ArrayType,
-        u"Map": MapType,
-        u"Struct": StructType
-    }
+class Teleport(object):
 
-    def t(self, schema):
+    def __init__(self):
+        self.type_map = {
+            "JSON": JSONType,
+            "Integer": IntegerType,
+            "Float": FloatType,
+            "String": StringType,
+            "Boolean": BooleanType,
+            "DateTime": DateTimeType,
+            "Schema": SchemaType,
+            "Array": ArrayType,
+            "Map": MapType,
+            "Struct": StructType
+        }
 
-        if schema in self.types_concrete.keys():
-            return self.types_concrete[schema](t)
+    def __call__(self, schema):
+
+        if type(schema) in (str, unicode):
+            return self.concrete_type(schema)
         elif type(schema) == dict and len(schema) == 1:
             (name, param) = schema.items()[0]
-            if name in self.types_generic.keys():
-                return self.types_generic[name](t, param)
+            return self.generic_type(name, param)
+        else:
+            raise Undefined("Unrecognized schema {}".format(schema))
 
-        raise Undefined()
+    def get_type_or_fail(self, name):
+        cls = self.type_map.get(name, None)
+        if cls is None:
+            cls = self.get_custom_type(name)
+        if cls is None:
+            raise Undefined("Unknown type {}".format(name))
+        return cls
 
+    def concrete_type(self, name):
+        cls = self.get_type_or_fail(name)
+        if issubclass(cls, ConcreteType):
+            return cls(self)
+        else:
+            raise Undefined("Not a concrete type: \"{}\"".format(name))
 
-t = Draft00().t
+    def generic_type(self, name, param):
+        cls = self.get_type_or_fail(name)
+        if issubclass(cls, GenericType):
+            return cls(self, param)
+        else:
+            raise Undefined("Not a generic type: \"{}\"".format(name))
+
+    def register(self, name):
+        def decorator(type_cls):
+            self.type_map[name] = type_cls
+            return type_cls
+        return decorator
+
+    def get_custom_type(self, name):
+        return None
+
+t = Teleport()
+
 

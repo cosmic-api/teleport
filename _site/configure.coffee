@@ -92,7 +92,9 @@ bootstrap = obnoxygen.tarFile
       name: "bootstrap-dist"
       url: "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
     '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
-    '/lumen': obnoxygen.fileDownload 'bootstrap-lumen.css', 'http://bootswatch.com/lumen/bootstrap.css'
+    '/lumen': obnoxygen.fileDownload
+      filename: 'bootstrap-lumen.css'
+      url: 'http://bootswatch.com/lumen/bootstrap.css'
     '/highlight': obnoxygen.localNpmPackage 'highlight.js'
   deps: [
     '_site/static/static.css'
@@ -117,6 +119,7 @@ bootstrap = obnoxygen.tarFile
     cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
   """
 
+
 master = obnoxygen.gitCheckoutBranch 'master'
 
 site = obnoxygen.tarFile
@@ -129,7 +132,7 @@ site = obnoxygen.tarFile
     "_site/templates/navbar.mustache"
   ]
   mounts:
-    '/static/bootstrap': 'bootstrap'
+    '/static/bootstrap': bootstrap
     '/python/latest': inject
       src: pythonDocs master
       args: "--navbar python/latest --bs"

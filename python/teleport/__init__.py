@@ -1,4 +1,4 @@
 import testsuite
-import draft00
+import core
 
-from draft00 import *
+from core import *

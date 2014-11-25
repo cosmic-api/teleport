@@ -287,14 +287,13 @@ Let's add a concrete type that matches all hex-encoded colors:
 
     @t.register("Color")
     class ColorType(ConcreteType):
+        wraps = "String"
 
         def contains(self, value):
-            if not t("String").contains(value):
-                return False
             return re.compile('^#[0-9a-f]{6}$').match(value) is not None
 
-Once we have called :meth:`~teleport.Teleport.register`, we can use it as a
-first-class citizen:
+Once we have called :meth:`~teleport.Teleport.register`, we can use the new
+type as a first-class citizen:
 
 .. code-block:: python
 

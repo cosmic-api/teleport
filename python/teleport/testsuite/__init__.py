@@ -1,7 +1,8 @@
-from unittest2 import defaultTestLoader, TestSuite
+import os
+from unittest2 import TestLoader
+
 
 def suite():
-    import draft00_test
-    draft00 = defaultTestLoader.loadTestsFromModule(draft00_test)
-    return TestSuite([draft00])
+    start_dir = os.path.dirname(__file__)
+    return TestLoader().discover(start_dir)
 

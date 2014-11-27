@@ -1,10 +1,11 @@
 Extending Teleport
 ------------------
 
-Teleport's specification does not define the totality of the :func:`t`
-function, just provides some instances of its inputs and outputs. Any
-implementation is allowed to extend it with new instances, inventing new
-concrete types, new generic types or other higher-level constructs.
+Teleport's specification does not define the totality of the
+:func:`t() <teleport.TypeMap.__call__>` function, just provides some instances
+of its inputs and outputs. Any implementation is allowed to extend it with new
+instances, inventing new concrete types, new generic types or other
+higher-level constructs.
 
 This implementation provides a convenient interface for extending Teleport with
 new concrete and generic types. You can see how it works by reading through

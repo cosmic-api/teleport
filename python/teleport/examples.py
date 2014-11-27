@@ -1,9 +1,9 @@
 import re
 import pickle
 
-from teleport import Teleport, ConcreteType, GenericType, Undefined
+from teleport import TypeMap, ConcreteType, GenericType, Undefined
 
-t = Teleport()
+t = TypeMap()
 
 
 @t.register("Color")

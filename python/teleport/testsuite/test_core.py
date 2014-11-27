@@ -3,7 +3,7 @@ import re
 from unittest2 import TestCase
 from datetime import datetime
 
-from teleport import t, Teleport, ConcreteType, GenericType
+from teleport import t, TypeMap, ConcreteType, GenericType
 
 
 

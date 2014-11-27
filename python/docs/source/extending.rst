@@ -13,9 +13,9 @@ make your own personal instance of the :func:`t` function:
 
 .. code-block:: python
 
-    from teleport import Teleport, ConcreteType, GenericType
+    from teleport import TypeMap, ConcreteType, GenericType
 
-    t = Teleport()
+    t = TypeMap()
 
 Save this in your project's package, say, in ``types.py``. To use your extended
 version of Teleport, simply import your version of :data:`t`:
@@ -37,7 +37,7 @@ Recipe: Color
 ^^^^^^^^^^^^^
 
 Let's add a concrete type that matches all hex-encoded colors. Use the
-:meth:`~teleport.Teleport.register` decorator to add a new type to your
+:meth:`~teleport.TypeMap.register` decorator to add a new type to your
 :data:`t` instance:
 
 .. code-block:: python
@@ -51,7 +51,7 @@ Let's add a concrete type that matches all hex-encoded colors. Use the
 
             return re.compile('^#[0-9a-f]{6}$').match(value) is not None
 
-Once we have called :meth:`~teleport.Teleport.register`, we can use the new
+Once we have called :meth:`~teleport.TypeMap.register`, we can use the new
 type as a first-class citizen:
 
 .. code-block:: python

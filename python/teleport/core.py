@@ -11,6 +11,14 @@ class Type(object):
     is :meth:`contains`, everything else is extentions made by this
     implementation.
 
+    When a type needs to access the :func:`t` function from one of its methods
+    (for recursive serialization, for example), it should use the same
+    :func:`t` function that was used to create it in the first place.
+
+    Instances of :class:`Type` have a :data:`t` attribute that is automatically
+    set to this value, so you can access it from one of the methods below as
+    :data:`self.t`.
+
     """
 
     def contains(self, json_value):
@@ -64,6 +72,10 @@ class Type(object):
 
 
 class ConcreteType(Type):
+    """Subclass this to tell :class:`~teleport.Teleport` that your custom type
+    is concrete.
+
+    """
 
     def __init__(self, t):
         self.t = t
@@ -71,26 +83,25 @@ class ConcreteType(Type):
 
 
 class GenericType(Type):
+    """Subclass this to tell :class:`~teleport.Teleport` that your custom type
+    is generic.
+
+    """
 
     def __init__(self, t, param):
         self.t = t
         self.process_param(param)
 
     def process_param(self, param):
+        """Takes the type parameter in its JSON form and raises
+        :exc:`~teleport.Undefined` if it is invalid. This method is called
+        when the type is instantiated. By default, it sets :data:`self.param`
+        to *param*. It may be useful to set other properties, they may be
+        accessed later by :meth:`from_json` or other methods.
+
+        """
         self.param = param
 
-    def contains(self, value):
-        try:
-            self.from_json(value)
-            return True
-        except Undefined:
-            return False
-
-    def from_json(self, value):
-        return value
-
-    def to_json(self, value):
-        return value
 
 
 class ArrayType(GenericType):
@@ -234,23 +245,34 @@ class SchemaType(ConcreteType):
             return False
 
 
-class Teleport(object):
+CORE_TYPES = {
+    "JSON": JSONType,
+    "Integer": IntegerType,
+    "Float": FloatType,
+    "String": StringType,
+    "Boolean": BooleanType,
+    "DateTime": DateTimeType,
+    "Schema": SchemaType,
+    "Array": ArrayType,
+    "Map": MapType,
+    "Struct": StructType
+}
+
+
+class TypeMap(object):
 
     def __init__(self):
-        self.type_map = {
-            "JSON": JSONType,
-            "Integer": IntegerType,
-            "Float": FloatType,
-            "String": StringType,
-            "Boolean": BooleanType,
-            "DateTime": DateTimeType,
-            "Schema": SchemaType,
-            "Array": ArrayType,
-            "Map": MapType,
-            "Struct": StructType
-        }
+        self.type_map = {}
+        self.type_map.update(CORE_TYPES)
 
     def __call__(self, schema):
+        """When you call the :func:`t` function, you are actually calling this
+        method. You will rarely want to override this directly.
+
+        :param schema: a JSON value
+        :return: a :class:`~teleport.Type` instance
+
+        """
 
         if type(schema) in (str, unicode):
             return self.concrete_type(schema)
@@ -282,15 +304,34 @@ class Teleport(object):
         else:
             raise Undefined("Not a generic type: \"{}\"".format(name))
 
+    def get_custom_type(self, name):
+        """Override this method to enable dynamic type search. It gets called
+        if the requested type is neither a core type nor a type added by
+        :meth:`register`. In that case, this is the last resort before
+        :exc:`~teleport.core.Undefined` is thrown.
+
+        :param name: a string
+        :return: a subclass of :class:`~teleport.Type` or None
+        """
+        return None
+
     def register(self, name):
+        """Used as a decorator to add a type to the type map.
+
+        .. code-block:: python
+
+            @t.register("Truth")
+            class TruthType(ConcreteType):
+
+                def contains(self, value):
+                    return value is True
+        """
         def decorator(type_cls):
             self.type_map[name] = type_cls
             return type_cls
         return decorator
 
-    def get_custom_type(self, name):
-        return None
 
-t = Teleport()
+t = TypeMap()
 
 

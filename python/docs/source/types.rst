@@ -89,7 +89,7 @@ Schema
 
 This is a very special type. Its value space is the set of all possible inputs
 for :func:`t`, all possible type definitions. The Schema type enables dynamic
-    typing, tagged unions and other high-level possibilities.
+typing, tagged unions and other high-level possibilities.
 
 .. code-block:: python
 

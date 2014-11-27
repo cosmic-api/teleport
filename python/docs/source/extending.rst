@@ -36,7 +36,7 @@ version of Teleport, simply import your version of :data:`t`:
 Recipe: Color
 ^^^^^^^^^^^^^
 
-Let's add a concrete type that matches all hex-encoded colors. Use the
+Let's add a concrete type that matches hex-encoded colors. Use the
 :meth:`~teleport.TypeMap.register` decorator to add a new type to your
 :data:`t` instance:
 
@@ -63,9 +63,9 @@ type as a first-class citizen:
     >>> t({"Array": "Color"}).contains(['#ffffff', '#000000']))
     True
 
-If you don't provide your own :meth:`from_json` and :meth:`to_json`
-implementations, the default implementation assumes that the native form is
-the same as the JSON form:
+If you don't provide your own :meth:`~teleport.Type.from_json` and
+:meth:`~teleport.Type.to_json` implementations, the default implementation
+assumes that the native form is the same as the JSON form:
 
 .. code-block:: python
 
@@ -100,9 +100,9 @@ nervous, we will use it to give Teleport the same power:
         def to_json(self, native_value):
             return pickle.dumps(native_value)
 
-Note that if we implement :meth:`from_json`, implementing :meth:`contains` is
-not necessary, as long as the former behaves correctly by raising
-:exc:`Undefined`.
+Note that if we implement :meth:`~teleport.Type.from_json`, implementing
+:meth:`~teleport.Type.contains` is not necessary, as long as the former behaves
+correctly by raising :exc:`~teleport.Undefined`.
 
 Now we can use it to serialize most Python objects:
 

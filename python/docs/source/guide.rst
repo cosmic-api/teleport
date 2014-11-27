@@ -1,19 +1,6 @@
 Guide
 =====
 
-Teleport is a JSON type system. Its language-agnostic specification asks only
-for one function to be exported:
-
-.. code-block:: python
-
-    >>> from teleport import t
-
-The purpose of the :func:`t` function is to map *type definitions* to *value
-spaces* (in this implementation, instances of :class:`Type`). Conveniently,
-every type definition is a JSON value and a value space is the set of all JSON
-values that belong to a type instance. Defining everything in terms of JSON
-allows us to have a common test suite for all implementations of Teleport.
-
 Installation
 ------------
 
@@ -24,6 +11,22 @@ if you have pip, you can install it like so:
 
     pip install teleport
 
+Introduction
+------------
+
+Teleport is a JSON type system. Its language-agnostic specification asks only
+for one function to be exported:
+
+.. code-block:: python
+
+    >>> from teleport import t
+
+The purpose of the :func:`t() <teleport.TypeMap.__call__>` function is to map
+*type definitions* to *value spaces* (in this implementation, instances of
+:class:`~teleport.Type`). Conveniently, every type definition is a JSON value
+and a value space is the set of all JSON values that belong to a type instance.
+Defining everything in terms of JSON allows us to have a common test suite for
+all implementations of Teleport.
 
 Type-Checking
 -------------
@@ -38,10 +41,11 @@ To check if a JSON value is of a certain type, we use the
     >>> t("DateTime").contains(u"2007-04-05T14:30 DROP TABLE users;")
     False
 
-Both the the :func:`t` function and the :meth:`~Type.contains` method accepts
-*JSON values* as input. Teleport uses the same format to represent JSON
-as the :mod:`json` module in the Python standard library. Therefore, to
-type-check a JSON-encoded string, you could do this:
+Both the the :func:`t() <teleport.TypeMap.__call__>` function and the
+:meth:`~teleport.Type.contains` method accepts *JSON values* as input. Teleport
+uses the same format to represent JSON as the :mod:`json` module in the Python
+standard library. Therefore, to type-check a JSON-encoded string, you could do
+this:
 
 .. code-block:: python
 
@@ -53,7 +57,7 @@ Serialization
 -------------
 
 This implementation provides serialization by extending each type with two
-methods: :meth:`from_json` and :meth:`to_json`:
+methods: :meth:`~teleport.Type.from_json` and :meth:`~teleport.Type.to_json`:
 
 .. code-block:: python
 

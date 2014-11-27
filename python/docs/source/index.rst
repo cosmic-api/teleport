@@ -45,7 +45,7 @@ To check if a JSON value is of a certain type, we use the
 Both the the :func:`t` function and the :meth:`~Type.contains` method accepts
 *JSON values* as input. Teleport uses the same format to represent JSON
 as the :mod:`json` module in the Python standard library. Therefore, to
-type-check a JSON string, you could do this:
+type-check a JSON-encoded string, you could do this:
 
 .. code-block:: python
 
@@ -63,25 +63,31 @@ methods: :meth:`from_json` and :meth:`to_json`:
 
     >>> t("DateTime").from_json("2015-04-05T14:30")
     datetime.datetime(2015, 4, 5, 14, 30)
-    >>> t("String").from_json("2015-04-05T14:30")
-    u"2015-04-05T14:30"
+    >>> t("DateTime").to_json(datetime.datetime(2015, 4, 5, 14, 30))
+    "2015-04-05T14:30"
+
+For container types they work recursively:
+
+.. code-block:: python
+
+    >>> t({"Array": "DateTime"}).from_json(["2015-04-05T14:30"])
+    [datetime.datetime(2015, 4, 5, 14, 30)]
 
 .. admonition:: Implementation notes
 
     Serialization is not mentioned in the Teleport spec because it cannot be
     defined in a language-agnostic way. Implementations have the freedom to
-    define serialization logic that fits their programming language perfectly,
-    but unfortunately, this functionality cannot be tested by the common test
-    suite.
+    define serialization logic that best fits their programming language, but
+    this functionality cannot be tested by the common test suite.
 
 Concrete and Generic Types
 --------------------------
 
 Teleport defines two kinds of types: *concrete* and *generic*.
 
-The JSON definition of a concrete type is its name as a string. For example,
-the definition of the Boolean type is :data:`"Boolean"`. When you plug that
-definition into :func:`t`, you get an instance of the Boolean type:
+The JSON definition of a concrete type is a string containing its name. For
+example, the definition of the Boolean type is :data:`"Boolean"`. When you plug
+that definition into :func:`t`, you get an instance of the Boolean type:
 
 .. code-block:: python
 
@@ -90,8 +96,7 @@ definition into :func:`t`, you get an instance of the Boolean type:
 
 A generic type's definition encodes an additional piece of data, a parameter
 which will be used by :func:`t` to create a type instance. For example, the
-built-in Array type needs a parameter which represents the type of its
-every element:
+built-in Array type needs a parameter:
 
 .. code-block:: python
 
@@ -164,10 +169,10 @@ instances of :class:`datetime` from the Python standard library are used.
 
     >>> t("DateTime").contains("2007-04-05T14:30")
     True
-    >>> t("DateTime").from_json(u"2015-04-05T14:30")
+    >>> t("DateTime").from_json("2015-04-05T14:30")
     datetime.datetime(2015, 4, 5, 14, 30)
-    >>> t("String").from_json(u"2015-04-05T14:30")
-    u"2015-04-05T14:30"
+    >>> t("DateTime").to_json(datetime.datetime(2015, 4, 5, 14, 30))
+    "2015-04-05T14:30"
 
 JSON
 ^^^^
@@ -243,8 +248,8 @@ With this type instance, you can validate JSON objects like these:
     ...                "deadline": "2015-04-05T14:30"})
     True
 
-Of course, you cannot be missing a required field and each field's schema must
-be respected:
+Of course, you cannot omit a required field and each field's schema must be
+respected:
 
 .. code-block:: python
 
@@ -271,9 +276,10 @@ function, just provides some instances of its inputs and outputs. Any
 implementation is allowed to extend it with new instances, inventing new
 concrete types, new generic types or other higher-level constructs.
 
-This implementation provides the following conveniences for defining concrete
-and generic types. Firstly, in order to keep the global namespace clean, make
-your own personal instance of the :func:`t` function:
+This implementation provides a convenient interface for extending Teleport with
+new concrete and generic types. You can see how it works by reading through
+the following recipes, but first, in order to keep the global namespace clean,
+make your own personal instance of the :func:`t` function:
 
 .. code-block:: python
 
@@ -281,15 +287,29 @@ your own personal instance of the :func:`t` function:
 
     t = Teleport()
 
-Let's add a concrete type that matches all hex-encoded colors:
+Save this in your project's package, say, in ``types.py``. To use your extended
+version of Teleport, simply import your version of :data:`t`:
+
+.. code-block:: python
+
+    from jsonapp.types import t
+
+Recipe: Color
+^^^^^^^^^^^^^
+
+Let's add a concrete type that matches all hex-encoded colors. Use the
+:meth:`~teleport.Teleport.register` decorator to add a new type to your
+:data:`t` instance:
 
 .. code-block:: python
 
     @t.register("Color")
     class ColorType(ConcreteType):
-        wraps = "String"
 
         def contains(self, value):
+            if not t("String").contains(value):
+                return False
+
             return re.compile('^#[0-9a-f]{6}$').match(value) is not None
 
 Once we have called :meth:`~teleport.Teleport.register`, we can use the new
@@ -302,6 +322,112 @@ type as a first-class citizen:
     >>> t("Color").contains('yellow')
     False
     >>> t({"Array": "Color"}).contains(['#ffffff', '#000000']))
+    True
+
+If you don't provide your own :meth:`from_json` and :meth:`to_json`
+implementations, the default implementation assumes that the native form is
+the same as the JSON form:
+
+.. code-block:: python
+
+    >>> t("Color").from_json('#ffffff')
+    "#ffffff"
+
+If your purpose for defining custom types is primarily type-checking, then you
+can forget about those methods altogether, they don't need to be extended in
+order to work.
+
+Recipe: PythonObject
+^^^^^^^^^^^^^^^^^^^^
+
+The :mod:`pickle` module from Python's standard library provides generic
+serialization of Python objects. Even though :mod:`pickle` makes the author
+nervous, we will use it to give Teleport the same power:
+
+.. code-block:: python
+
+    import pickle
+
+    @t.register("PythonObject")
+    class PythonObjectType(ConcreteType):
+
+        def from_json(self, json_value):
+            if not t("String").contains(json_value):
+                raise Undefined("PythonObject must be a string")
+            return pickle.loads(json_value)
+
+        def to_json(self, native_value):
+            return pickle.dumps(native_value)
+
+Note that if we implement :meth:`from_json`, implementing :meth:`contains` is
+not necessary, as long as your :meth:`from_json` implementation behaves
+correctly by throwing :exc:`Undefined`.
+
+Now we can use it to serialize most Python objects:
+
+.. code-block:: python
+
+    >>> t("PythonObject").to_json(set([1, 2]))
+    'c__builtin__\nset\np0\n((lp1\nI1\naI2\natp2\nRp3\n.'
+
+.. warning::
+
+    Pickle is unsafe with untrusted data. You probably shouldn't actually use
+    this type.
+
+Recipe: Nullable
+^^^^^^^^^^^^^^^^
+
+Teleport does not encourage using null unless there is a good reason for it.
+One good reason is an existing format using null. Either way, the following
+generic type is a good way to introduce it:
+
+.. code-block:: python
+
+    @t.register("Nullable")
+    class NullableType(GenericType):
+
+        def process_param(self, param):
+            self.child = self.t(param)
+
+        def from_json(self, value):
+            if value is None:
+                return None
+            return self.child.from_json(value)
+
+        def to_json(self, value):
+            if value is None:
+                return None
+            return self.child.to_json(value)
+
+Now you can define weird types like this:
+
+.. code-block:: python
+
+    >>> s = t({"Array": {"Nullable": "String"}})
+    >>> s.contains(["sparse", None, "arrays", None, None, None, "what"])
+    True
+
+More realistically, you might use it to deal with JSON objects with null
+values. The reason this type is not in Teleport core is to discourage us from
+creating these monsters:
+
+.. code-block:: python
+
+    >>> s = t({"Struct": {
+    ...          "required": {"id": "Integer"},
+    ...          "optional": {"name": {"Nullable": "String"},
+    ...                       "age":  {"Nullable": "Integer"}}}})
+
+Even though they may be useful for reading objects like these:
+
+.. code-block:: python
+
+    >>> s.contains({"id": 1, "name": "Jake", "age": 28})
+    True
+    >>> s.contains({"id": 1, "name": None, "age": 12})
+    True
+    >>> s.contains({"id": 1, "age": None})
     True
 
 API

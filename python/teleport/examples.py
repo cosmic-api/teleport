@@ -1,8 +1,10 @@
 import re
+import pickle
 
-from teleport import Teleport, ConcreteType, GenericType
+from teleport import Teleport, ConcreteType, GenericType, Undefined
 
 t = Teleport()
+
 
 @t.register("Color")
 class ColorType(ConcreteType):
@@ -19,7 +21,26 @@ class NullableType(GenericType):
     def process_param(self, param):
         self.child = self.t(param)
 
-    def contains(self, value):
+    def from_json(self, value):
         if value is None:
-            return True
-        return self.child.contains(value)
+            return None
+        return self.child.from_json(value)
+
+    def to_json(self, value):
+        if value is None:
+            return None
+        return self.child.to_json(value)
+
+
+@t.register("PythonObject")
+class PythonObjectType(ConcreteType):
+
+    def from_json(self, json_value):
+        if not t("String").contains(json_value):
+            raise Undefined("PythonObject must be a string")
+        return pickle.loads(json_value)
+
+    def to_json(self, native_value):
+        return pickle.dumps(native_value)
+
+

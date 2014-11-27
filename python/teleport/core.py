@@ -143,7 +143,7 @@ class StructType(GenericType):
                 raise Undefined()
 
             for k, s in param[kind].items():
-                self.schemas[k] = t(s)
+                self.schemas[k] = self.t(s)
 
         self.opt = set(param['optional'].keys())
         self.req = set(param['required'].keys())

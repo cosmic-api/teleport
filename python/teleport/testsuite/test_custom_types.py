@@ -1,8 +1,10 @@
-from unittest2 import TestCase
+import platform
+import unittest2
+
 from teleport.examples import t
 
 
-class CustomTypeTest(TestCase):
+class CustomTypeTest(unittest2.TestCase):
 
     def test_Color(self):
         self.assertTrue(t("Color").contains('#ffffff'))
@@ -29,6 +31,7 @@ class CustomTypeTest(TestCase):
         self.assertTrue(s.contains({"id": 1, "name": None, "age": 12}))
         self.assertTrue(s.contains({"id": 1, "age": None}))
 
+    @unittest2.skipIf(platform.python_implementation() != 'CPython', "Skipping pickle test for PyPy")
     def test_PythonObject(self):
         self.assertEqual(t("PythonObject").to_json(1), 'I1\n.')
         self.assertEqual(t("PythonObject").to_json({1, 2}),

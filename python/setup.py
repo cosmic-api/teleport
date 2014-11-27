@@ -7,15 +7,19 @@ with open("README.rst") as readme:
 
 setup(
     name='teleport',
-    version="0.2.1",
+    version="0.3.0",
     packages=['teleport', 'teleport.testsuite'],
-    description='An extandable serialization system',
+    description='Lightweight JSON type system',
     license="MIT",
-    author="8313547 Canada Inc.",
+    author="Alexei Boronine",
     author_email="alexei@boronine.com",
+    url="http://teleport-json.org",
     install_requires=[
-        "isodate>=0.4.9",
-        "ordereddict>=1.1"
+        "isodate>=0.4.9"
+    ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Programming Language :: Python :: 2',
     ],
     long_description=long_description,
     test_suite='teleport.testsuite.suite'

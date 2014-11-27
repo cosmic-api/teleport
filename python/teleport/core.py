@@ -16,7 +16,8 @@ class Type(object):
     def contains(self, json_value):
         """
         Returns :data:`True` if *json_value* is a member of this type's value
-        space and :data:`False` if it is not.
+        space and :data:`False` if it is not. You don't have to override this
+        method if you implement :meth:`from_json`.
 
         .. code-block:: python
 
@@ -33,7 +34,8 @@ class Type(object):
 
     def from_json(self, json_value):
         """Convert JSON value to native value. Raises :exc:`Undefined` if
-        *json_value* is not a member of this type.
+        *json_value* is not a member of this type. By default, this method
+        returns the JSON value unchanged.
 
         .. code-block:: python
 
@@ -46,7 +48,9 @@ class Type(object):
             raise Undefined()
 
     def to_json(self, native_value):
-        """Convert valid native value to JSON value.
+        """Convert valid native value to JSON value. By default, this method
+        returns the native value unchanged, assuming that it is already in
+        the format expected by the :mod:`json` module.
 
         .. code-block:: python
 

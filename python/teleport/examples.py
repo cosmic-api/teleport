@@ -38,7 +38,10 @@ class PythonObjectType(ConcreteType):
     def from_json(self, json_value):
         if not t("String").contains(json_value):
             raise Undefined("PythonObject must be a string")
-        return pickle.loads(json_value)
+        try:
+            return pickle.loads(json_value)
+        except:
+            raise Undefined("PythonObject could not be unpickled")
 
     def to_json(self, native_value):
         return pickle.dumps(native_value)

@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Teleport'
-copyright = u'2013, 8313547 Canada Inc.'
+copyright = u'2014, 8313547 Canada Inc.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

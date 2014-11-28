@@ -79,10 +79,7 @@ rootDir = path.join __dirname, ".."
 
 makefile = new obnoxygen.Makefile rootDir
 makefile.addTask "deploy", """
-  (cd tmp/site-inject \
-  && rsync -avz \
-  -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-  --progress . root@104.131.5.252:/root/teleport-json.org)
+  cat .cache/site-inject.tar | ssh root@104.131.5.252 "(cd /root/teleport-json.org; tar xf -)"
 """
 makefile.addTask "clean", "rm -rf build/*"
 

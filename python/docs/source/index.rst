@@ -42,4 +42,5 @@ Contents
    types
    extending
    api
+   changelog
 

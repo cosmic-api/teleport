@@ -3,9 +3,9 @@ Teleport
 ========
 
 This is the Python implementation of Teleport
-(`draft00 <http://www.teleport-json.org/spec/draft00/>`_).
+(`draft-00 <http://www.teleport-json.org/spec/draft-00/>`_).
 
-Check out the `spec <http://www.teleport-json.org/spec/draft00/>`_ and the
+Check out the `spec <http://www.teleport-json.org/spec/draft-00/>`_ and the
 `documentation <http://www.teleport-json.org/python/0.3/>`_.
 
 Installing

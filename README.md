@@ -4,8 +4,9 @@ Teleport
 Teleport is a lightweight type system that extends JSON. It can be used for:
 
 * Serializing data
-* Validation input
+* Validating input
 * Generating documentation
+* Building custom JSON serializers
 * Building API clients
 
 Teleport is:
@@ -18,10 +19,7 @@ Status
 
 A new [specification](http://www.teleport-json.org/spec/latest/) has been
 submitted as [an Internet Draft](https://datatracker.ietf.org/doc/draft-boronine-teleport/)
-on Nov 10, 2014. The old specification is implemented as a [Python library](http://www.teleport-json.org/python/latest/).
-
-The Python library will soon be updated to match the new spec, a JavaScript
-library is in the works as well.
+on Nov 10, 2014. It is implemented as a [Python library](http://www.teleport-json.org/python/latest/).
 
 Build Instructions
 ==================
@@ -60,7 +58,7 @@ Live development mode:
 License
 -------
 
-Copyright (C) 2012 8313547 Canada Inc.
+Copyright (C) 2014 8313547 Canada Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

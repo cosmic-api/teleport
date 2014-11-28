@@ -29,10 +29,17 @@ pythonDocs = (src) ->
       '/python/flask-sphinx-themes': obnoxygen.tarFromZip
         name: "flask-sphinx-themes"
         url: "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
+      '/intersphinx/python2': obnoxygen.fileDownload
+        filename: 'python2.inv'
+        url: 'https://docs.python.org/2.7/objects.inv'
     getCommands: (tmp) -> """
+      cp #{tmp}/intersphinx/python2/python2.inv #{tmp}/python/docs/source
       echo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{tmp}/python/docs/source/conf.py
       echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
+      echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/source/conf.py
       (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
+
+
     """
 
 

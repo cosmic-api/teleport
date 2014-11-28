@@ -1,8 +1,8 @@
-from unittest2 import defaultTestLoader, TestSuite
+import os
+from unittest2 import TestLoader
+
 
 def suite():
-    import legacy_full_test, legacy_test
-    main = defaultTestLoader.loadTestsFromModule(legacy_full_test)
-    language = legacy_test.suite()
-    return TestSuite([main, language])
+    start_dir = os.path.dirname(__file__)
+    return TestLoader().discover(start_dir)
 

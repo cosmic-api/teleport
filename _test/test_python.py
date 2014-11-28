@@ -5,13 +5,13 @@ import unittest2
 from draft00_suite import suite as tests
 
 sys.path.append(os.path.join('../python', os.path.dirname(__file__)))
-from teleport.draft00 import t
+from teleport import t
 
 
 def make_pass_test(schema, datum):
     class T(unittest2.TestCase):
         def test_passing(self):
-            if datum not in t(schema):
+            if not t(schema).contains(datum):
                 raise Exception()
     return T('test_passing')
 
@@ -19,7 +19,7 @@ def make_pass_test(schema, datum):
 def make_fail_test(schema, datum):
     class T(unittest2.TestCase):
         def test_failing(self):
-            if datum in t(schema):
+            if t(schema).contains(datum):
                 raise Exception()
     return T('test_failing')
 

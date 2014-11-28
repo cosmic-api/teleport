@@ -1,4 +1,1 @@
-from legacy import *
-
-import testsuite
-import draft00
+from .core import *

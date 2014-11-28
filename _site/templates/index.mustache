@@ -7,110 +7,116 @@
 
 <div class="container">
   <div class="row">
-    <div class="col-md-12" style="padding:50px;text-align:center;margin-bottom:50px">
-      <h1 style="font-size:70px">Teleport</h1>
-      <h7>Lightweight JSON Type System</h7>
+    <div class="col-md-12" style="padding:50px;margin-bottom:50px">
+        <div class="page-header">
+            <h1>Teleport
+                <small>Lightweight JSON Types</small>
+            </h1>
+        </div>
     </div>
   </div>
   <div class="row">
-    <div class="col-md-6">
-      <dl class="dl-horizontal">
-        <dt>Current version</dt>
-        <dd>v0.2.1</dd>
-        <dt>Installation</dt>
-        <dd><code>pip install teleport</code></dd>
-        <dt>GitHub</dt>
-        <dd><a href="https://github.com/cosmic-api/teleport">cosmic-api/teleport</a></dd>
-        <dt>Development</dt>
-        <dd>
-          Use the <a href="https://github.com/cosmic-api/teleport/issues">issue tracker</a> to report bugs and offer suggestions.
-          Join the discussion in the <a href="https://groups.google.com/forum/#!forum/teleport-json">mailing list</a>
-            or email the author <a href="mailto:alexei@boronine.com">directly</a>.
-        </dd>
-      </dl>
-    </div>
-    <div class="col-md-6">
-      <p>Teleport is:</p>
-      <ul>
-        <li>A serialization system on top of JSON</li>
-        <li>An input validation system</li>
-        <li>A declarative schema system</li>
-        <li>An aid in automatically generating API docs</li>
-        <li>Portable and extendable</li>
-        <li>Open Source (<a class="reference external" href="http://opensource.org/licenses/MIT">MIT license</a>)</li>
-      </ul>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-3" style="padding:50px;"></div>
-    <div class="col-md-9"></div>
-  </div>
-  <div class="row">
-    <div class="col-md-3" style="padding:50px">Type definitions <span class="safe-mdash">&mdash;</span></div>
-    <div class="col-md-9">
-      <pre class="front-page highlight-please python">from teleport import *
+      <div class="col-md-6">
+          <h2>Type definitions</h2>
+      <pre class="front-page highlight-please python">from teleport import t, Undefined
 
-schema = Struct([
-    required('text', String),
-    optional('duedate', DateTime),
-    required('tags', Array(String)),
-])</pre>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-3" style="padding:50px">For serialization <span class="safe-mdash">&mdash;</span></div>
-    <div class="col-md-9">
-      <pre class="front-page highlight-please python">&gt;&gt;&gt; schema.from_json({
+TODO = t({"Struct": {
+            "required": {"text": "String"},
+            "optional": {"deadline": "DateTime",
+                         "tags": {"Array": "String"}}}})</pre>
+          </p>
+          <h2>For validation &amp; serialization</h2>
+          <pre class="front-page highlight-please python">&gt;&gt;&gt; TODO.from_json({
 ...     'text': 'Return videotapes',
-...     'duedate': '2014-10-14T21:17:00.663882',
+...     'deadline': '2014-10-14T21:17:00.663882',
 ...     'tags': ['movies'],
 ... })
-{'text': u'Return videotapes', 'duedate': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882), 'tags': [u'movies']}</pre>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-3" style="padding:50px">For validating input <span class="safe-mdash">&mdash;</span></div>
-    <div class="col-md-9">
-      <pre class="front-page highlight-please python">@route('/todo/add')
-def add_todo():
+{'deadline': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882),
+ 'tags': [u'movies'],
+ 'text': u'Return videotapes'}</pre>
+          <h2>For API servers</h2>
+          <pre class="front-page highlight-please python">def add_todo(request):
     try:
-        todo = schema.from_json(request.json)
-    except ValidationError as e:
-        return (str(e), 400, {})
-    Todo(**todo).save()</pre>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-3" style="padding:50px">Tiny <span class="safe-mdash">&mdash;</span></div>
-    <div class="col-md-9" style="padding:50px">&lt; 1000 <a href="https://github.com/cosmic-api/teleport/blob/master/teleport/types.py">lines of code</a></div>
-  </div>
-  <div class="row">
-    <div class="col-md-3" style="padding:50px">But infinitely extendable <span class="safe-mdash">&mdash;</span></div>
-    <div class="col-md-9">
-      <pre class="front-page highlight-please python">class Todo(BasicWrapper):
-    schema = Struct([
-        required('text', String),
-        optional('duedate', DateTime),
-        required('tags', Array(String)),
-    ])
+        todo = TODO.from_json(request.json)
+    except Undefined:
+        raise BadRequest("Invalid JSON data")
+    Todo.create(**todo).id</pre>
+          <h2>For API clients</h2>
+          <pre class="front-page highlight-please python">def add_todo(**todo):
+    payload = json.dumps(TODO.to_json(todo))
+    requests.post(url, data=json.dumps(payload))
 
-    def __init__(self, text, tags, duedate=None):
-        self.text = text
-        self.tags = tags
-        self.duedate = duedate
 
-    @classmethod
-    def assemble(cls, datum):
-        return cls(**datum)
-
-    @classmethod
-    def disassemble(cls, todo):
-        return {
-          'text': todo.text,
-          'duedate': todo.duedate,
-          'tags': todo.tags
-        }</pre>
-    </div>
+</pre>
+      </div>
+      <div class="col-md-6">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">About</h3>
+              </div>
+              <div class="panel-body">
+                  <p>Teleport is a type system that extends JSON. You can use it:</p>
+                  <ul>
+                      <li>To validate input</li>
+                      <li>To build JSON serializers</li>
+                      <li>To build API servers and clients</li>
+                      <li>To auto-generate API documentation</li>
+                      <li>To explore type systems</li>
+                  </ul>
+                  <p>Teleport's principles:</p>
+                  <ul>
+                      <li>Minimalism (< <a href="https://github.com/cosmic-api/teleport/blob/master/python/teleport/core.py">1000 LOC</a>)</li>
+                      <li>Portability and extensibility</li>
+                      <li>Language-agnostic specification</li>
+                      <li>Enforces existing conventions</li>
+                      <li>Open Source (<a class="reference external" href="http://opensource.org/licenses/MIT">MIT license</a>)</li>
+                  </ul>
+              </div>
+          </div>
+      </div>
+      <div class="col-md-6">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Compatibility</h3>
+              </div>
+              <div class="panel-body">
+                  <table class="table">
+                      <thead>
+                      <tr>
+                          <th>Specification</th>
+                          <th>Python implementation</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr>
+                          <td><a href="https://datatracker.ietf.org/doc/draft-boronine-teleport/?include_text=1">draft-boronine-teleport-00</a></td>
+                          <td>v0.3.0 (<a href="/python/0.3/">docs</a>)</td>
+                      </tr>
+                      <tr class="warning-fuggggggggggggggly">
+                          <td><a href="/spec/1.0/">1.0</a> <span class="label label-warning">Obsolete</span></td>
+                          <td>v0.2.1 (<a href="/python/0.2/">docs</a>)</td>
+                      </tr>
+                      </tbody>
+                  </table>
+              </div>
+            </div>
+      </div>
+      <div class="col-md-6">
+          <div class="panel panel-primary">
+              <div class="panel-heading">
+                  <h3 class="panel-title">Development</h3>
+              </div>
+              <div class="panel-body">
+                  <dl class="dl-">
+                      <dt>GitHub</dt>
+                      <dd><a href="https://github.com/cosmic-api/teleport">cosmic-api/teleport</a></dd>
+                  </dl>
+                  <p>Use the <a href="https://github.com/cosmic-api/teleport/issues">issue tracker</a> to report bugs and offer suggestions.
+                  Join the discussion in the <a href="https://groups.google.com/forum/#!forum/teleport-json">mailing list</a>
+                  or email the author <a href="mailto:alexei@boronine.com">directly</a>.</p>
+              </div>
+          </div>
+      </div>
   </div>
 </div>
 <footer style="margin-top:70px">

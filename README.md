@@ -35,11 +35,11 @@ Create Makefile:
 
 To build full site:
 
-	make build/site.tar
+	make .cache/site.tar
 
 To build Python docs from current tree:
 
-	make build/current-source-sphinx.tar
+	make .cache/current-source-sphinx.tar
 
 To clear cache:
 
@@ -47,7 +47,7 @@ To clear cache:
 
 To deploy via rsync (private key):
 
-	make build/site-inject.tar
+	make .cache/site-inject.tar
 	make deploy
 
 Live development mode:

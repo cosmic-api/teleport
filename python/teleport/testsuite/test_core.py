@@ -1,10 +1,8 @@
-import re
-
 from unittest2 import TestCase
 from datetime import datetime
 
-from teleport import t, TypeMap, ConcreteType, GenericType
-
+from teleport import t
+from teleport.compat import PY2
 
 
 class T(object):
@@ -26,7 +24,12 @@ dn = datetime(2013, 10, 18, 1, 58, 24, 904349)
 
 class IntegerTest(T, TestCase):
     schema = "Integer"
-    pairs = [(1, 1), (1L, 1L)]
+    pairs = [(1, 1)]
+
+    if PY2:
+        pairs.append((long(1), long(1)))
+
+
 
 
 class FloatTest(T, TestCase):

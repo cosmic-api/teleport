@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 import isodate
+from .compat import test_integer, normalize_string
 
 
 class Undefined(Exception):
@@ -114,10 +117,10 @@ class ArrayType(GenericType):
         if type(value) != list:
             raise Undefined()
 
-        return map(self.space.from_json, value)
+        return list(map(self.space.from_json, value))
 
     def to_json(self, value):
-        return map(self.space.to_json, value)
+        return list(map(self.space.to_json, value))
 
 
 class MapType(GenericType):
@@ -196,7 +199,7 @@ class JSONType(ConcreteType):
 
 class IntegerType(ConcreteType):
     def contains(self, value):
-        return type(value) in (int, long)
+        return test_integer(value)
 
 
 class FloatType(ConcreteType):
@@ -207,15 +210,10 @@ class FloatType(ConcreteType):
 class StringType(ConcreteType):
 
     def from_json(self, value):
-        if type(value) == str:
-            try:
-                return unicode(value)
-            except UnicodeDecodeError:
-                raise Undefined()
-        elif type(value) == unicode:
-            return value
-        else:
-            raise Undefined()
+        s = normalize_string(value)
+        if s is not None:
+            return s
+        raise Undefined("Invalid string", value)
 
 
 class BooleanType(ConcreteType):
@@ -273,11 +271,13 @@ class TypeMap(object):
         :return: a :class:`~teleport.Type` instance
 
         """
+        s = normalize_string(schema)
 
-        if type(schema) in (str, unicode):
-            return self.concrete_type(schema)
+        if s is not None:
+            return self.concrete_type(s)
         elif type(schema) == dict and len(schema) == 1:
-            (name, param) = schema.items()[0]
+            name = list(schema)[0]
+            param = schema[name]
             return self.generic_type(name, param)
         else:
             raise Undefined("Unrecognized schema {}".format(schema))

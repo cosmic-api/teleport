@@ -20,6 +20,7 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
     ],
     long_description=long_description,
     test_suite='teleport.testsuite.suite'

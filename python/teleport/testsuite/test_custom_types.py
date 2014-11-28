@@ -1,7 +1,7 @@
-import platform
 import unittest2
 
 from teleport.examples import t
+from teleport.compat import PY3, PYPY
 
 
 class CustomTypeTest(unittest2.TestCase):
@@ -31,7 +31,7 @@ class CustomTypeTest(unittest2.TestCase):
         self.assertTrue(s.contains({"id": 1, "name": None, "age": 12}))
         self.assertTrue(s.contains({"id": 1, "age": None}))
 
-    @unittest2.skipIf(platform.python_implementation() != 'CPython', "Skipping pickle test for PyPy")
+    @unittest2.skipIf(PYPY or PY3, "Skipping pickle test for PyPy and Python3")
     def test_PythonObject(self):
         self.assertEqual(t("PythonObject").to_json(1), 'I1\n.')
         self.assertEqual(t("PythonObject").to_json({1, 2}),

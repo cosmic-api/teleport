@@ -103,6 +103,7 @@ renderNavbar = (path) ->
       subMenu: [
         { version: 'latest' }
         { divider: true }
+        { version: '0.3' }
         { version: '0.2' }
         { version: '0.1' }
       ]

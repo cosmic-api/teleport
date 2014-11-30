@@ -5,6 +5,9 @@ pre.front-page {
     background: none !important;
     font-family: monospace !important;
 }
+pre code {
+    font-family: monospace !important;
+}
 
 .safe-mdash {
     font-family: sans-serif;

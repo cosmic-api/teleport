@@ -73,7 +73,13 @@ inject = (html, options) ->
   if highlight
     $('pre.highlight-please').each ->
       if $(@).hasClass 'python'
-        $(@).html hljs.highlight('python', $(@).text()).value
+        $code = $ '<code>'
+        $code.addClass 'hljs python'
+        $code.html hljs.highlight('python', $(@).text()).value
+        $(@).html ''
+        $(@).append $code
+
+        #$(@).html hljs.highlight('python', $(@).text()).value
     $('pre.highlight-please').removeClass 'highlight-please'
 
   if navbar?

@@ -36,25 +36,24 @@ TODO = t({"Struct": {
         todo = TODO.from_json(request.json)
     except Undefined:
         raise BadRequest("Invalid JSON data")
-    Todo.create(**todo).id</pre>
+    Todo.create(**todo)</pre>
           <h3>For API clients</h3>
           <pre class="front-page highlight-please python">def add_todo(**todo):
     payload = json.dumps(TODO.to_json(todo))
-    requests.post(url, data=json.dumps(payload))</pre>
+    requests.post('http://api.example.com/Todo', data=payload)</pre>
       </div>
       <div class="col-md-6">
-          <div class="panel panel-default">
+          <div class="panel panel-primary">
               <div class="panel-heading">
-                  <h3 class="panel-title">About</h3>
+                  <h3 class="panel-title">What is Teleport?</h3>
               </div>
               <div class="panel-body">
-                  <p>Teleport is a type system extending JSON. You can use it:</p>
+                  <p>Teleport is a type system extending JSON. You can use it for:</p>
                   <ul>
-                      <li>To validate input</li>
-                      <li>To build JSON serializers</li>
-                      <li>To build API servers and clients</li>
-                      <li>To auto-generate API documentation</li>
-                      <li>To explore type systems</li>
+                      <li>Validating input</li>
+                      <li>Building JSON serializers</li>
+                      <li>Building API servers and clients</li>
+                      <li>Auto-generating API documentation</li>
                   </ul>
                   <p>Teleport's principles:</p>
                   <ul>
@@ -83,11 +82,11 @@ TODO = t({"Struct": {
                       <tbody>
                       <tr>
                           <td><a href="https://datatracker.ietf.org/doc/draft-boronine-teleport/?include_text=1">draft-boronine-teleport-00</a></td>
-                          <td>v0.3.0 (<a href="/python/0.3/">docs</a>)</td>
+                          <td>0.3.0 (<a href="/python/0.3/">docs</a>)</td>
                       </tr>
-                      <tr class="warning-fuggggggggggggggly">
+                      <tr>
                           <td><a href="/spec/1.0/">1.0</a> <span class="label label-warning">Obsolete</span></td>
-                          <td>v0.2.1 (<a href="/python/0.2/">docs</a>)</td>
+                          <td>0.2.1 (<a href="/python/0.2/">docs</a>)</td>
                       </tr>
                       </tbody>
                   </table>
@@ -95,7 +94,7 @@ TODO = t({"Struct": {
             </div>
       </div>
       <div class="col-md-6">
-          <div class="panel panel-primary">
+          <div class="panel panel-default">
               <div class="panel-heading">
                   <h3 class="panel-title">Development</h3>
               </div>

@@ -100,6 +100,9 @@ bootstrap = obnoxygen.tarFile
       filename: 'bootstrap-lumen.css'
       url: 'http://bootswatch.com/lumen/bootstrap.css'
     '/highlight': obnoxygen.localNpmPackage 'highlight.js'
+    '/awesome': obnoxygen.tarFromZip
+      name: 'font-awesome'
+      url: 'http://fortawesome.github.io/Font-Awesome/assets/font-awesome-4.2.0.zip'
   deps: [
     '_site/static/static.css'
   ]
@@ -117,10 +120,12 @@ bootstrap = obnoxygen.tarFile
     # Fonts get prepended
     cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css
     cat #{tmp}/everything-safe.css >> #{tmp}/dist/css/bootstrap.css
+    cat #{tmp}/awesome/font-awesome-4.2.0/css/font-awesome.css >> #{tmp}/dist/css/bootstrap.css
     #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
     # Copy fonts
     mkdir -p #{tmp}/dist/fonts
     cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
+    cp #{tmp}/awesome/font-awesome-4.2.0/fonts/* #{tmp}/dist/fonts
   """
 
 

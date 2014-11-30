@@ -6,11 +6,8 @@ pre.front-page {
     font-family: monospace !important;
 }
 pre code {
-    font-family: monospace !important;
-}
-
-.safe-mdash {
-    font-family: sans-serif;
+    padding: 20px !important;
+    font-family: "Ubuntu Mono", monospace !important;
 }
 
 /* spec page */
@@ -23,7 +20,7 @@ pre code {
 
 .draft-container pre {
     font-family: "Ubuntu Mono";
-    font-size: 15px;
+    font-size: 14px;
     padding: 0px !important;
     border: none !important;
     background: none !important;

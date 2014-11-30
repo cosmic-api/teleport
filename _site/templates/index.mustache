@@ -9,19 +9,18 @@
   <div class="row">
       <div class="col-md-12">
           <div class="page-header">
-              <h1>Teleport
-                  <small>Lightweight JSON Types</small>
-              </h1>
+              <h1>Teleport</h1>
           </div>
       </div>
       <div class="col-md-6">
+          <h4>Lightweight JSON types:</h4>
           <pre class="front-page highlight-please python">from teleport import t, Undefined
 
 TODO = t({"Struct": {
             "required": {"text": "String"},
             "optional": {"deadline": "DateTime",
                          "tags": {"Array": "String"}}}})</pre>
-          <h3>For validation &amp; serialization</h3>
+          <h4>For validation &amp; serialization:</h4>
           <pre class="front-page highlight-please python">&gt;&gt;&gt; TODO.from_json({
 ...     'text': 'Return videotapes',
 ...     'deadline': '2014-10-14T21:17:00.663882',
@@ -30,22 +29,22 @@ TODO = t({"Struct": {
 {'deadline': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882),
  'tags': [u'movies'],
  'text': u'Return videotapes'}</pre>
-          <h3>For API servers</h3>
+          <h4>For API servers:</h4>
           <pre class="front-page highlight-please python">def add_todo(request):
     try:
         todo = TODO.from_json(request.json)
     except Undefined:
         raise BadRequest("Invalid JSON data")
     Todo.create(**todo)</pre>
-          <h3>For API clients</h3>
+          <h4>For API clients:</h4>
           <pre class="front-page highlight-please python">def add_todo(**todo):
     payload = json.dumps(TODO.to_json(todo))
-    requests.post('http://api.example.com/Todo', data=payload)</pre>
+    requests.post('http://api.example.com/todos', data=payload)</pre>
       </div>
       <div class="col-md-6">
-          <div class="panel panel-primary">
+          <div class="panel panel-default">
               <div class="panel-heading">
-                  <h3 class="panel-title">What is Teleport?</h3>
+                  <h3 class="panel-title">About</h3>
               </div>
               <div class="panel-body">
                   <p>Teleport is a type system extending JSON. You can use it for:</p>

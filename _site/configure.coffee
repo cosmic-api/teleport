@@ -95,10 +95,10 @@ bootstrap = obnoxygen.tarFile
     '/': obnoxygen.tarFromZip
       name: "bootstrap-dist"
       url: "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
-    '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,400italic|Ubuntu+Mono:400,700"
+    '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Ubuntu+Mono:400,700"
     '/lumen': obnoxygen.fileDownload
       filename: 'bootstrap-lumen.css'
-      url: 'http://bootswatch.com/lumen/bootstrap.css'
+      url: 'http://bootswatch.com/flatly/bootstrap.css'
     '/highlight': obnoxygen.localNpmPackage 'highlight.js'
     '/awesome': obnoxygen.tarFromZip
       name: 'font-awesome'
@@ -109,13 +109,13 @@ bootstrap = obnoxygen.tarFile
   getCommands: (tmp) -> """
     # Concatenate CSS from multiple sources
     cp #{tmp}/lumen/bootstrap-lumen.css #{tmp}/everything.css
-    cat #{tmp}/highlight/styles/tomorrow.css >> #{tmp}/everything.css
+    cat #{tmp}/highlight/styles/rainbow.css >> #{tmp}/everything.css
     cat _site/static/static.css >> #{tmp}/everything.css
     # Make the css safe to mix with other css
     namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
     sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
     # Remove google font API loads
-    sed -i '/googleapis/d' #{tmp}/everything-safe.css
+    #sed -i '/googleapis/d' #{tmp}/everything-safe.css
     rm -r #{tmp}/dist/css/*
     # Fonts get prepended
     cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css

@@ -109,7 +109,7 @@ bootstrap = obnoxygen.tarFile
   getCommands: (tmp) -> """
     # Concatenate CSS from multiple sources
     cp #{tmp}/lumen/bootstrap-lumen.css #{tmp}/everything.css
-    cat #{tmp}/highlight/styles/tomorrow.css >> #{tmp}/everything.css
+    cat #{tmp}/highlight/styles/default.css >> #{tmp}/everything.css
     cat _site/static/static.css >> #{tmp}/everything.css
     # Make the css safe to mix with other css
     namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css

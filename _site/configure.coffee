@@ -183,11 +183,15 @@ site = obnoxygen.tarFile
     #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
   """
 
-makefile.addRule pythonDocs obnoxygen.workingTree
+
+currentSource = obnoxygen.workingTree
   name: 'current-source'
   deps: glob.sync "python/docs/source/**"
     .concat glob.sync "python/teleport/**"
+    .concat ['_spec/teleport.xml']
 
+makefile.addRule pythonDocs currentSource
+makefile.addRule newSpec currentSource
 
 makefile.addRule site
 makefile.addRule inject

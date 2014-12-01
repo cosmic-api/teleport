@@ -103,7 +103,7 @@ renderNavbar = (path) ->
       repoLink: true
       subMenuShow: false
     python:
-      star: true
+      star: false
       repoLink: true
       subMenuShow: true
       subMenu: [
@@ -114,7 +114,7 @@ renderNavbar = (path) ->
         { version: '0.1' }
       ]
     spec:
-      star: true
+      star: false
       repoLink: true
       subMenuShow: true
       subMenu: [

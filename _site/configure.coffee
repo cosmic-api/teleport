@@ -2,6 +2,8 @@ _ = require 'underscore'
 path = require 'path'
 fs = require 'fs'
 
+os = require 'os'
+
 obnoxygen = require 'obnoxygen'
 glob = require "glob"
 
@@ -78,8 +80,16 @@ inject = (options) ->
 rootDir = path.join __dirname, ".."
 
 makefile = new obnoxygen.Makefile rootDir
+
+deployTmp = "#{os.tmpdir()}/oxg/dist"
 makefile.addTask "deploy", """
-  cat .cache/site-inject.tar | ssh root@104.131.5.252 "(cd /root/teleport-json.org; tar xf -)"
+  rm -rf #{deployTmp}
+  mkdir -p #{deployTmp}
+  tar xf .cache/site-inject.tar -C #{deployTmp}
+  (cd #{deployTmp} \
+      && rsync -avz \
+      -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+      --progress . root@104.131.5.252:/root/teleport-json.org)
 """
 makefile.addTask "clean", "rm -rf build/*"
 
@@ -95,7 +105,7 @@ bootstrap = obnoxygen.tarFile
     '/': obnoxygen.tarFromZip
       name: "bootstrap-dist"
       url: "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
-    '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Ubuntu+Mono:400,700"
+    '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Inconsolata:400,700"
     '/lumen': obnoxygen.fileDownload
       filename: 'bootstrap-lumen.css'
       url: 'http://bootswatch.com/flatly/bootstrap.css'
@@ -115,7 +125,7 @@ bootstrap = obnoxygen.tarFile
     namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
     sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
     # Remove google font API loads
-    #sed -i '/googleapis/d' #{tmp}/everything-safe.css
+    sed -i '/googleapis/d' #{tmp}/everything-safe.css
     rm -r #{tmp}/dist/css/*
     # Fonts get prepended
     cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css

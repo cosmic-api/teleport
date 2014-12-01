@@ -7,7 +7,7 @@ pre.front-page {
 }
 pre code {
     padding: 20px !important;
-    font-family: "Ubuntu Mono", monospace !important;
+    font-family: "Inconsolata", monospace !important;
 }
 
 /* spec page */
@@ -19,7 +19,7 @@ pre code {
 }
 
 .draft-container pre {
-    font-family: "Ubuntu Mono";
+    font-family: "Inconsolata", monospace;
     font-size: 14px;
     padding: 0px !important;
     border: none !important;

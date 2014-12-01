@@ -1,6 +1,6 @@
 <html class="bs">
 <head>
-<title>Teleport - Lightweight JSON Type System</title>
+<title>Teleport - Minimal JSON Types</title>
 </head>
 
 <body>
@@ -9,11 +9,11 @@
   <div class="row">
       <div class="col-md-12">
           <div class="page-header">
-              <h1>Teleport</h1>
+              <h1>Teleport<br/>
+                  <small>Minimal JSON types</small></h1>
           </div>
       </div>
       <div class="col-md-6">
-          <h4>Lightweight JSON types:</h4>
           <pre class="front-page highlight-please python">from teleport import t, Undefined
 
 TODO = t({"Struct": {
@@ -42,33 +42,24 @@ TODO = t({"Struct": {
     requests.post('http://api.example.com/todos', data=payload)</pre>
       </div>
       <div class="col-md-6">
-          <div class="panel panel-default">
+          <p>Teleport is a type system extending JSON. You can use it for:</p>
+          <ul>
+              <li>Validating input</li>
+              <li>Building JSON serializers</li>
+              <li>Building API servers and clients</li>
+              <li>Auto-generating API documentation</li>
+          </ul>
+          <p>Principles:</p>
+          <ul>
+              <li>Minimalism (< <a href="https://github.com/cosmic-api/teleport/blob/master/python/teleport/core.py">1000 LOC</a>)</li>
+              <li>Portability and extensibility</li>
+              <li>Language-agnostic specification</li>
+              <li>Enforces existing conventions</li>
+              <li>Open Source (<a class="reference external" href="http://opensource.org/licenses/MIT">MIT license</a>)</li>
+          </ul>
+          <div class="panel panel-default" style="margin-top:60px">
               <div class="panel-heading">
-                  <h3 class="panel-title">About</h3>
-              </div>
-              <div class="panel-body">
-                  <p>Teleport is a type system extending JSON. You can use it for:</p>
-                  <ul>
-                      <li>Validating input</li>
-                      <li>Building JSON serializers</li>
-                      <li>Building API servers and clients</li>
-                      <li>Auto-generating API documentation</li>
-                  </ul>
-                  <p>Teleport's principles:</p>
-                  <ul>
-                      <li>Minimalism (< <a href="https://github.com/cosmic-api/teleport/blob/master/python/teleport/core.py">1000 LOC</a>)</li>
-                      <li>Portability and extensibility</li>
-                      <li>Language-agnostic specification</li>
-                      <li>Enforces existing conventions</li>
-                      <li>Open Source (<a class="reference external" href="http://opensource.org/licenses/MIT">MIT license</a>)</li>
-                  </ul>
-              </div>
-          </div>
-      </div>
-      <div class="col-md-6">
-          <div class="panel panel-default">
-              <div class="panel-heading">
-                <h3 class="panel-title">Compatibility</h3>
+                  <h3 class="panel-title">Compatibility</h3>
               </div>
               <div class="panel-body">
                   <table class="table">
@@ -80,17 +71,19 @@ TODO = t({"Struct": {
                       </thead>
                       <tbody>
                       <tr>
-                          <td><a href="https://datatracker.ietf.org/doc/draft-boronine-teleport/?include_text=1">draft-boronine-teleport-00</a></td>
+                          <td><a href="https://datatracker.ietf.org/doc/draft-boronine-teleport/?include_text=1">draft-00</a></td>
                           <td>0.3.0 (<a href="/python/0.3/">docs</a>)</td>
                       </tr>
                       <tr>
-                          <td><a href="/spec/1.0/">1.0</a> <span class="label label-warning">Obsolete</span></td>
-                          <td>0.2.1 (<a href="/python/0.2/">docs</a>)</td>
+                          <td><a href="/spec/1.0/">1.0</a> (obsolete)</td>
+                          <td><del>0.2.1</del> (<a href="/python/0.2/">docs</a>)</td>
                       </tr>
                       </tbody>
                   </table>
               </div>
-            </div>
+          </div>
+      </div>
+      <div class="col-md-6">
       </div>
       <div class="col-md-6">
           <div class="panel panel-default">
@@ -98,10 +91,7 @@ TODO = t({"Struct": {
                   <h3 class="panel-title">Development</h3>
               </div>
               <div class="panel-body">
-                  <dl class="dl-">
-                      <dt>GitHub</dt>
-                      <dd><a href="https://github.com/cosmic-api/teleport">cosmic-api/teleport</a></dd>
-                  </dl>
+                  <p>Source code, specification as well as this site are all in a <a href="https://github.com/cosmic-api/teleport/">single git repository</a>.</p>
                   <p>Use the <a href="https://github.com/cosmic-api/teleport/issues">issue tracker</a> to report bugs and offer suggestions.
                   Join the discussion in the <a href="https://groups.google.com/forum/#!forum/teleport-json">mailing list</a>
                   or email the author <a href="mailto:alexei@boronine.com">directly</a>.</p>

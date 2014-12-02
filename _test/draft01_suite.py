@@ -111,7 +111,14 @@ ttt = [
             Box(u"String"),
             Box(u"JSON"),
             Box(u"DateTime"),
-            Box(u"Schema")
+            Box(u"Schema"),
+            Box({"Array": "String"}),
+            Box({"Map": "String"}),
+            Box({"Struct": { # Test metadata support added in draft-01
+                "required": {},
+                "optional": {},
+                "doc.order": []
+            }})
         }
     }
 ]

@@ -152,7 +152,7 @@ class StructType(GenericType):
     def process_param(self, param):
         expected = {'required', 'optional'}
 
-        if type(param) != dict or set(param.keys()) != expected:
+        if type(param) != dict or not expected.issubset(set(param.keys())):
             raise Undefined()
 
         self.schemas = {}

@@ -1,4 +1,5 @@
 fs = require 'fs'
+marked = require 'marked'
 mustache = require 'mustache'
 
 render = (file, context) ->
@@ -44,4 +45,5 @@ process.stdin.on 'end', ->
 
       spec += line + "\n"
 
-    console.log render "spec.mustache", body: "<pre class='rfc'>#{spec}</pre>"
+    console.log render "spec.mustache",
+      body: "<pre class='rfc'>#{spec}</pre>"

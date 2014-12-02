@@ -152,6 +152,7 @@
             <figure>
                 <artwork><![CDATA[
    t({"Struct": {
+        "optional": {},
         "required": {
            "input": "Schema",
            "output": "Schema"}}}]]></artwork>
@@ -210,7 +211,9 @@
         <section title="Built-in Concrete Types">
             <t>
                 <list hangIndent="16" style="hanging">
-                    <t hangText="t(&quot;JSON&quot;)">JSON</t>
+                    <t hangText="t(&quot;JSON&quot;)">
+                        The set of all JSON values.
+                    </t>
                     <t hangText="t(&quot;Schema&quot;)">
                         The set of all type definitions, including all
                         strings representing concrete types as well as every
@@ -263,9 +266,10 @@
                 x :: t({&quot;Struct&quot;: p}) if and only if
                 <list hangIndent="10" style="empty">
                     <t>
-                        p is an object with two members: required and optional.
-                        Both are objects and their names are disjoint, that is,
-                        they don't have a pair of members with the same name.
+                        p is an object with at least two members: required and
+                        optional. Both are objects and their names are
+                        disjoint, that is, they don't have a pair of members
+                        with the same name.
                     </t>
                     <t>
                         x is an object. The name of every member of p.required
@@ -274,6 +278,11 @@
                     <t>
                         For every pair (k, v) in x, there is a pair (k, s) in
                         either p.required or p.optional such that v :: t(s).
+                    </t>
+                    <t>
+                        Note: the definition of Struct implies that its
+                        parameter p can contain arbitrary metadata in the form
+                        of other object members.
                     </t>
                 </list>
             </t>

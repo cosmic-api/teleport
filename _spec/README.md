@@ -6,6 +6,6 @@ There is an [implementation in Python](https://github.com/cosmic-api/teleport.py
 
 Build:
 
-    xml2rfc teleport-id.xml --html --text
+    xml2rfc teleport.xml --html --text
 
 xml2rfc tool can be obtained [here](http://xml2rfc.ietf.org/).

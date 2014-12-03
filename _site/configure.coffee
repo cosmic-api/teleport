@@ -156,7 +156,7 @@ site = obnoxygen.tarFile
       src: pythonDocs master
       args: "--navbar python/latest --bs"
     '/python/0.3': inject
-      src: pythonDocs obnoxygen.gitCheckoutTag 'py-0.3.0'
+      src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.3-maintenance'
       args: "--navbar 'python/0.3' --bs"
     '/python/0.2': inject
       src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.2-maintenance'

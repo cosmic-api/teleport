@@ -4,6 +4,7 @@ pre.front-page {
     border: none !important;
     background: none !important;
     font-family: monospace !important;
+    padding-left: 0 !important;
 }
 pre code {
     padding: 20px !important;

@@ -173,6 +173,9 @@ site = obnoxygen.tarFile
     '/spec/draft-01': inject
       src: newSpec obnoxygen.gitCheckoutTag 'spec-draft-01'
       args: "--navbar 'spec/draft-01' --bs"
+    '/spec/draft-02': inject
+      src: newSpec obnoxygen.gitCheckoutTag 'spec-draft-02'
+      args: "--navbar 'spec/draft-02' --bs"
     '/spec/1.0': inject
       src: copyFromArchive 'spec-old'
       args: "--navbar 'spec/1.0' --bs"

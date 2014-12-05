@@ -5,6 +5,7 @@
     <!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
     <!ENTITY RFC4627 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4627.xml">
     <!ENTITY ISO8601 SYSTEM "http://xml2rfc.ietf.org/public/rfc/bibxml-misc/reference.ISO.8601.1988.xml">
+    <!ENTITY RFC3339 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3339.xml">
     <!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">]>
 
 <?rfc strict="yes" ?>
@@ -15,7 +16,7 @@
 <?rfc compact="yes" ?>
 <?rfc subcompact="no" ?>
 
-<rfc category="info" docName="draft-boronine-teleport-01" ipr="trust200902">
+<rfc category="info" docName="draft-boronine-teleport-02" ipr="trust200902">
 
     <front>
 
@@ -35,8 +36,8 @@
         <abstract>
             <t>
                 Teleport is a minimal type system designed as an extension of
-                JSON. It comes with 10 types sufficient for basic use, but
-                it defines a pattern for extending it with arbitrary types.
+                JSON. It comes with 10 types sufficient for basic use and
+                provides two patterns for extending it with new types.
                 Teleport's type definitions are JSON values, for example, an
                 array of strings is defined as {"Array": "String"}.
             </t>
@@ -46,7 +47,7 @@
                 API clients.
             </t>
             <t>
-                This document provides the mathematical basis of Teleport and
+                This document provides the mathematical basis for Teleport and
                 can be used for implementing libraries.
             </t>
         </abstract>
@@ -143,8 +144,7 @@
 
         <section title="JSON Schemas">
             <t>
-                "Schema", one of the build-in concrete types, is defined as
-                the set of all known type definitions. This is made possible by
+                Schema, one of the build-in concrete types, is made possible by
                 the fact that type definitions are JSON values. The Schema type
                 is useful to specify APIs. For example, to describe a function
                 you can use this:
@@ -179,6 +179,10 @@
                         t :: (V -> S)
                     </t>
                 </list>
+                This document does not give a full definition of the t
+                function, it merely provides some instances of its inputs and
+                outputs. Expanding the definition of the t function is the
+                basis for extending Teleport.
             </t>
             <section title="Concrete Types">
                 <t>
@@ -210,31 +214,41 @@
         </section>
         <section title="Built-in Concrete Types">
             <t>
-                <list hangIndent="16" style="hanging">
-                    <t hangText="t(&quot;JSON&quot;)">
-                        The set of all JSON values.
+                <list hangIndent="10" style="hanging">
+                    <t hangText="JSON">
+                        t(&quot;JSON&quot;) is the set of all JSON values.
+                        This type can be used as a wildcard for type-checking
+                        or as a noop for composable serialization.
                     </t>
-                    <t hangText="t(&quot;Schema&quot;)">
-                        The set of all type definitions, including all
-                        strings representing concrete types as well as every
-                        instance of every generic type.
+                    <t hangText="Schema">
+                        t(&quot;Schema&quot;) is the set of all type
+                        definitions, including all strings representing
+                        concrete types as well as every instance of every
+                        generic type.
                     </t>
-                    <t hangText="t(&quot;Integer&quot;)">
-                        All numbers that don't have a fractional or exponent
-                        part.
+                    <t hangText="Decimal">
+                        t(&quot;Decimal&quot;) is the set of all numbers.
+                        This type represents real numbers and
+                        arbitrary-precision approximations of real numbers.
                     </t>
-                    <t hangText="t(&quot;Float&quot;)">
-                        All numbers that have a fractional or exponent part.
+                    <t hangText="Integer">
+                        t(&quot;Integer&quot;) is the set of all numbers
+                        that don't have a fractional or exponent part.
                     </t>
-                    <t hangText="t(&quot;String&quot;)">
-                        All strings.
+                    <t hangText="String">
+                        t(&quot;String&quot;) is the set of all strings.
+                        Note that JSON strings are sequences of Unicode
+                        characters.
                     </t>
-                    <t hangText="t(&quot;Boolean&quot;)">
-                        All booleans.
+                    <t hangText="Boolean">
+                        t(&quot;Boolean&quot;) is a set containing the JSON
+                        values true and false.
                     </t>
-                    <t hangText="t(&quot;DateTime&quot;)">
-                        All strings that are valid according to
-                        <xref target="ISO.8601.1988">ISO 8601</xref>.
+                    <t hangText="DateTime">
+                        t(&quot;DateTime&quot;) is the set of all strings that
+                        are valid according to
+                        <xref target="RFC3339">RFC 3339</xref>. This type
+                        represents typestamps with optional timezone data.
                     </t>
                 </list>
             </t>
@@ -280,7 +294,7 @@
                         either p.required or p.optional such that v :: t(s).
                     </t>
                     <t>
-                        Note: the definition of Struct implies that its
+                        NOTE: the definition of Struct implies that its
                         parameter p can contain arbitrary metadata in the form
                         of other object members.
                     </t>
@@ -305,7 +319,7 @@
         <references title="Normative References">
             &RFC4627;
             &RFC2119;
-            &ISO8601;
+            &RFC3339;
         </references>
 
         <references title="Informative References">

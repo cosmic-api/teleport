@@ -2,7 +2,7 @@ import sys
 import os
 import unittest2
 
-from draft01_suite import suite as tests
+from draft02_suite import suite as tests
 
 sys.path.append(os.path.join('../python', os.path.dirname(__file__)))
 from teleport import t

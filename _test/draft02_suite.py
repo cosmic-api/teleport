@@ -60,8 +60,8 @@ ttt = [
         "pass": {Box(-1), Box(1), Box(3123342342349238429834)}
     },
     {
-        "schema": "Float",
-        "all": primitives,
+        "schema": "Decimal",
+        "all": primitives - {Box(1), Box(-1)},
         "pass": {Box(1e4), Box(1.0), Box(1.1)}
     },
     {
@@ -106,7 +106,7 @@ ttt = [
         "all": primitives,
         "pass": {
             Box(u"Integer"),
-            Box(u"Float"),
+            Box(u"Decimal"),
             Box(u"Boolean"),
             Box(u"String"),
             Box(u"JSON"),

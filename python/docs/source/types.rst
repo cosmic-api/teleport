@@ -20,17 +20,39 @@ native form.
     >>> t("Integer").contains(1L)
     True
 
-Float
-^^^^^
+Decimal
+^^^^^^^
 
-Uses instances of :class:`float` in both the JSON form and the native form.
+Uses instances of :class:`int`, :class:`long`, :class:`float` and
+:class:`~decimal.Decimal` in both the JSON form and the native form.
 
 .. code-block:: python
 
-    >>> t("Float").contains(1.0)
+    >>> t("Decimal").contains(0)
     True
-    >>> t("Float").contains(1e2)
+    >>> t("Decimal").contains(1.0)
     True
+    >>> t("Decimal").contains(1e2)
+    True
+
+.. note::
+
+    By default, the :mod:`json` module from the Python standard library maps
+    JSON numbers to floats. This is a practical design decision, however, keep
+    in mind that JSON numbers are arbitrary-precision decimal floats whereas
+    Python floats are binary and of a set precision. They are simply two
+    different types and there is no precise mapping between them.
+
+    If precision is important for you, you'll be happy to know that JSON
+    numbers can be mapped perfectly to instances of Python's built-in
+    :class:`~decimal.Decimal` class and the :mod:`json` module makes it easy to
+    to use it instead of floats:
+
+    .. code-block:: python
+
+        >>> import decimal
+        >>> json.loads('1.1', parse_float=decimal.Decimal)
+        Decimal('1.1')
 
 String
 ^^^^^^
@@ -118,7 +140,7 @@ instances of :class:`dict` in the native form.
 
 .. code-block:: python
 
-    >>> t({"Map": "Float"}).contains({"x": 0.12, "y": 0.87})
+    >>> t({"Map": "Decimal"}).contains({"x": 0.12, "y": 0.87})
     True
     >>> t({"Map": "Integer"}).contains({"a": 1, "b": True})
     False

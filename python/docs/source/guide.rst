@@ -50,7 +50,7 @@ this:
 .. code-block:: python
 
     >>> import json
-    >>> t("Float").contains(json.loads("3.14159"))
+    >>> t("Decimal").contains(json.loads("3.14159"))
     True
 
 Serialization

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
-
+import decimal
 import isodate
+
 from .compat import test_integer, normalize_string
 
 
@@ -202,9 +203,9 @@ class IntegerType(ConcreteType):
         return test_integer(value)
 
 
-class FloatType(ConcreteType):
+class DecimalType(ConcreteType):
     def contains(self, value):
-        return type(value) == float
+        return type(value) in (long, int, float, decimal.Decimal)
 
 
 class StringType(ConcreteType):
@@ -246,7 +247,7 @@ class SchemaType(ConcreteType):
 CORE_TYPES = {
     "JSON": JSONType,
     "Integer": IntegerType,
-    "Float": FloatType,
+    "Decimal": DecimalType,
     "String": StringType,
     "Boolean": BooleanType,
     "DateTime": DateTimeType,

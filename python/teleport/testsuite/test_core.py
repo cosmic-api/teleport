@@ -32,8 +32,8 @@ class IntegerTest(T, TestCase):
 
 
 
-class FloatTest(T, TestCase):
-    schema = "Float"
+class DecimalTest(T, TestCase):
+    schema = "Decimal"
     pairs = [(0.1, 0.1), (1e10, 1e10)]
 
 

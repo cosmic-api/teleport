@@ -35,7 +35,7 @@ conveniently, are instances of those classes.
         {'Array': teleport.core.ArrayType,
          'Boolean': teleport.core.BooleanType,
          'DateTime': teleport.core.DateTimeType,
-         'Float': teleport.core.FloatType,
+         'Decimal': teleport.core.DecimalType,
          'Integer': teleport.core.IntegerType,
          'JSON': teleport.core.JSONType,
          'Map': teleport.core.MapType,

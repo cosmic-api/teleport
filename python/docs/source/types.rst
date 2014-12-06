@@ -87,10 +87,35 @@ instances of :class:`~datetime.datetime` from the Python standard library are us
     >>> t("DateTime").to_json(a)
     '2013-10-18T01:58:24.904349Z'
 
+While RFC 3339 provides a convention for specifying time at an unknown
+location, Teleport does not support it, defaulting instead to UTC.
+
+Creating Timestamps
+"""""""""""""""""""
+
+It may be tempting for new Python programmers to use
+:meth:`datetime.now() <datetime.datetime.now>` or
+:meth:`datetime.utcnow() <datetime.datetime.utcnow>`, but neither of these are
+suitable for creating proper timestamps. The latter option comes close, but
+fails to include a piece of data signifying that the time is in UTC.
+
+Omitting timezones from the standard library was a wise decision, but not
+including a UTC object is a puzzling one. Sadly, there is no Python one-liner
+for creating a UTC timestamp. Similarly to pytz, Teleport provides a
+convenient import for this purpose:
+
+.. code-block:: python
+
+    >>> from teleport import utc
+    >>> datetime.utcnow().replace(tzinfo=utc)
+    datetime.datetime(2014, 12, 6, 9, 28, 55, 908619, tzinfo=<UTC>)
+
+Note that another tempting option, ``datetime.now(utc)``, is also incorrect.
+
 .. seealso::
 
     :ref:`on-datetime-standards` discusses the choice of RFC 3309 over
-    ISO 8601.
+    ISO 8601. :ref:`on-timezones` discusses timezone issues.
 
 JSON
 ^^^^

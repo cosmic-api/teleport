@@ -28,15 +28,15 @@ At a Glance
     >>> TODO.contains({"task": "Return videotapes"})
     True
     >>> TODO.from_json({"task": "Return videotapes",
-    ...                 "deadline": "2015-04-05T14:30"})
-    {u'deadline': datetime.datetime(2015, 4, 5, 14, 30),
-     u'task': u'Return videotapes'}
+    ...                 "deadline": "2015-04-05T14:30:00Z"})
+    {'deadline': datetime.datetime(2015, 4, 5, 14, 30, tzinfo=<UTC>),
+     'task': u'Return videotapes'}
 
 Contents
 --------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    guide
    types

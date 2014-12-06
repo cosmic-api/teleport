@@ -1,9 +1,8 @@
 from __future__ import unicode_literals
-import decimal
 import pyrfc3339
 from datetime import tzinfo, timedelta
 
-from .compat import test_integer, normalize_string
+from .compat import test_integer, test_long, normalize_string
 
 
 class UTC(tzinfo):
@@ -226,7 +225,7 @@ class IntegerType(ConcreteType):
 
 class DecimalType(ConcreteType):
     def contains(self, value):
-        return type(value) in (long, int, float, decimal.Decimal)
+        return test_long(value)
 
 
 class StringType(ConcreteType):

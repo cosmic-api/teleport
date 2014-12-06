@@ -7,6 +7,8 @@ Built-in Types
 
 The Teleport specification defines ten types: 7 concrete and 3 generic.
 
+.. _type-integer:
+
 Integer
 ^^^^^^^
 
@@ -19,6 +21,8 @@ native form.
     True
     >>> t("Integer").contains(1L)
     True
+
+.. _type-decimal:
 
 Decimal
 ^^^^^^^
@@ -35,24 +39,11 @@ Uses instances of :class:`int`, :class:`long`, :class:`float` and
     >>> t("Decimal").contains(1e2)
     True
 
-.. note::
+.. seealso::
 
-    By default, the :mod:`json` module from the Python standard library maps
-    JSON numbers to floats. This is a practical design decision, however, keep
-    in mind that JSON numbers are arbitrary-precision decimal floats whereas
-    Python floats are binary and of a set precision. They are simply two
-    different types and there is no precise mapping between them.
-
-    If precision is important for you, you'll be happy to know that JSON
-    numbers can be mapped perfectly to instances of Python's built-in
-    :class:`~decimal.Decimal` class and the :mod:`json` module makes it easy to
-    to use it instead of floats:
-
-    .. code-block:: python
-
-        >>> import decimal
-        >>> json.loads('1.1', parse_float=decimal.Decimal)
-        Decimal('1.1')
+    To read more about floats and decimals, see :ref:`on-numeric-types`. Skip
+    ahead to :ref:`decimal-precision` to see how to safely parse precise
+    decimal numbers.
 
 String
 ^^^^^^
@@ -82,18 +73,24 @@ Uses instances of :class:`boolean` in both the JSON form and the native form.
 DateTime
 ^^^^^^^^
 
-The `ISO 8601 <http://www.iso.org/iso/home/standards/iso8601.htm>`_ standard
+The `RFC 3339 <http://tools.ietf.org/html/rfc3339>`_ (proposed) standard
 is used to represent datetime objects in JSON form. In the native form,
-instances of :class:`datetime` from the Python standard library are used.
+instances of :class:`~datetime.datetime` from the Python standard library are used.
 
 .. code-block:: python
 
-    >>> t("DateTime").contains("2007-04-05T14:30")
+    >>> t("DateTime").contains('2013-10-18T01:58:24.904349Z')
     True
-    >>> t("DateTime").from_json("2015-04-05T14:30")
-    datetime.datetime(2015, 4, 5, 14, 30)
-    >>> t("DateTime").to_json(datetime.datetime(2015, 4, 5, 14, 30))
-    "2015-04-05T14:30"
+    >>> a = t("DateTime").from_json('2013-10-18T01:58:24.904349Z')
+    >>> a
+    datetime.datetime(2013, 10, 18, 1, 58, 24, 904349, tzinfo=<UTC>)
+    >>> t("DateTime").to_json(a)
+    '2013-10-18T01:58:24.904349Z'
+
+.. seealso::
+
+    :ref:`on-datetime-standards` discusses the choice of RFC 3309 over
+    ISO 8601.
 
 JSON
 ^^^^

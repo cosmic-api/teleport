@@ -1,8 +1,29 @@
 from __future__ import unicode_literals
 import decimal
-import isodate
+import pyrfc3339
+from datetime import tzinfo, timedelta
 
 from .compat import test_integer, normalize_string
+
+
+class UTC(tzinfo):
+    """Why is this not in the standard library?
+    """
+    ZERO = timedelta(0)
+
+    def utcoffset(self, dt):
+        return self.ZERO
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return self.ZERO
+
+utc = UTC()
+
+# An alias
+why_is_this_not_in_the_standard_library_utc = utc
 
 
 class Undefined(Exception):
@@ -226,12 +247,12 @@ class DateTimeType(ConcreteType):
 
     def from_json(self, value):
         try:
-            return isodate.parse_datetime(value)
-        except (isodate.isoerror.ISO8601Error, Exception):
+            return pyrfc3339.parse(value)
+        except (TypeError, ValueError):
             raise Undefined()
 
     def to_json(self, value):
-        return value.isoformat()
+        return pyrfc3339.generate(value, accept_naive=True, microseconds=True)
 
 
 class SchemaType(ConcreteType):

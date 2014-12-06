@@ -15,7 +15,7 @@ setup(
     author_email="alexei@boronine.com",
     url="http://teleport-json.org",
     install_requires=[
-        "isodate>=0.4.9"
+        "pyRFC3339>=0.2"
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

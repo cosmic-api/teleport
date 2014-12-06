@@ -26,3 +26,5 @@ def test_integer(i):
     if PY3 and type(i) == int:
         return True
     return False
+
+

@@ -3,6 +3,7 @@ from datetime import datetime
 
 from teleport import t
 from teleport.compat import PY2
+from teleport import utc
 
 
 class T(object):
@@ -18,8 +19,8 @@ class T(object):
             self.assertEqual(t(self.schema).to_json(pair[1]), pair[0])
 
 
-ds = '2013-10-18T01:58:24.904349'
-dn = datetime(2013, 10, 18, 1, 58, 24, 904349)
+ds = '2013-10-18T01:58:24.904349Z'
+dn = datetime(2013, 10, 18, 1, 58, 24, 904349, tzinfo=utc)
 
 
 class IntegerTest(T, TestCase):

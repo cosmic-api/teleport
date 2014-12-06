@@ -9,8 +9,8 @@ t = TypeMap()
 @t.register("Color")
 class ColorType(ConcreteType):
 
-    def contains(self, value):
-        if not t("String").contains(value):
+    def check(self, value):
+        if not t("String").check(value):
             return False
         return re.compile('^#[0-9a-f]{6}$').match(value) is not None
 
@@ -36,7 +36,7 @@ class NullableType(GenericType):
 class PythonObjectType(ConcreteType):
 
     def from_json(self, json_value):
-        if not t("String").contains(json_value):
+        if not t("String").check(json_value):
             raise Undefined("PythonObject must be a string")
         try:
             return pickle.loads(json_value)

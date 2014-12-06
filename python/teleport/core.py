@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import pyrfc3339
 from datetime import tzinfo, timedelta
+import warnings
 
 from .compat import test_integer, test_long, normalize_string
 
@@ -19,10 +20,10 @@ class UTC(tzinfo):
     def dst(self, dt):
         return self.ZERO
 
-utc = UTC()
+    def __repr__(self):
+        return '<UTC>'
 
-# An alias
-why_is_this_not_in_the_standard_library_utc = utc
+utc = UTC()
 
 
 class Undefined(Exception):
@@ -32,7 +33,7 @@ class Undefined(Exception):
 class Type(object):
     """Conceptually, an instance of this class is a value space, a set of
     JSON values. As such, the only method defined by the Teleport specification
-    is :meth:`contains`, everything else is extentions made by this
+    is :meth:`check`, everything else is extentions made by this
     implementation.
 
     When a type needs to access the :func:`t` function from one of its methods
@@ -45,7 +46,7 @@ class Type(object):
 
     """
 
-    def contains(self, json_value):
+    def check(self, json_value):
         """
         Returns :data:`True` if *json_value* is a member of this type's value
         space and :data:`False` if it is not. You don't have to override this
@@ -53,9 +54,9 @@ class Type(object):
 
         .. code-block:: python
 
-            >>> t("DateTime").contains(u"2015-04-05T14:30")
+            >>> t("DateTime").check(u"2015-04-05T14:30")
             True
-            >>> t("DateTime").contains(u"2007-04-05T14:30 DROP TABLE users;")
+            >>> t("DateTime").check(u"2007-04-05T14:30 DROP TABLE users;")
             False
         """
         try:
@@ -63,6 +64,9 @@ class Type(object):
             return True
         except Undefined:
             return False
+
+    def contains(self, json_value):
+        raise RuntimeError("check deprecated in favor of check")
 
     def from_json(self, json_value):
         """Convert JSON value to native value. Raises :exc:`Undefined` if
@@ -74,7 +78,7 @@ class Type(object):
             >>> t("DateTime").from_json(u"2015-04-05T14:30")
             datetime.datetime(2015, 4, 5, 14, 30)
         """
-        if self.contains(json_value):
+        if self.check(json_value):
             return json_value
         else:
             raise Undefined()
@@ -214,17 +218,17 @@ class StructType(GenericType):
 
 
 class JSONType(ConcreteType):
-    def contains(self, value):
+    def check(self, value):
         return True
 
 
 class IntegerType(ConcreteType):
-    def contains(self, value):
+    def check(self, value):
         return test_integer(value)
 
 
 class DecimalType(ConcreteType):
-    def contains(self, value):
+    def check(self, value):
         return test_long(value)
 
 
@@ -238,7 +242,7 @@ class StringType(ConcreteType):
 
 
 class BooleanType(ConcreteType):
-    def contains(self, value):
+    def check(self, value):
         return type(value) == bool
 
 
@@ -256,7 +260,7 @@ class DateTimeType(ConcreteType):
 
 class SchemaType(ConcreteType):
 
-    def contains(self, value):
+    def check(self, value):
         try:
             t(value)
             return True
@@ -344,7 +348,7 @@ class TypeMap(object):
             @t.register("Truth")
             class TruthType(ConcreteType):
 
-                def contains(self, value):
+                def check(self, value):
                     return value is True
         """
         def decorator(type_cls):

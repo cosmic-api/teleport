@@ -17,9 +17,9 @@ native form.
 
 .. code-block:: python
 
-    >>> t("Integer").contains(1)
+    >>> t("Integer").check(1)
     True
-    >>> t("Integer").contains(1L)
+    >>> t("Integer").check(1L)
     True
 
 .. _type-decimal:
@@ -32,11 +32,11 @@ Uses instances of :class:`int`, :class:`long`, :class:`float` and
 
 .. code-block:: python
 
-    >>> t("Decimal").contains(0)
+    >>> t("Decimal").check(0)
     True
-    >>> t("Decimal").contains(1.0)
+    >>> t("Decimal").check(1.0)
     True
-    >>> t("Decimal").contains(1e2)
+    >>> t("Decimal").check(1e2)
     True
 
 .. seealso::
@@ -53,11 +53,11 @@ both the JSON form and the native form.
 
 .. code-block:: python
 
-    >>> t("String").contains(u"hello world")
+    >>> t("String").check(u"hello world")
     True
-    >>> t("String").contains("hello world")
+    >>> t("String").check("hello world")
     True
-    >>> t("String").contains("hello" + chr(225))
+    >>> t("String").check("hello" + chr(225))
     False
 
 Boolean
@@ -67,7 +67,7 @@ Uses instances of :class:`boolean` in both the JSON form and the native form.
 
 .. code-block:: python
 
-    >>> t("Boolean").contains(True)
+    >>> t("Boolean").check(True)
     True
 
 DateTime
@@ -79,7 +79,7 @@ instances of :class:`~datetime.datetime` from the Python standard library are us
 
 .. code-block:: python
 
-    >>> t("DateTime").contains('2013-10-18T01:58:24.904349Z')
+    >>> t("DateTime").check('2013-10-18T01:58:24.904349Z')
     True
     >>> a = t("DateTime").from_json('2013-10-18T01:58:24.904349Z')
     >>> a
@@ -125,7 +125,7 @@ the :mod:`json` module from the Python standard library.
 
 .. code-block:: python
 
-    >>> t("JSON").contains([None, 1, "xyz"])
+    >>> t("JSON").check([None, 1, "xyz"])
     True
 
 Schema
@@ -137,7 +137,7 @@ typing, tagged unions and other high-level possibilities.
 
 .. code-block:: python
 
-    >>> t("Schema").contains("Integer")
+    >>> t("Schema").check("Integer")
     True
 
 Array
@@ -149,9 +149,9 @@ specifies the type of every element in the array. Uses instances of
 
 .. code-block:: python
 
-    >>> t({"Array": "Integer"}).contains([1, 2, 3])
+    >>> t({"Array": "Integer"}).check([1, 2, 3])
     True
-    >>> t({"Array": "Integer"}).contains([1, 2, 3.0])
+    >>> t({"Array": "Integer"}).check([1, 2, 3.0])
     False
 
 Map
@@ -162,9 +162,9 @@ instances of :class:`dict` in the native form.
 
 .. code-block:: python
 
-    >>> t({"Map": "Decimal"}).contains({"x": 0.12, "y": 0.87})
+    >>> t({"Map": "Decimal"}).check({"x": 0.12, "y": 0.87})
     True
-    >>> t({"Map": "Integer"}).contains({"a": 1, "b": True})
+    >>> t({"Map": "Integer"}).check({"a": 1, "b": True})
     False
 
 Struct
@@ -185,9 +185,9 @@ With this type instance, you can validate JSON objects like these:
 
 .. code-block:: python
 
-    >>> TODO.contains({"task": "Return videotapes"})
+    >>> TODO.check({"task": "Return videotapes"})
     True
-    >>> TODO.contains({"task": "Return videotapes",
+    >>> TODO.check({"task": "Return videotapes",
     ...                "deadline": "2015-04-05T14:30"})
     True
 
@@ -196,9 +196,9 @@ respected:
 
 .. code-block:: python
 
-    >>> TODO.contains({})
+    >>> TODO.check({})
     False
-    >>> TODO.contains({"task": 1})
+    >>> TODO.check({"task": 1})
     False
 
 Like Array and Map, Struct performs recursive serialization:

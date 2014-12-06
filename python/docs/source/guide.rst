@@ -31,18 +31,18 @@ all implementations of Teleport.
 Type-Checking
 -------------
 
-To check if a JSON value is of a certain type, we use the
-:meth:`~Type.contains` method:
+To check if a JSON value is of a certain type, we use the :meth:`~Type.check`
+method:
 
 .. code-block:: python
 
-    >>> t("DateTime").contains(u"2015-04-05T14:30")
+    >>> t("DateTime").check(u"2015-04-05T14:30")
     True
-    >>> t("DateTime").contains(u"2007-04-05T14:30 DROP TABLE users;")
+    >>> t("DateTime").check(u"2007-04-05T14:30 DROP TABLE users;")
     False
 
 Both the the :func:`t() <teleport.TypeMap.__call__>` function and the
-:meth:`~teleport.Type.contains` method accepts *JSON values* as input. Teleport
+:meth:`~teleport.Type.check` method accepts *JSON values* as input. Teleport
 uses the same format to represent JSON as the :mod:`json` module in the Python
 standard library. Therefore, to type-check a JSON-encoded string, you could do
 this:
@@ -50,7 +50,7 @@ this:
 .. code-block:: python
 
     >>> import json
-    >>> t("Decimal").contains(json.loads("3.14159"))
+    >>> t("Decimal").check(json.loads("3.14159"))
     True
 
 Serialization

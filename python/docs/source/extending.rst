@@ -46,8 +46,8 @@ Let's add a concrete type that matches hex-encoded colors. Use the
     @t.register("Color")
     class ColorType(ConcreteType):
 
-        def contains(self, value):
-            if not t("String").contains(value):
+        def check(self, value):
+            if not t("String").check(value):
                 return False
 
             return re.compile('^#[0-9a-f]{6}$').match(value) is not None
@@ -57,11 +57,11 @@ type as a first-class citizen:
 
 .. code-block:: python
 
-    >>> t("Color").contains('#ffffff')
+    >>> t("Color").check('#ffffff')
     True
-    >>> t("Color").contains('yellow')
+    >>> t("Color").check('yellow')
     False
-    >>> t({"Array": "Color"}).contains(['#ffffff', '#000000']))
+    >>> t({"Array": "Color"}).check(['#ffffff', '#000000']))
     True
 
 If you don't provide your own :meth:`~teleport.Type.from_json` and
@@ -91,7 +91,7 @@ nervous, we will use it to give Teleport the same power:
     class PythonObjectType(ConcreteType):
 
         def from_json(self, json_value):
-            if not t("String").contains(json_value):
+            if not t("String").check(json_value):
                 raise Undefined("PythonObject must be a string")
             try:
                 return pickle.loads(json_value)
@@ -102,7 +102,7 @@ nervous, we will use it to give Teleport the same power:
             return pickle.dumps(native_value)
 
 Note that if we implement :meth:`~teleport.Type.from_json`, implementing
-:meth:`~teleport.Type.contains` is not necessary, as long as the former behaves
+:meth:`~teleport.Type.check` is not necessary, as long as the former behaves
 correctly by raising :exc:`~teleport.Undefined`.
 
 Now we can use it to serialize most Python objects:
@@ -146,7 +146,7 @@ Now you can define weird types like this:
 .. code-block:: python
 
     >>> s = t({"Array": {"Nullable": "String"}})
-    >>> s.contains(["sparse", None, "arrays", None, None, None, "what"])
+    >>> s.check(["sparse", None, "arrays", None, None, None, "what"])
     True
 
 More realistically, you might use it to deal with JSON objects with null
@@ -164,9 +164,9 @@ Even though they may be useful for reading objects like these:
 
 .. code-block:: python
 
-    >>> s.contains({"id": 1, "name": "Jake", "age": 28})
+    >>> s.check({"id": 1, "name": "Jake", "age": 28})
     True
-    >>> s.contains({"id": 1, "name": None, "age": 12})
+    >>> s.check({"id": 1, "name": None, "age": 12})
     True
-    >>> s.contains({"id": 1, "age": None})
+    >>> s.check({"id": 1, "age": None})
     True

@@ -45,7 +45,7 @@ primitives = {
     Box(True),
     Box(False),
     Box(u""),
-    Box(u"2007-04-05T14:30"),
+    Box(u"2007-04-05T14:30:00Z"),
     Box(u"Boolean"),
     Box({}),
     Box([]),
@@ -72,7 +72,7 @@ ttt = [
     {
         "schema": "String",
         "all": primitives,
-        "pass": {Box(u""), Box(u"2007-04-05T14:30"), Box(u"Boolean")}
+        "pass": {Box(u""), Box(u"2007-04-05T14:30:00Z"), Box(u"Boolean")}
     },
     {
         "schema": "JSON",
@@ -82,7 +82,7 @@ ttt = [
     {
         "schema": "DateTime",
         "all": primitives,
-        "pass": {Box(u"2007-04-05T14:30")}
+        "pass": {Box(u"2007-04-05T14:30:00Z")}
     },
     {
         "schema": {"Array": "Integer"},

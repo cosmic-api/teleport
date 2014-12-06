@@ -25,7 +25,7 @@ At a Glance
     ...            "required": {"task": "String"},
     ...            "optional": {"priority": "Integer",
     ...                         "deadline": "DateTime"}}})
-    >>> TODO.contains({"task": "Return videotapes"})
+    >>> TODO.check({"task": "Return videotapes"})
     True
     >>> TODO.from_json({"task": "Return videotapes",
     ...                 "deadline": "2015-04-05T14:30:00Z"})

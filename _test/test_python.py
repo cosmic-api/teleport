@@ -11,7 +11,7 @@ from teleport import t
 def make_pass_test(schema, datum):
     class T(unittest2.TestCase):
         def test_passing(self):
-            if not t(schema).contains(datum):
+            if not t(schema).check(datum):
                 raise Exception()
     return T('test_passing')
 
@@ -19,7 +19,7 @@ def make_pass_test(schema, datum):
 def make_fail_test(schema, datum):
     class T(unittest2.TestCase):
         def test_failing(self):
-            if t(schema).contains(datum):
+            if t(schema).check(datum):
                 raise Exception()
     return T('test_failing')
 

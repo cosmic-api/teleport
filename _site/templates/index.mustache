@@ -23,10 +23,10 @@ TODO = t({"Struct": {
           <h4>For validation &amp; serialization:</h4>
           <pre class="front-page highlight-please python">&gt;&gt;&gt; TODO.from_json({
 ...     'text': 'Return videotapes',
-...     'deadline': '2014-10-14T21:17:00.663882',
-...     'tags': ['movies'],
+...     'deadline': '2014-10-14T21:17:00Z',
+...     'tags': ['movies']
 ... })
-{'deadline': datetime.datetime(2014, 10, 14, 21, 17, 0, 663882),
+{'deadline': datetime.datetime(2014, 10, 14, 21, 17, tzinfo=&lt;UTC&gt;),
  'tags': [u'movies'],
  'text': u'Return videotapes'}</pre>
           <h4>For API servers:</h4>

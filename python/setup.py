@@ -7,7 +7,7 @@ with open("README.rst") as readme:
 
 setup(
     name='teleport',
-    version="0.3.1",
+    version="0.4.0",
     packages=['teleport', 'teleport.testsuite'],
     description='Lightweight JSON type system',
     license="MIT",

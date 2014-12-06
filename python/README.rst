@@ -2,11 +2,10 @@
 Teleport
 ========
 
-This is the Python implementation of Teleport
-(`draft-00 <http://www.teleport-json.org/spec/draft-00/>`_).
+This is the Python implementation of Teleport (draft-02).
 
-Check out the `spec <http://www.teleport-json.org/spec/draft-00/>`_ and the
-`documentation <http://www.teleport-json.org/python/0.3/>`_.
+Check out the `spec <http://www.teleport-json.org/spec/draft-02/>`_ and the
+`documentation <http://www.teleport-json.org/python/0.4/>`_.
 
 Installing
 ----------

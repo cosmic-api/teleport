@@ -194,7 +194,7 @@ currentSource = obnoxygen.workingTree
   name: 'current-source'
   deps: glob.sync "python/docs/source/**"
     .concat glob.sync "python/teleport/**"
-    .concat ['_spec/teleport.xml']
+    .concat ['_spec/teleport.xml', 'python/CHANGES.rst']
 
 makefile.addRule pythonDocs currentSource
 makefile.addRule newSpec currentSource

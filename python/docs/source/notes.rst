@@ -79,7 +79,7 @@ implementation, these points roughly correspond to :meth:`Type.check` and
 
 Teleport comes with 10 built-in types. Two of them, String and Boolean, don't
 add any meaning to their JSON conterparts, but are nonetheless useful for
-composability. The other 8 are intepretation of JSON usage.
+composability. The other 8 are intepretations of JSON usage.
 
 .. _on-numeric-types:
 
@@ -145,7 +145,7 @@ for worse. The practical reason is that mapping floats to decimals is not
 trivial.
 
 Consider the float value represented by ``1.1`` in Python. Because floats are
-stored in *binary*, the actual value in memory looks more like this:
+not stored in base 10, the actual value in memory looks more like this:
 
 .. code-block:: python
 
@@ -166,10 +166,10 @@ simplest, most robust option:
     >>> (1.1).hex()
     '0x1.199999999999ap+0'
 
-However, floats were designed for *inexact* arithmetic, in which case the
-Decimal type with its arbitrary precision is more than enough. An exact float
-representation is conceivably useful, but only for low-level hacks, which are
-outside of the scope of this project.
+However, floats were designed for *inexact* arithmetic, for which purpose
+the Decimal type with its arbitrary precision is perfectly adequate. An exact
+float representation is conceivably useful, but only for low-level hacks, which
+are outside of the scope of this project.
 
 Accounting Software
 """""""""""""""""""

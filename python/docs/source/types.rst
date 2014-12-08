@@ -34,16 +34,27 @@ Uses instances of :class:`int`, :class:`long`, :class:`float` and
 
     >>> t("Decimal").check(0)
     True
-    >>> t("Decimal").check(1.0)
+    >>> t("Decimal").check(922337203685477580700000L)
     True
-    >>> t("Decimal").check(1e2)
+    >>> t("Decimal").check(1.0e2)
     True
+    >>> t("Decimal").check(Decimal('0.99'))
+    True
+
+By default, the :mod:`json` module maps non-integer JSON numbers to floats.
+If precision is important for you, you'll be happy to know that Python's
+built-in :class:`~decimal.Decimal` class can be plugged into the :mod:`json`
+module:
+
+.. code-block:: python
+
+    >>> import decimal
+    >>> json.loads('{"price": 0.99}', parse_float=decimal.Decimal)
+    {u'price': Decimal('0.99')}
 
 .. seealso::
 
-    To read more about floats and decimals, see :ref:`on-numeric-types`. Skip
-    ahead to :ref:`decimal-precision` to see how to safely parse precise
-    decimal numbers.
+    To read more the relevant design choices, see :ref:`on-numeric-types`.
 
 String
 ^^^^^^

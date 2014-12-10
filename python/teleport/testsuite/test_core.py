@@ -1,9 +1,8 @@
 from unittest2 import TestCase
 from datetime import datetime
 
-from teleport import t
+from teleport import t, utc, Undefined, MultipleErrors
 from teleport.compat import PY2
-from teleport import utc
 
 
 class T(object):
@@ -82,3 +81,26 @@ class StructTest(T, TestCase):
 
 
 
+
+class ErrorTest(TestCase):
+
+    def setUp(self):
+        self.t = t({"Struct": {
+            "optional": {},
+            "required": {
+                "name": "String",
+                "tags": {"Array": "String"}}}})
+
+    def test_errors(self):
+
+        try:
+            self.t.from_json({
+                "tags": ["a", True],
+                "lol": 1
+            })
+        except MultipleErrors as m:
+            self.assertEqual(m.to_json(), [
+                {"error": ["MissingField", "name"], "pointer": []},
+                {"error": ["UnexpectedField", "lol"], "pointer": []},
+                {"error": [], "pointer": ["tags", 1]}
+            ])

@@ -9,7 +9,7 @@ t = TypeMap()
 @t.register("Color")
 class ColorType(ConcreteType):
 
-    def check(self, value):
+    def impl_check(self, value):
         if not t("String").check(value):
             return False
         return re.compile('^#[0-9a-f]{6}$').match(value) is not None
@@ -21,7 +21,7 @@ class NullableType(GenericType):
     def process_param(self, param):
         self.child = self.t(param)
 
-    def from_json(self, value):
+    def impl_from_json(self, value):
         if value is None:
             return None
         return self.child.from_json(value)
@@ -35,7 +35,7 @@ class NullableType(GenericType):
 @t.register("PythonObject")
 class PythonObjectType(ConcreteType):
 
-    def from_json(self, json_value):
+    def impl_from_json(self, json_value):
         if not t("String").check(json_value):
             raise Undefined("PythonObject must be a string")
         try:

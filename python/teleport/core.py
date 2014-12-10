@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
+
+import json
 import pyrfc3339
 from datetime import tzinfo, timedelta
-import warnings
+from collections import OrderedDict
 
 from .compat import test_integer, test_long, normalize_string
+
 
 
 class UTC(tzinfo):
@@ -27,7 +30,48 @@ utc = UTC()
 
 
 class Undefined(Exception):
-    pass
+    location = ()
+
+    def to_json(self):
+        return dict(OrderedDict([
+            ("error", list(self.args)),
+            ("pointer", list(self.location))
+        ]))
+
+    def prepend_location(self, item):
+        inst = self.__class__(*self.args)
+        inst.location = (item,) + self.location
+        return inst
+
+    def human_str(self):
+        pass
+
+    def to_pretty_json(self):
+        return json.dumps(self.to_json())
+
+    def __str__(self):
+        return self.to_pretty_json()
+
+
+class MultipleErrors(Undefined):
+
+    def __init__(self, exceptions):
+        self.exceptions = exceptions
+
+    def to_json(self):
+        return [e.to_json() for e in self.exceptions]
+
+    def __str__(self):
+        ret = ""
+        for exc in self.exceptions:
+            ret += '\n' + str(exc) + ""
+        return ret
+
+
+class ForceReturn(Exception):
+    """Not an error, return value from error iterator"""
+    def __init__(self, value):
+        self.value = value
 
 
 class Type(object):
@@ -59,14 +103,38 @@ class Type(object):
             >>> t("DateTime").check(u"2007-04-05T14:30 DROP TABLE users;")
             False
         """
-        try:
-            self.from_json(json_value)
-            return True
-        except Undefined:
-            return False
+        if hasattr(self, 'impl_check'):
+            return self.impl_check(json_value)
+        elif hasattr(self, 'impl_from_json'):
+            try:
+                self.impl_from_json(json_value)
+                return True
+            except Undefined:
+                return False
+        elif hasattr(self, 'impl_from_json_iter'):
+            try:
+                list(self.impl_from_json_iter(json_value))
+                return False
+            except ForceReturn as ret:
+                return True
+        else:
+            raise NotImplementedError("impl_check or impl_from_json necessary")
 
-    def contains(self, json_value):
-        raise RuntimeError("check deprecated in favor of check")
+    def from_json_iter(self, json_value):
+        if hasattr(self, 'impl_from_json_iter'):
+            for err in self.impl_from_json_iter(json_value):
+                yield err
+        elif hasattr(self, 'impl_from_json'):
+            try:
+                ret = self.impl_from_json(json_value)
+                raise ForceReturn(ret)
+            except Undefined as err:
+                yield err
+        elif hasattr(self, 'impl_check'):
+            if self.impl_check(json_value) == True:
+                raise ForceReturn(json_value)
+            else:
+                yield Undefined("Invalid")
 
     def from_json(self, json_value):
         """Convert JSON value to native value. Raises :exc:`Undefined` if
@@ -78,10 +146,23 @@ class Type(object):
             >>> t("DateTime").from_json(u"2015-04-05T14:30")
             datetime.datetime(2015, 4, 5, 14, 30)
         """
-        if self.check(json_value):
-            return json_value
+        if hasattr(self, 'impl_from_json'):
+            return self.impl_from_json(json_value)
+        elif hasattr(self, 'impl_from_json_iter'):
+            try:
+                exceptions = list(self.impl_from_json_iter(json_value))
+                if len(exceptions) == 0:
+                    raise RuntimeError("impl_from_json_iter didn't return anything")
+                raise MultipleErrors(exceptions)
+            except ForceReturn as ret:
+                return ret.value
+        elif hasattr(self, 'impl_check'):
+            if self.impl_check(json_value):
+                return json_value
+            else:
+                raise Undefined("Invalid whatever it is")
         else:
-            raise Undefined()
+            raise NotImplementedError("impl_check or impl_from_json necessary")
 
     def to_json(self, native_value):
         """Convert valid native value to JSON value. By default, this method
@@ -137,12 +218,24 @@ class ArrayType(GenericType):
     def process_param(self, param):
         self.space = self.t(param)
 
-    def from_json(self, value):
+    def impl_from_json_iter(self, json_value):
 
-        if type(value) != list:
-            raise Undefined()
+        if type(json_value) != list:
+            yield Undefined("Must be list")
+            return
 
-        return list(map(self.space.from_json, value))
+        fail = False
+        arr = []
+        for i, item in enumerate(json_value):
+            try:
+                for err in self.space.from_json_iter(item):
+                    fail = True
+                    yield err.prepend_location(i)
+            except ForceReturn as ret:
+                arr.append(ret.value)
+
+        if not fail:
+            raise ForceReturn(arr)
 
     def to_json(self, value):
         return list(map(self.space.to_json, value))
@@ -153,16 +246,24 @@ class MapType(GenericType):
     def process_param(self, param):
         self.space = self.t(param)
 
-    def from_json(self, value):
+    def impl_from_json_iter(self, json_value):
 
-        if type(value) != dict:
-            raise Undefined()
+        if type(json_value) != dict:
+            yield Undefined("Must be dict")
+            return
 
-        ret = {}
-        for key, val in value.items():
-            ret[key] = self.space.from_json(val)
+        fail = False
+        m = {}
+        for key, val in json_value.items():
+            try:
+                for err in self.space.from_json_iter(val):
+                    fail = True
+                    yield err.prepend_location(key)
+            except ForceReturn as ret:
+                m[key] = ret.value
 
-        return ret
+        if not fail:
+            raise ForceReturn(m)
 
     def to_json(self, value):
         ret = {}
@@ -194,20 +295,39 @@ class StructType(GenericType):
         if not self.opt.isdisjoint(self.req):
             raise Undefined()
 
-    def from_json(self, value):
+    def impl_from_json_iter(self, json_value):
 
-        if type(value) != dict:
-            raise Undefined()
+        if type(json_value) != dict:
+            yield Undefined("Dict expected")
+            return
+
+        fail = False
 
         for k in self.req:
-            if k not in value:
-                raise Undefined()
+            if k not in json_value:
+                fail = True
+                yield Undefined("MissingField", k)
 
-        ret = {}
-        for k, v in value.items():
-            ret[k] = self.schemas[k].from_json(v)
+        for k in json_value.keys():
+            if k not in self.schemas.keys():
+                fail = True
+                yield Undefined("UnexpectedField", k)
 
-        return ret
+        struct = {}
+        for k, v in json_value.items():
+            if k not in self.schemas.keys():
+                continue
+
+            try:
+                for err in self.schemas[k].from_json_iter(v):
+                    fail = True
+                    yield err.prepend_location(k)
+            except ForceReturn as ret:
+                struct[k] = ret.value
+
+        if not fail:
+            raise ForceReturn(struct)
+
 
     def to_json(self, value):
         ret = {}
@@ -218,37 +338,37 @@ class StructType(GenericType):
 
 
 class JSONType(ConcreteType):
-    def check(self, value):
+    def impl_check(self, value):
         return True
 
 
 class IntegerType(ConcreteType):
-    def check(self, value):
+    def impl_check(self, value):
         return test_integer(value)
 
 
 class DecimalType(ConcreteType):
-    def check(self, value):
+    def impl_check(self, value):
         return test_long(value)
 
 
 class StringType(ConcreteType):
 
-    def from_json(self, value):
+    def impl_from_json(self, value):
         s = normalize_string(value)
         if s is not None:
             return s
-        raise Undefined("Invalid string", value)
+        raise Undefined()
 
 
 class BooleanType(ConcreteType):
-    def check(self, value):
+    def impl_check(self, value):
         return type(value) == bool
 
 
 class DateTimeType(ConcreteType):
 
-    def from_json(self, value):
+    def impl_from_json(self, value):
         try:
             return pyrfc3339.parse(value)
         except (TypeError, ValueError):
@@ -260,7 +380,7 @@ class DateTimeType(ConcreteType):
 
 class SchemaType(ConcreteType):
 
-    def check(self, value):
+    def impl_check(self, value):
         try:
             t(value)
             return True

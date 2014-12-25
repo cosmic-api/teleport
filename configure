@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
 
-node_modules/.bin/coffee _site/configure.coffee
+touch .env
+sh -ac ' . ./.env; node_modules/.bin/coffee _site/configure.coffee'

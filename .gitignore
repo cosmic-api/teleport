@@ -8,6 +8,7 @@
 \#*
 
 /.cache
+/.env
 /node_modules
 /Makefile
 

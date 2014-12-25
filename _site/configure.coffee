@@ -86,10 +86,8 @@ makefile.addTask "deploy", """
   rm -rf #{deployTmp}
   mkdir -p #{deployTmp}
   tar xf .cache/site-inject.tar -C #{deployTmp}
-  (cd #{deployTmp} \
-      && rsync -avz \
-      -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-      --progress . root@104.131.5.252:/root/teleport-json.org)
+  touch .env
+  sh -ac ' . ./.env; #{coffeeExec} _site/deploy.coffee -d #{deployTmp}'
 """
 makefile.addTask "clean", "rm -rf build/*"
 

@@ -17,7 +17,7 @@ params =
   localDir: argv.d
   deleteRemoved: true
   s3Params:
-    Bucket: "teleport-json.org"
+    Bucket: "www.teleport-json.org"
     Prefix: ""
     # other options supported by putObject, except Body and ContentLength.
     # See: http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property

@@ -26,7 +26,7 @@ Build Instructions
 
 Install requirements (in project root):
 
-    sudo pip install sphinx, xml2rfc
+    sudo pip install sphinx xml2rfc
     npm install
 
 Create Makefile:

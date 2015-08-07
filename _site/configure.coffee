@@ -212,8 +212,15 @@ if require.main == module
   fs.writeFileSync "#{__dirname}/../Makefile", makefile.toString()
 
 
+runDemo = ->
+  obnoxygen.demo.runDemoServer
+    rootDir: "."
+    makefile: makefile
+    callback: (err, server) ->
+
 module.exports =
   makefile: makefile
+  runDemo: runDemo
 
 
 

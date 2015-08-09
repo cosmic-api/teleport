@@ -110,9 +110,7 @@ renderNavbar = (path) ->
         { version: 'latest' }
         { divider: true }
         { version: '0.4' }
-        { version: '0.3' }
         { version: '0.2' }
-        { version: '0.1' }
       ]
     spec:
       star: false

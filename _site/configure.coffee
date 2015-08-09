@@ -36,7 +36,7 @@ pythonDocs = (src) ->
         url: 'https://docs.python.org/2.7/objects.inv'
     getCommands: (tmp) -> """
       cp #{tmp}/intersphinx/python2/python2.inv #{tmp}/python/docs/source
-      echo '\\nhtml_theme_path = ["../../flask-sphinx-themes"]\\n' >> #{tmp}/python/docs/source/conf.py
+      echo '\\nhtml_theme_path = ["../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> #{tmp}/python/docs/source/conf.py
       echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
       echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/source/conf.py
       (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
@@ -112,7 +112,7 @@ bootstrap = obnoxygen.tarFile
     '/highlight': obnoxygen.localNpmPackage 'highlight.js'
     '/awesome': obnoxygen.tarFromZip
       name: 'font-awesome'
-      url: 'http://fortawesome.github.io/Font-Awesome/assets/font-awesome-4.2.0.zip'
+      url: 'http://fortawesome.github.io/Font-Awesome/assets/font-awesome-4.4.0.zip'
   deps: [
     '_site/static/static.css'
   ]
@@ -122,7 +122,7 @@ bootstrap = obnoxygen.tarFile
     cat #{tmp}/highlight/styles/default.css >> #{tmp}/everything.css
     cat _site/static/static.css >> #{tmp}/everything.css
     # Make the css safe to mix with other css
-    namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
+    #{bin}/namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
     sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
     # Remove google font API loads
     sed -i '/googleapis/d' #{tmp}/everything-safe.css
@@ -130,12 +130,12 @@ bootstrap = obnoxygen.tarFile
     # Fonts get prepended
     cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css
     cat #{tmp}/everything-safe.css >> #{tmp}/dist/css/bootstrap.css
-    cat #{tmp}/awesome/font-awesome-4.2.0/css/font-awesome.css >> #{tmp}/dist/css/bootstrap.css
+    cat #{tmp}/awesome/font-awesome-4.4.0/css/font-awesome.css >> #{tmp}/dist/css/bootstrap.css
     #{bin}/cleancss #{tmp}/dist/css/bootstrap.css > #{tmp}/dist/css/bootstrap.min.css
     # Copy fonts
     mkdir -p #{tmp}/dist/fonts
     cp #{tmp}/fonts/*.ttf #{tmp}/dist/fonts
-    cp #{tmp}/awesome/font-awesome-4.2.0/fonts/* #{tmp}/dist/fonts
+    cp #{tmp}/awesome/font-awesome-4.4.0/fonts/* #{tmp}/dist/fonts
   """
 
 

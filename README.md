@@ -54,7 +54,7 @@ Live development mode (site, Python docs, spec):
 
 	./live site
 	./live current-source-sphinx
-	./live current-source-xml2rfc
+	./live latest-xml2rfc
 
 License
 -------

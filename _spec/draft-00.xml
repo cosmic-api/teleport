@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+    <!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+    <!ENTITY RFC4627 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.4627.xml">
+    <!ENTITY ISO8601 SYSTEM "http://xml2rfc.ietf.org/public/rfc/bibxml-misc/reference.ISO.8601.1988.xml">
+    <!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">]>
+
+<?rfc strict="yes" ?>
+<?rfc toc="yes"?>
+<?rfc tocdepth="4"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="yes" ?>
+<?rfc subcompact="no" ?>
+
+<rfc category="info" docName="draft-boronine-teleport-00" ipr="trust200902">
+
+    <front>
+
+        <title abbrev="Abbreviated Title">Minimal JSON Type System</title>
+
+        <author fullname="Alexei Boronine" initials="A." role="editor" surname="Boronine">
+            <address>
+                <email>alexei@boronine.com</email>
+            </address>
+        </author>
+
+        <date month="November" year="2014"/>
+        <area>General</area>
+        <workgroup>Internet Engineering Task Force</workgroup>
+        <keyword>template</keyword>
+
+        <abstract>
+            <t>
+                Teleport is a minimal type system designed as an extension of
+                JSON. It comes with 10 types sufficient for basic use, but
+                it defines a pattern for extending it with arbitrary types.
+                Teleport's type definitions are JSON values, for example, an
+                array of strings is defined as {"Array": "String"}.
+            </t>
+            <t>
+                Teleport implementations can be used for data serialization,
+                input validation, for documenting JSON APIs and for building
+                API clients.
+            </t>
+            <t>
+                This document provides the mathematical basis of Teleport and
+                can be used for implementing libraries.
+            </t>
+        </abstract>
+    </front>
+
+    <middle>
+        <section title="Introduction">
+            <t>
+                In Teleport, a type is a relation between a type definition
+                and a value space. For example:
+            </t>
+            <figure>
+                <artwork><![CDATA[
+   t("Integer") = {0, -1,  1, -2,  2, -3,  3, ...}]]></artwork>
+            </figure>
+            <t>
+                Here "Integer" is a type definition and t("Integer") is the set
+                of all values this type can take. The t function is used to
+                represent this relationship.
+            </t>
+            <t>
+                Because Teleport is based on JSON, all value spaces are sets of
+                JSON values. More interestingly, type definitions are JSON
+                values too, which makes it trivial to share them with other
+                programs.
+            </t>
+            <t>
+                Teleport's design goals is to be a natural extension of JSON,
+                be extremely lightweight, and extendable not only with rich
+                types but with high-level type system concepts.
+            </t>
+        </section>
+        <section title="Conventions and Terminology">
+            <t>
+                The key words "MUST", "MUST NOT", "REQUIRED", "SHALL",
+                "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY",
+                and "OPTIONAL" in this document are to be interpreted as
+                described in <xref target="RFC2119">RFC 2119</xref>.
+            </t>
+            <t>
+                The terms "JSON", "JSON text", "JSON value", "member",
+                "element", "object", "array", "number", "string",
+                "boolean", "true", "false", and "null" in this document
+                are to be interpreted as defined in
+                <xref target="RFC4627">RFC 4627</xref>.
+            </t>
+            <section title="Syntax">
+                <t>
+                    Throughout this document, an extended JSON syntax is used.
+                    Unquoted strings are symbols representing JSON values,
+                    sets and functions. Also, the following set theory syntax
+                    is used:
+                </t>
+                <t>
+                    <list hangIndent="12" style="hanging">
+                        <t hangText="a :: A">
+                            Set A contains element a.
+                        </t>
+                        <t hangText="D -> C">
+                            The set of functions that map values from set D
+                            to values from set C.
+                        </t>
+                    </list>
+                </t>
+            </section>
+        </section>
+        <section title="Type Patterns">
+            <t>
+                Types defined simply by a string, like "Integer" above, are
+                called concrete. Teleport ships with 7 concrete types.
+            </t>
+            <t>
+                A generic type maps a set of schemas to a set of value spaces.
+                Each pair in the mapping is called an instance. For example,
+                {"Array": "Integer"} is an instance of the Array type.
+            </t>
+            <t>
+                Three generic types are provided: Array, Map and Struct. Their
+                precise definition is provided in the following sections, but
+                these examples should be enough to understand how they work:
+            </t>
+
+            <figure>
+                <artwork><![CDATA[
+   ["foo", "bar"]       :: t({"Array": "String"})
+
+   {"a": 1, "b": 2}     :: t({"Map": "Integer"})
+
+   {"name": "Alexei"}   :: t({"Struct": {
+                                "required": {"name": "String"},
+                                "optional": {"age": "Integer"}})]]></artwork>
+            </figure>
+        </section>
+
+        <section title="JSON Schemas">
+            <t>
+                "Schema", one of the build-in concrete types, is defined as
+                the set of all known type definitions. This is made possible by
+                the fact that type definitions are JSON values. The Schema type
+                is useful to specify APIs. For example, to describe a function
+                you can use this:
+            </t>
+            <figure>
+                <artwork><![CDATA[
+   t({"Struct": {
+        "required": {
+           "input": "Schema",
+           "output": "Schema"}}}]]></artwork>
+            </figure>
+        </section>
+
+        <section title="Mathematical Basis">
+            <t>
+                The set of all JSON values is called V. A subset of V is called
+                a value space and the set of all value spaces is called S.
+                <list hangIndent="10" style="empty">
+                    <t>
+                        V = {null, true, false, 0, 1, 2, 3, 4, ...}
+                        <vspace blankLines="1"/>
+                        S = {{}, {null}, {null, true}, {null, ...}, ...}
+                    </t>
+                </list>
+            </t>
+            <t>
+                There is a certain function t that maps JSON values to value
+                spaces.
+                <list hangIndent="10" style="empty">
+                    <t>
+                        t :: (V -> S)
+                    </t>
+                </list>
+            </t>
+            <section title="Concrete Types">
+                <t>
+
+                    x is of concrete type c if and only if
+                    <list hangIndent="10" style="numbers">
+                        <t>
+                            c is a string
+                        </t>
+                        <t>
+                            x :: t(c).
+                        </t>
+                    </list>
+                </t>
+            </section>
+            <section title="Generic Types">
+                <t>
+                    x is of generic type g if and only if
+                    <list hangIndent="10" style="numbers">
+                        <t>
+                            g is a string
+                        </t>
+                        <t>
+                            x :: t({g: p}) for some p
+                        </t>
+                    </list>
+                </t>
+            </section>
+        </section>
+        <section title="Built-in Concrete Types">
+            <t>
+                <list hangIndent="16" style="hanging">
+                    <t hangText="t(&quot;JSON&quot;)">JSON</t>
+                    <t hangText="t(&quot;Schema&quot;)">
+                        The set of all type definitions, including all
+                        strings representing concrete types as well as every
+                        instance of every generic type.
+                    </t>
+                    <t hangText="t(&quot;Integer&quot;)">
+                        All numbers that don't have a fractional or exponent
+                        part.
+                    </t>
+                    <t hangText="t(&quot;Float&quot;)">
+                        All numbers that have a fractional or exponent part.
+                    </t>
+                    <t hangText="t(&quot;String&quot;)">
+                        All strings.
+                    </t>
+                    <t hangText="t(&quot;Boolean&quot;)">
+                        All booleans.
+                    </t>
+                    <t hangText="t(&quot;DateTime&quot;)">
+                        All strings that are valid according to
+                        <xref target="ISO.8601.1988">ISO 8601</xref>.
+                    </t>
+                </list>
+            </t>
+        </section>
+        <section title="Built-in Generic Types">
+            <t>
+                x :: t({&quot;Array&quot;: p}) if and only if
+                <list hangIndent="10" style="empty">
+                    <t>
+                        x is an array
+                    </t>
+                    <t>
+                        e :: t(p) for every element e in x
+                    </t>
+                </list>
+            </t>
+            <t>
+                x :: t({&quot;Map&quot;: p}) if and only if
+                <list hangIndent="10" style="empty">
+                    <t>
+                        x is an object
+                    </t>
+                    <t>
+                        v :: t(p) for every pair (k, v) in x
+                    </t>
+                </list>
+            </t>
+            <t>
+                x :: t({&quot;Struct&quot;: p}) if and only if
+                <list hangIndent="10" style="empty">
+                    <t>
+                        p is an object with two members: required and optional.
+                        Both are objects and their names are disjoint, that is,
+                        they don't have a pair of members with the same name.
+                    </t>
+                    <t>
+                        x is an object. The name of every member of p.required
+                        is also the name of a member of x.
+                    </t>
+                    <t>
+                        For every pair (k, v) in x, there is a pair (k, s) in
+                        either p.required or p.optional such that v :: t(s).
+                    </t>
+                </list>
+            </t>
+        </section>
+
+        <section anchor="IANA" title="IANA Considerations">
+            <t>This memo includes no request to IANA.</t>
+        </section>
+
+        <section anchor="Security" title="Security Considerations">
+            <t>
+                All drafts are required to have a security considerations
+                section. See <xref target="RFC3552">RFC 3552</xref> for a guide.
+            </t>
+        </section>
+    </middle>
+
+    <back>
+
+        <references title="Normative References">
+            &RFC4627;
+            &RFC2119;
+            &ISO8601;
+        </references>
+
+        <references title="Informative References">
+            &RFC3552;
+        </references>
+
+        <section anchor="discussion" title="Mailing List">
+            <t>
+                Comments are solicited and should be addressed to the working
+                group's mailing list at teleport-json@googlegroups.com and/or
+                the author.
+            </t>
+        </section>
+
+    </back>
+</rfc>

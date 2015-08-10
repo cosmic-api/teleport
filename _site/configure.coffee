@@ -40,27 +40,22 @@ pythonDocs = (src) ->
       echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
       echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/source/conf.py
       (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
-
-
     """
 
-
-newSpec = (src) ->
+newNewSpec = (source) ->
   obnoxygen.tarFile
-    archive: "#{src.archive}-xml2rfc"
+    archive: "#{source}-xml2rfc"
     deps: [
       "_site/spec.coffee"
       "_site/templates/spec.mustache"
+      "_spec/#{source}.xml"
     ]
-    mounts:
-      '/': src
     resultDir: '/out'
     getCommands: (tmp) -> """
-      (cd #{tmp}/_spec; xml2rfc teleport.xml --text)
+      xml2rfc _spec/#{source}.xml --text --out=#{tmp}/teleport.txt
       mkdir #{tmp}/out
-      #{coffeeExec} _site/spec.coffee < #{tmp}/_spec/teleport.txt > #{tmp}/out/index.html
+      #{coffeeExec} _site/spec.coffee < #{tmp}/teleport.txt > #{tmp}/out/index.html
     """
-
 
 inject = (options) ->
   {src, args} = options
@@ -160,16 +155,16 @@ site = obnoxygen.tarFile
       src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.2-maintenance'
       args: "--navbar 'python/0.2' --bs"
     '/spec/latest': inject
-      src: newSpec master
+      src: newNewSpec 'latest'
       args: "--navbar 'spec/latest' --bs"
     '/spec/draft-00': inject
-      src: newSpec obnoxygen.gitCheckoutTag 'spec-draft-00'
+      src: newNewSpec 'draft-00'
       args: "--navbar 'spec/draft-00' --bs"
     '/spec/draft-01': inject
-      src: newSpec obnoxygen.gitCheckoutTag 'spec-draft-01'
+      src: newNewSpec 'draft-01'
       args: "--navbar 'spec/draft-01' --bs"
     '/spec/draft-02': inject
-      src: newSpec obnoxygen.gitCheckoutTag 'spec-draft-02'
+      src: newNewSpec 'draft-02'
       args: "--navbar 'spec/draft-02' --bs"
     '/spec/1.0': inject
       src: copyFromArchive 'spec-old'
@@ -192,7 +187,6 @@ currentSource = obnoxygen.workingTree
     .concat ['_spec/teleport.xml', 'python/CHANGES.rst']
 
 makefile.addRule pythonDocs currentSource
-makefile.addRule newSpec currentSource
 
 makefile.addRule site
 makefile.addRule inject

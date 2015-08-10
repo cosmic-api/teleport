@@ -1,61 +1,31 @@
+========
 Teleport
 ========
 
-Teleport is a lightweight type system that extends JSON. It can be used for:
+This is the Python implementation of Teleport. Currently implements an obsolete version of the spec: 1.0.
 
-* Serializing data
-* Validating input
-* Generating documentation
-* Building custom JSON serializers
-* Building API clients
+Check out the `spec <http://www.teleport-json.org/spec/latest/>`_ and the `documentation <http://www.teleport-json.org/python/latest/>`_.
 
-Teleport is:
+Installing
+----------
 
-* Portable and extendable
-* Open Source ([MIT license](http://opensource.org/licenses/MIT))
+.. code:: bash
 
-Status
-======
+   $ pip install teleport
 
-The latest [specification](http://www.teleport-json.org/spec/latest/) has been
-submitted as [an Internet Draft](https://datatracker.ietf.org/doc/draft-boronine-teleport/)
-on Dec 5, 2014. It is implemented as a [Python library](http://www.teleport-json.org/python/latest/).
+Testing
+-------
 
-Build Instructions
-==================
+After installing `Tox <https://tox.readthedocs.org/en/latest/>`_, you can test Teleport by calling:
 
-Install requirements (in project root):
+.. code:: bash
 
-    sudo pip install sphinx xml2rfc
-    npm install
-
-Create Makefile:
-
-	./configure
-
-To build full site:
-
-	make .cache/site.tar
-
-To clear cache:
-
-	make clean
-
-To deploy via rsync (private key):
-
-	make .cache/site-inject.tar
-	make deploy
-
-Live development mode (site, Python docs, spec):
-
-	./live site
-	./live python-0.4-sphinx
-	./live draft-02-xml2rfc
+   $ tox
 
 License
 -------
 
-Copyright (C) 2015 8313547 Canada Inc.
+Copyright (C) 2014 8313547 Canada Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

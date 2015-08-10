@@ -21,28 +21,30 @@ copyFromArchive = (name) ->
     deps: [source]
     commands: ["cp -R #{source} #{obnoxygen.archiveFile archive}"]
 
-
-pythonDocs = (src) ->
+pythonDocs = (version) ->
   obnoxygen.tarFile
-    archive: "#{src.archive}-sphinx"
+    archive: "python-#{version}-sphinx"
     resultDir: '/python/out'
+    deps: glob.sync "python/#{version}/docs/source/**"
+      .concat glob.sync "python/#{version}/teleport/**"
+      .concat glob.sync "python/CHANGES.rst"
     mounts:
-      '/': src
-      '/python/flask-sphinx-themes': obnoxygen.tarFromZip
+      '/flask-sphinx-themes': obnoxygen.tarFromZip
         name: "flask-sphinx-themes"
         url: "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
       '/intersphinx/python2': obnoxygen.fileDownload
         filename: 'python2.inv'
         url: 'https://docs.python.org/2.7/objects.inv'
     getCommands: (tmp) -> """
+      cp -R python/#{version} #{tmp}/python
       cp #{tmp}/intersphinx/python2/python2.inv #{tmp}/python/docs/source
-      echo '\\nhtml_theme_path = ["../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> #{tmp}/python/docs/source/conf.py
+      echo '\\nhtml_theme_path = ["../../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> #{tmp}/python/docs/source/conf.py
       echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
       echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/source/conf.py
       (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
     """
 
-newNewSpec = (source) ->
+formatSpec = (source) ->
   obnoxygen.tarFile
     archive: "#{source}-xml2rfc"
     deps: [
@@ -145,23 +147,20 @@ site = obnoxygen.tarFile
   ]
   mounts:
     '/static/bootstrap': bootstrap
-    '/python/latest': inject
-      src: pythonDocs master
-      args: "--navbar python/latest --bs"
     '/python/0.4': inject
-      src: pythonDocs obnoxygen.gitCheckoutTag 'py-0.4.0'
+      src: pythonDocs '0.4'
       args: "--navbar 'python/0.4' --bs"
     '/python/0.2': inject
-      src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.2-maintenance'
+      src: pythonDocs '0.2'
       args: "--navbar 'python/0.2' --bs"
     '/spec/draft-00': inject
-      src: newNewSpec 'draft-00'
+      src: formatSpec 'draft-00'
       args: "--navbar 'spec/draft-00' --bs"
     '/spec/draft-01': inject
-      src: newNewSpec 'draft-01'
+      src: formatSpec 'draft-01'
       args: "--navbar 'spec/draft-01' --bs"
     '/spec/draft-02': inject
-      src: newNewSpec 'draft-02'
+      src: formatSpec 'draft-02'
       args: "--navbar 'spec/draft-02' --bs"
     '/spec/1.0': inject
       src: copyFromArchive 'spec-old'
@@ -175,15 +174,6 @@ site = obnoxygen.tarFile
     #{coffeeExec} _site/index.coffee > #{tmp}/index.html
     #{coffeeExec} _site/inject.coffee #{tmp}/index.html --navbar '/' --bs --highlight
   """
-
-
-currentSource = obnoxygen.workingTree
-  name: 'current-source'
-  deps: glob.sync "python/docs/source/**"
-    .concat glob.sync "python/teleport/**"
-    .concat ['_spec/teleport.xml', 'python/CHANGES.rst']
-
-makefile.addRule pythonDocs currentSource
 
 makefile.addRule site
 makefile.addRule inject

@@ -82,7 +82,7 @@ deployTmp = "#{os.tmpdir()}/oxg/dist"
 makefile.addTask "deploy", """
   rm -rf #{deployTmp}
   mkdir -p #{deployTmp}
-  tar xf .cache/site-inject.tar -C #{deployTmp}
+  tar xf .cache/site.tar -C #{deployTmp}
   touch .env
   sh -ac ' . ./.env; #{coffeeExec} _site/deploy.coffee -d #{deployTmp}'
 """

@@ -37,11 +37,11 @@ pythonDocs = (version) ->
         url: 'https://docs.python.org/2.7/objects.inv'
     getCommands: (tmp) -> """
       cp -R python/#{version} #{tmp}/python
-      cp #{tmp}/intersphinx/python2/python2.inv #{tmp}/python/docs/source
-      echo '\\nhtml_theme_path = ["../../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> #{tmp}/python/docs/source/conf.py
-      echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/source/conf.py
-      echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/source/conf.py
-      (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs/source out)
+      cp #{tmp}/intersphinx/python2/python2.inv #{tmp}/python/docs
+      echo '\\nhtml_theme_path = ["../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> #{tmp}/python/docs/conf.py
+      echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/conf.py
+      echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/conf.py
+      (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs out)
     """
 
 formatSpec = (source) ->

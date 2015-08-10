@@ -5,7 +5,14 @@ Built-in Types
 
     To learn how to create custom types, see the :doc:`extending` section.
 
-The Teleport specification defines ten types: 7 concrete and 3 generic.
+A Teleport type is created by providing two things:
+
+1. A set of all JSON values that can be the type's members
+2. A way to interpret a JSON value according to the type
+
+In implementing types, this roughly corresponds to a type-checking function and
+a deserialization function, although the latter is optional. This library
+implements all 10 built-in Teleport types, as well as a few extra ones.
 
 .. _type-integer:
 
@@ -54,7 +61,7 @@ module:
 
 .. seealso::
 
-    To read more the relevant design choices, see :ref:`on-numeric-types`.
+    To read more the relevant design choices, see :doc:`design/numbers`.
 
 String
 ^^^^^^
@@ -125,8 +132,8 @@ Note that another tempting option, ``datetime.now(utc)``, is also incorrect.
 
 .. seealso::
 
-    :ref:`on-datetime-standards` discusses the choice of RFC 3309 over
-    ISO 8601. :ref:`on-timezones` discusses timezone issues.
+    :doc:`design/datetime` discusses the choice of RFC 3309 over ISO 8601.
+    :ref:`on-timezones` discusses timezone issues.
 
 JSON
 ^^^^

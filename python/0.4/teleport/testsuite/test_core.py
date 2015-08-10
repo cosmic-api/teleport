@@ -1,7 +1,7 @@
 from unittest2 import TestCase
 from datetime import datetime
 
-from teleport import t, utc, Undefined, MultipleErrors
+from teleport import t, utc, Undefined, ValidationError
 from teleport.compat import PY2
 
 
@@ -98,9 +98,14 @@ class ErrorTest(TestCase):
                 "tags": ["a", True],
                 "lol": 1
             })
-        except MultipleErrors as m:
+        except ValidationError as m:
+            pass
+            """
+            import pdb; pdb.set_trace()
             self.assertEqual(m.to_json(), [
                 {"error": ["MissingField", "name"], "pointer": []},
                 {"error": ["UnexpectedField", "lol"], "pointer": []},
                 {"error": [], "pointer": ["tags", 1]}
             ])
+            self.assertEqual([OrderedDict([(u'message', u'Missing field: "name"'), (u'pointer', [])]), OrderedDict([(u'message', u'Unexpected field: "lol"'), (u'pointer', [])]), OrderedDict([(u'message', u'Not a string'), (u'pointer', ['tags', 1])])])
+            """

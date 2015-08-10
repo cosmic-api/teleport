@@ -2,58 +2,29 @@ from __future__ import unicode_literals
 
 import json
 import pyrfc3339
-from datetime import tzinfo, timedelta
 from collections import OrderedDict
 
 from .compat import test_integer, test_long, normalize_string
-
-
-
-class UTC(tzinfo):
-    """Why is this not in the standard library?
-    """
-    ZERO = timedelta(0)
-
-    def utcoffset(self, dt):
-        return self.ZERO
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return self.ZERO
-
-    def __repr__(self):
-        return '<UTC>'
-
-utc = UTC()
+from .util import utc, format_multiple_errors
 
 
 class Undefined(Exception):
-    location = ()
+
+    def __init__(self, message, location=()):
+        self.message = message
+        self.location = location
 
     def to_json(self):
-        return dict(OrderedDict([
-            ("error", list(self.args)),
+        return OrderedDict([
+            ("message", self.message),
             ("pointer", list(self.location))
-        ]))
+        ])
 
     def prepend_location(self, item):
-        inst = self.__class__(*self.args)
-        inst.location = (item,) + self.location
-        return inst
-
-    def human_str(self):
-        pass
-
-    def to_pretty_json(self):
-        return json.dumps(self.to_json())
-
-    def __str__(self):
-        return self.to_pretty_json()
+        return self.__class__(self.message, (item,) + self.location)
 
 
-class MultipleErrors(Undefined):
+class ValidationError(Undefined):
 
     def __init__(self, exceptions):
         self.exceptions = exceptions
@@ -62,10 +33,8 @@ class MultipleErrors(Undefined):
         return [e.to_json() for e in self.exceptions]
 
     def __str__(self):
-        ret = ""
-        for exc in self.exceptions:
-            ret += '\n' + str(exc) + ""
-        return ret
+        tups = [(e.message, e.location) for e in self.exceptions]
+        return format_multiple_errors(tups)
 
 
 class ForceReturn(Exception):
@@ -84,17 +53,16 @@ class Type(object):
     (for recursive serialization, for example), it should use the same
     :func:`t` function that was used to create it in the first place.
 
-    Instances of :class:`Type` have a :data:`t` attribute that is automatically
-    set to this value, so you can access it from one of the methods below as
-    :data:`self.t`.
+    Instances of :class:`~teleport.Type` have a :data:`t` attribute that is
+    automatically set to this value, so you can access it from one of the
+    methods below as :data:`self.t`.
 
     """
 
     def check(self, json_value):
         """
         Returns :data:`True` if *json_value* is a member of this type's value
-        space and :data:`False` if it is not. You don't have to override this
-        method if you implement :meth:`from_json`.
+        space and :data:`False` if it is not.
 
         .. code-block:: python
 
@@ -153,7 +121,7 @@ class Type(object):
                 exceptions = list(self.impl_from_json_iter(json_value))
                 if len(exceptions) == 0:
                     raise RuntimeError("impl_from_json_iter didn't return anything")
-                raise MultipleErrors(exceptions)
+                raise ValidationError(exceptions)
             except ForceReturn as ret:
                 return ret.value
         elif hasattr(self, 'impl_check'):
@@ -306,12 +274,12 @@ class StructType(GenericType):
         for k in self.req:
             if k not in json_value:
                 fail = True
-                yield Undefined("MissingField", k)
+                yield Undefined("Missing field: {}".format(json.dumps(k)))
 
         for k in json_value.keys():
             if k not in self.schemas.keys():
                 fail = True
-                yield Undefined("UnexpectedField", k)
+                yield Undefined("Unexpected field: {}".format(json.dumps(k)))
 
         struct = {}
         for k, v in json_value.items():
@@ -358,7 +326,7 @@ class StringType(ConcreteType):
         s = normalize_string(value)
         if s is not None:
             return s
-        raise Undefined()
+        raise Undefined("Not a string")
 
 
 class BooleanType(ConcreteType):
@@ -372,7 +340,7 @@ class DateTimeType(ConcreteType):
         try:
             return pyrfc3339.parse(value)
         except (TypeError, ValueError):
-            raise Undefined()
+            raise Undefined("Invalid DateTime")
 
     def to_json(self, value):
         return pyrfc3339.generate(value, accept_naive=True, microseconds=True)

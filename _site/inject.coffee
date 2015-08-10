@@ -117,8 +117,6 @@ renderNavbar = (path) ->
       repoLink: true
       subMenuShow: true
       subMenu: [
-        { version: 'latest' }
-        { divider: true }
         { version: 'draft-02' }
         { version: 'draft-01' }
         { version: 'draft-00' }
@@ -134,6 +132,7 @@ renderNavbar = (path) ->
     activeSectionId: sec
     activeSection: sections[sec]
     activeVersion: ver
+    latestSpec: sections.spec.subMenu[0].version
   }
 
 

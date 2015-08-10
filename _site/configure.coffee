@@ -154,9 +154,6 @@ site = obnoxygen.tarFile
     '/python/0.2': inject
       src: pythonDocs obnoxygen.gitCheckoutBranch 'py-0.2-maintenance'
       args: "--navbar 'python/0.2' --bs"
-    '/spec/latest': inject
-      src: newNewSpec 'latest'
-      args: "--navbar 'spec/latest' --bs"
     '/spec/draft-00': inject
       src: newNewSpec 'draft-00'
       args: "--navbar 'spec/draft-00' --bs"

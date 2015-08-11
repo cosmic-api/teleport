@@ -4,7 +4,7 @@ Teleport
 
 This is the Python implementation of Teleport. Currently implements an obsolete version of the spec: 1.0.
 
-Check out the `spec <http://www.teleport-json.org/spec/latest/>`_ and the `documentation <http://www.teleport-json.org/python/latest/>`_.
+Check out the `spec <http://www.teleport-json.org/spec/1.0/`_ and the `documentation <http://www.teleport-json.org/python/0.2/`_.
 
 Installing
 ----------

@@ -5,42 +5,8 @@ import pyrfc3339
 from collections import OrderedDict
 
 from .compat import test_integer, test_long, normalize_string
-from .util import utc, format_multiple_errors
+from .util import utc, format_multiple_errors, ForceReturn, Undefined, ValidationError, error_generator, IterableException
 
-
-class Undefined(Exception):
-
-    def __init__(self, message, location=()):
-        self.message = message
-        self.location = location
-
-    def to_json(self):
-        return OrderedDict([
-            ("message", self.message),
-            ("pointer", list(self.location))
-        ])
-
-    def prepend_location(self, item):
-        return self.__class__(self.message, (item,) + self.location)
-
-
-class ValidationError(Undefined):
-
-    def __init__(self, exceptions):
-        self.exceptions = exceptions
-
-    def to_json(self):
-        return [e.to_json() for e in self.exceptions]
-
-    def __str__(self):
-        tups = [(e.message, e.location) for e in self.exceptions]
-        return format_multiple_errors(tups)
-
-
-class ForceReturn(Exception):
-    """Not an error, return value from error iterator"""
-    def __init__(self, value):
-        self.value = value
 
 
 class Type(object):
@@ -56,6 +22,7 @@ class Type(object):
     Instances of :class:`~teleport.Type` have a :data:`t` attribute that is
     automatically set to this value, so you can access it from one of the
     methods below as :data:`self.t`.
+
 
     """
 
@@ -79,30 +46,8 @@ class Type(object):
                 return True
             except Undefined:
                 return False
-        elif hasattr(self, 'impl_from_json_iter'):
-            try:
-                list(self.impl_from_json_iter(json_value))
-                return False
-            except ForceReturn as ret:
-                return True
         else:
             raise NotImplementedError("impl_check or impl_from_json necessary")
-
-    def from_json_iter(self, json_value):
-        if hasattr(self, 'impl_from_json_iter'):
-            for err in self.impl_from_json_iter(json_value):
-                yield err
-        elif hasattr(self, 'impl_from_json'):
-            try:
-                ret = self.impl_from_json(json_value)
-                raise ForceReturn(ret)
-            except Undefined as err:
-                yield err
-        elif hasattr(self, 'impl_check'):
-            if self.impl_check(json_value) == True:
-                raise ForceReturn(json_value)
-            else:
-                yield Undefined("Invalid")
 
     def from_json(self, json_value):
         """Convert JSON value to native value. Raises :exc:`Undefined` if
@@ -116,14 +61,6 @@ class Type(object):
         """
         if hasattr(self, 'impl_from_json'):
             return self.impl_from_json(json_value)
-        elif hasattr(self, 'impl_from_json_iter'):
-            try:
-                exceptions = list(self.impl_from_json_iter(json_value))
-                if len(exceptions) == 0:
-                    raise RuntimeError("impl_from_json_iter didn't return anything")
-                raise ValidationError(exceptions)
-            except ForceReturn as ret:
-                return ret.value
         elif hasattr(self, 'impl_check'):
             if self.impl_check(json_value):
                 return json_value
@@ -186,7 +123,8 @@ class ArrayType(GenericType):
     def process_param(self, param):
         self.space = self.t(param)
 
-    def impl_from_json_iter(self, json_value):
+    @error_generator
+    def impl_from_json(self, json_value):
 
         if type(json_value) != list:
             yield Undefined("Must be list")
@@ -195,12 +133,13 @@ class ArrayType(GenericType):
         fail = False
         arr = []
         for i, item in enumerate(json_value):
+
             try:
-                for err in self.space.from_json_iter(item):
-                    fail = True
+                arr.append(self.space.from_json(item))
+            except IterableException as errs:
+                fail = True
+                for err in errs:
                     yield err.prepend_location(i)
-            except ForceReturn as ret:
-                arr.append(ret.value)
 
         if not fail:
             raise ForceReturn(arr)
@@ -214,7 +153,8 @@ class MapType(GenericType):
     def process_param(self, param):
         self.space = self.t(param)
 
-    def impl_from_json_iter(self, json_value):
+    @error_generator
+    def impl_from_json(self, json_value):
 
         if type(json_value) != dict:
             yield Undefined("Must be dict")
@@ -223,12 +163,13 @@ class MapType(GenericType):
         fail = False
         m = {}
         for key, val in json_value.items():
+
             try:
-                for err in self.space.from_json_iter(val):
-                    fail = True
+                m[key] = self.space.from_json(val)
+            except IterableException as errs:
+                fail = True
+                for err in errs:
                     yield err.prepend_location(key)
-            except ForceReturn as ret:
-                m[key] = ret.value
 
         if not fail:
             raise ForceReturn(m)
@@ -263,7 +204,8 @@ class StructType(GenericType):
         if not self.opt.isdisjoint(self.req):
             raise Undefined()
 
-    def impl_from_json_iter(self, json_value):
+    @error_generator
+    def impl_from_json(self, json_value):
 
         if type(json_value) != dict:
             yield Undefined("Dict expected")
@@ -287,11 +229,11 @@ class StructType(GenericType):
                 continue
 
             try:
-                for err in self.schemas[k].from_json_iter(v):
-                    fail = True
+                struct[k] = self.schemas[k].from_json(v)
+            except IterableException as errs:
+                fail = True
+                for err in errs:
                     yield err.prepend_location(k)
-            except ForceReturn as ret:
-                struct[k] = ret.value
 
         if not fail:
             raise ForceReturn(struct)

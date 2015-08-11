@@ -149,4 +149,4 @@ def suite():
 
 if __name__ == "__main__":
     tests = make_json_suite()
-    print json.dumps(tests_schema.to_json(tests), sort_keys=True)
+    print(json.dumps(tests_schema.to_json(tests), sort_keys=True))

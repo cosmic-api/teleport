@@ -99,25 +99,22 @@ class GenericType(Type):
     """
 
     def __init__(self, t, param):
-        self.t = t
-        self.process_param(param)
-
-    def process_param(self, param):
-        """Takes the type parameter in its JSON form and raises
-        :exc:`~teleport.Undefined` if it is invalid. This method is called
-        when the type is instantiated. By default, it sets :data:`self.param`
-        to *param*. It may be useful to set other properties, they may be
-        accessed later by :meth:`from_json` or other methods.
+        """Takes a :class:`~teleport.TypeMap` *t*, and a JSON parameter *param*
+        Raises :exc:`~teleport.Undefined` if the parameter is invalid. By default,
+        the constructor sets :data:`self.param` to *param*. It may be useful to set
+        other properties, which may be accessed later by :meth:`from_json` or other 
+        methods.
 
         """
+        self.t = t
         self.param = param
 
 
 
 class ArrayType(GenericType):
 
-    def process_param(self, param):
-        self.space = self.t(param)
+    def __init__(self, t, param):
+        self.space = t(param)
 
     @error_generator
     def from_json(self, json_value):
@@ -146,8 +143,8 @@ class ArrayType(GenericType):
 
 class MapType(GenericType):
 
-    def process_param(self, param):
-        self.space = self.t(param)
+    def __init__(self, t, param):
+        self.space = t(param)
 
     @error_generator
     def from_json(self, json_value):
@@ -180,7 +177,7 @@ class MapType(GenericType):
 
 class StructType(GenericType):
 
-    def process_param(self, param):
+    def __init__(self, t, param):
         expected = {'required', 'optional'}
 
         if type(param) != dict or not expected.issubset(set(param.keys())):
@@ -192,7 +189,7 @@ class StructType(GenericType):
                 raise Undefined()
 
             for k, s in param[kind].items():
-                self.schemas[k] = self.t(s)
+                self.schemas[k] = t(s)
 
         self.opt = set(param['optional'].keys())
         self.req = set(param['required'].keys())

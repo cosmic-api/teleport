@@ -21,11 +21,20 @@ copyFromArchive = (name) ->
     deps: [source]
     commands: ["cp -R #{source} #{obnoxygen.archiveFile archive}"]
 
+pythonBuildVenv = obnoxygen.tarFile
+  archive: "python-build-venv"
+  getCommands: (tmp) -> """
+    python3 -m venv --without-pip #{tmp}
+    wget https://bootstrap.pypa.io/get-pip.py -P #{tmp}
+    #{tmp}/bin/python #{tmp}/get-pip.py
+    #{tmp}/bin/pip install sphinx
+  """
+
 pythonDocs = (version) ->
   obnoxygen.tarFile
     archive: "python-#{version}-sphinx"
     resultDir: '/python/out'
-    deps: glob.sync "python/#{version}/docs/source/**"
+    deps: glob.sync "python/#{version}/docs/**"
       .concat glob.sync "python/#{version}/teleport/**"
       .concat glob.sync "python/CHANGES.rst"
     mounts:
@@ -35,13 +44,14 @@ pythonDocs = (version) ->
       '/intersphinx/python2': obnoxygen.fileDownload
         filename: 'python2.inv'
         url: 'https://docs.python.org/2.7/objects.inv'
+      '/venv': pythonBuildVenv
     getCommands: (tmp) -> """
       cp -R python/#{version} #{tmp}/python
       cp #{tmp}/intersphinx/python2/python2.inv #{tmp}/python/docs
       echo '\\nhtml_theme_path = ["../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> #{tmp}/python/docs/conf.py
-      echo '\\nimport os, sys; sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))\\n' >> #{tmp}/python/docs/conf.py
       echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> #{tmp}/python/docs/conf.py
-      (cd #{tmp}/python; sphinx-build -b html -D html_theme=flask docs out)
+      (cd #{tmp}/python; #{tmp}/venv/bin/python setup.py install)
+      (cd #{tmp}/python; #{tmp}/venv/bin/python #{tmp}/venv/bin/sphinx-build -b html -D html_theme=flask docs out)
     """
 
 formatSpec = (source) ->

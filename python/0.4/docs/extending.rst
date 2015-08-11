@@ -128,8 +128,8 @@ following generic type is a good way to introduce it:
     @t.register("Nullable")
     class NullableType(GenericType):
 
-        def process_param(self, param):
-            self.child = self.t(param)
+        def __init__(self, t, param):
+            self.child = t(param)
 
         def from_json(self, value):
             if value is None:

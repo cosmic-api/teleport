@@ -160,6 +160,9 @@ site = obnoxygen.tarFile
     '/python/0.4': inject
       src: pythonDocs '0.4'
       args: "--navbar 'python/0.4' --bs"
+    '/python/0.3': inject
+      src: pythonDocs '0.3'
+      args: "--navbar 'python/0.3' --bs"
     '/python/0.2': inject
       src: pythonDocs '0.2'
       args: "--navbar 'python/0.2' --bs"

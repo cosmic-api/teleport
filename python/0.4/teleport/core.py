@@ -38,16 +38,14 @@ class Type(object):
             >>> t("DateTime").check(u"2007-04-05T14:30 DROP TABLE users;")
             False
         """
-        if hasattr(self, 'impl_check'):
-            return self.impl_check(json_value)
-        elif hasattr(self, 'impl_from_json'):
+        if self.__class__.from_json != Type.from_json:
             try:
-                self.impl_from_json(json_value)
+                self.from_json(json_value)
                 return True
             except Undefined:
                 return False
         else:
-            raise NotImplementedError("impl_check or impl_from_json necessary")
+            raise NotImplementedError("check or from_json necessary")
 
     def from_json(self, json_value):
         """Convert JSON value to native value. Raises :exc:`Undefined` if
@@ -59,15 +57,13 @@ class Type(object):
             >>> t("DateTime").from_json(u"2015-04-05T14:30")
             datetime.datetime(2015, 4, 5, 14, 30)
         """
-        if hasattr(self, 'impl_from_json'):
-            return self.impl_from_json(json_value)
-        elif hasattr(self, 'impl_check'):
-            if self.impl_check(json_value):
+        if self.__class__.check != Type.check:
+            if self.check(json_value):
                 return json_value
             else:
-                raise Undefined("Invalid whatever it is")
+                raise Undefined("Invalid whatever it is")      
         else:
-            raise NotImplementedError("impl_check or impl_from_json necessary")
+            raise NotImplementedError("check or from_json necessary")
 
     def to_json(self, native_value):
         """Convert valid native value to JSON value. By default, this method
@@ -124,7 +120,7 @@ class ArrayType(GenericType):
         self.space = self.t(param)
 
     @error_generator
-    def impl_from_json(self, json_value):
+    def from_json(self, json_value):
 
         if type(json_value) != list:
             yield Undefined("Must be list")
@@ -154,7 +150,7 @@ class MapType(GenericType):
         self.space = self.t(param)
 
     @error_generator
-    def impl_from_json(self, json_value):
+    def from_json(self, json_value):
 
         if type(json_value) != dict:
             yield Undefined("Must be dict")
@@ -205,7 +201,7 @@ class StructType(GenericType):
             raise Undefined()
 
     @error_generator
-    def impl_from_json(self, json_value):
+    def from_json(self, json_value):
 
         if type(json_value) != dict:
             yield Undefined("Dict expected")
@@ -248,23 +244,23 @@ class StructType(GenericType):
 
 
 class JSONType(ConcreteType):
-    def impl_check(self, value):
+    def check(self, value):
         return True
 
 
 class IntegerType(ConcreteType):
-    def impl_check(self, value):
+    def check(self, value):
         return test_integer(value)
 
 
 class DecimalType(ConcreteType):
-    def impl_check(self, value):
+    def check(self, value):
         return test_long(value)
 
 
 class StringType(ConcreteType):
 
-    def impl_from_json(self, value):
+    def from_json(self, value):
         s = normalize_string(value)
         if s is not None:
             return s
@@ -272,13 +268,13 @@ class StringType(ConcreteType):
 
 
 class BooleanType(ConcreteType):
-    def impl_check(self, value):
+    def check(self, value):
         return type(value) == bool
 
 
 class DateTimeType(ConcreteType):
 
-    def impl_from_json(self, value):
+    def from_json(self, value):
         try:
             return pyrfc3339.parse(value)
         except (TypeError, ValueError):
@@ -290,7 +286,7 @@ class DateTimeType(ConcreteType):
 
 class SchemaType(ConcreteType):
 
-    def impl_check(self, value):
+    def check(self, value):
         try:
             t(value)
             return True

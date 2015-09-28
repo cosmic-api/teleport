@@ -1,10 +1,8 @@
 parseArgs = require 'minimist'
 
 {makefile} = require './configure'
-builder = require 'builder/builder'
-
-{LiveAgent} = builder.live
-{archiveFile} = builder
+{LiveAgent} = require './builder/live'
+{archiveFile} = require './builder/builder'
 
 main = ->
 

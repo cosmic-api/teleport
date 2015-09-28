@@ -88,13 +88,12 @@ rootDir = path.join __dirname, ".."
 
 makefile = new builder.Makefile rootDir
 
-deployTmp = "#{os.tmpdir()}/oxg/dist"
+deployTmp = "dist"
 makefile.addTask "deploy", """
   rm -rf #{deployTmp}
   mkdir -p #{deployTmp}
   tar xf .cache/site.tar -C #{deployTmp}
-  touch .env
-  sh -ac ' . ./.env; #{coffeeExec} _site/deploy.coffee -d #{deployTmp}'
+  #{bin}/divshot push production
 """
 makefile.addTask "clean", "rm -rf build/*"
 

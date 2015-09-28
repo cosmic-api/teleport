@@ -175,6 +175,9 @@ site = builder.tarFile
     '/spec/draft-02': inject
       src: formatSpec 'draft-02'
       args: "--navbar 'spec/draft-02' --bs"
+    '/spec/draft-03': inject
+      src: formatSpec 'draft-03'
+      args: "--navbar 'spec/draft-03' --bs"
     '/spec/1.0': inject
       src: copyFromArchive 'spec-old'
       args: "--navbar 'spec/1.0' --bs"

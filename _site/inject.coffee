@@ -116,6 +116,7 @@ renderNavbar = (path) ->
       repoLink: true
       subMenuShow: true
       subMenu: [
+        { version: 'draft-03' }
         { version: 'draft-02' }
         { version: 'draft-01' }
         { version: 'draft-00' }

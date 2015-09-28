@@ -1,10 +1,10 @@
 parseArgs = require 'minimist'
 
 {makefile} = require './configure'
-obnoxygen = require 'obnoxygen'
+builder = require 'builder/builder'
 
-{LiveAgent} = obnoxygen.live
-{archiveFile} = obnoxygen
+{LiveAgent} = builder.live
+{archiveFile} = builder
 
 main = ->
 

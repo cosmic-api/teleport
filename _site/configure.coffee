@@ -4,7 +4,7 @@ fs = require 'fs'
 
 os = require 'os'
 
-obnoxygen = require 'obnoxygen'
+builder = require './builder/builder'
 glob = require "glob"
 
 # Executables
@@ -16,12 +16,12 @@ bin = "node_modules/.bin"
 copyFromArchive = (name) ->
   source = "_site/archive/#{name}.tar"
   archive = "archive-#{name}"
-  new obnoxygen.Rule
+  new builder.Rule
     archive: archive
     deps: [source]
-    commands: ["cp -R #{source} #{obnoxygen.archiveFile archive}"]
+    commands: ["cp -R #{source} #{builder.archiveFile archive}"]
 
-pythonBuildVenv = obnoxygen.tarFile
+pythonBuildVenv = builder.tarFile
   archive: "python-build-venv"
   getCommands: (tmp) -> """
     python3 -m venv --without-pip #{tmp}
@@ -31,17 +31,17 @@ pythonBuildVenv = obnoxygen.tarFile
   """
 
 pythonDocs = (version) ->
-  obnoxygen.tarFile
+  builder.tarFile
     archive: "python-#{version}-sphinx"
     resultDir: '/python/out'
     deps: glob.sync "python/#{version}/docs/**"
       .concat glob.sync "python/#{version}/teleport/**"
       .concat glob.sync "python/CHANGES.rst"
     mounts:
-      '/flask-sphinx-themes': obnoxygen.tarFromZip
+      '/flask-sphinx-themes': builder.tarFromZip
         name: "flask-sphinx-themes"
         url: "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
-      '/intersphinx/python2': obnoxygen.fileDownload
+      '/intersphinx/python2': builder.fileDownload
         filename: 'python2.inv'
         url: 'https://docs.python.org/2.7/objects.inv'
       '/venv': pythonBuildVenv
@@ -55,7 +55,7 @@ pythonDocs = (version) ->
     """
 
 formatSpec = (source) ->
-  obnoxygen.tarFile
+  builder.tarFile
     archive: "#{source}-xml2rfc"
     deps: [
       "_site/spec.coffee"
@@ -71,7 +71,7 @@ formatSpec = (source) ->
 
 inject = (options) ->
   {src, args} = options
-  obnoxygen.tarFile
+  builder.tarFile
     archive: "#{src.archive}-inject"
     deps: [
       "_site/inject.coffee"
@@ -86,7 +86,7 @@ inject = (options) ->
 
 rootDir = path.join __dirname, ".."
 
-makefile = new obnoxygen.Makefile rootDir
+makefile = new builder.Makefile rootDir
 
 deployTmp = "#{os.tmpdir()}/oxg/dist"
 makefile.addTask "deploy", """
@@ -98,24 +98,24 @@ makefile.addTask "deploy", """
 """
 makefile.addTask "clean", "rm -rf build/*"
 
-makefile.addRule new obnoxygen.Rule
+makefile.addRule new builder.Rule
   filename: 'node_modules'
   deps: ["package.json"]
   commands: ['npm install', 'touch node_modules']
 
-bootstrap = obnoxygen.tarFile
+bootstrap = builder.tarFile
   archive: 'bootstrap'
   resultDir: '/dist'
   mounts:
-    '/': obnoxygen.tarFromZip
+    '/': builder.tarFromZip
       name: "bootstrap-dist"
       url: "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
-    '/fonts': obnoxygen.googleFonts "http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Inconsolata:400,700"
-    '/lumen': obnoxygen.fileDownload
+    '/fonts': builder.googleFonts "http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Inconsolata:400,700"
+    '/lumen': builder.fileDownload
       filename: 'bootstrap-lumen.css'
       url: 'http://bootswatch.com/flatly/bootstrap.css'
-    '/highlight': obnoxygen.localNpmPackage 'highlight.js'
-    '/awesome': obnoxygen.tarFromZip
+    '/highlight': builder.localNpmPackage 'highlight.js'
+    '/awesome': builder.tarFromZip
       name: 'font-awesome'
       url: 'http://fortawesome.github.io/Font-Awesome/assets/font-awesome-4.4.0.zip'
   deps: [
@@ -128,9 +128,9 @@ bootstrap = obnoxygen.tarFile
     cat _site/static/static.css >> #{tmp}/everything.css
     # Make the css safe to mix with other css
     #{bin}/namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
-    sed -i 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
+    sed -i '' 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
     # Remove google font API loads
-    sed -i '/googleapis/d' #{tmp}/everything-safe.css
+    sed -i '' '/googleapis/d' #{tmp}/everything-safe.css
     rm -r #{tmp}/dist/css/*
     # Fonts get prepended
     cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css
@@ -144,9 +144,9 @@ bootstrap = obnoxygen.tarFile
   """
 
 
-master = obnoxygen.gitCheckoutBranch 'master'
+master = builder.gitCheckoutBranch 'master'
 
-site = obnoxygen.tarFile
+site = builder.tarFile
   archive: "site"
   deps: [
     "_site/static"
@@ -178,7 +178,7 @@ site = obnoxygen.tarFile
     '/spec/1.0': inject
       src: copyFromArchive 'spec-old'
       args: "--navbar 'spec/1.0' --bs"
-    '/npm-jquery': obnoxygen.localNpmPackage 'jquery'
+    '/npm-jquery': builder.localNpmPackage 'jquery'
   getCommands: (tmp) -> """
     cp -R _site/static #{tmp}
     cp #{tmp}/npm-jquery/dist/jquery* #{tmp}/static
@@ -199,7 +199,7 @@ if require.main == module
 
 
 runDemo = ->
-  obnoxygen.demo.runDemoServer
+  builder.demo.runDemoServer
     rootDir: "."
     makefile: makefile
     callback: (err, server) ->

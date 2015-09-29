@@ -170,10 +170,10 @@ googleFonts = (googleUrl) ->
     getCommands: (tmp) -> """
       wget -O #{tmp}/index.css "#{googleUrl}"
       cat #{tmp}/index.css | grep -o -e "http.*ttf" > #{tmp}/download.list
-      (cd #{tmp} && cat download.list | xargs wget -i)
+      (cd #{tmp} && wget -i download.list)
       mkdir #{tmp}/out
       cp #{tmp}/*.ttf #{tmp}/out
-      sed -i '' 's/http.*\\/\\(.*\\.ttf\\)/\"..\\/fonts\\/\\1\"/g' < #{tmp}/index.css > #{tmp}/out/index.css
+      sed 's/http.*\\/\\(.*\\.ttf\\)/\"..\\/fonts\\/\\1\"/g' < #{tmp}/index.css > #{tmp}/out/index.css
     """
 
 

@@ -127,9 +127,9 @@ bootstrap = builder.tarFile
     cat _site/static/static.css >> #{tmp}/everything.css
     # Make the css safe to mix with other css
     #{bin}/namespace-css #{tmp}/everything.css -s .bs >> #{tmp}/everything-safe.css
-    sed -i '' 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
+    sed -i.bak 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' #{tmp}/everything-safe.css
     # Remove google font API loads
-    sed -i '' '/googleapis/d' #{tmp}/everything-safe.css
+    sed -i.bak '/googleapis/d' #{tmp}/everything-safe.css
     rm -r #{tmp}/dist/css/*
     # Fonts get prepended
     cp #{tmp}/fonts/index.css #{tmp}/dist/css/bootstrap.css

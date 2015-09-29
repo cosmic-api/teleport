@@ -1,9 +1,15 @@
 sudo: required
-
 services:
 - docker
-
 before_install:
-  - docker build -t teleport/teleport .
-  - docker run -d teleport/teleport make .cache/site.tar
-
+- docker build -t teleport/teleport .
+- docker run -d teleport/teleport make .cache/site.tar
+deploy:
+  provider: divshot
+  api_key:
+    secure: gMrU4s+2QcdKWfKURRJxhyKpard5epcIcSpKMauO6DQ+SDpRL8b06GEIaK/WB5pvXH4dDyw/qhrs1wzlYr3rFOh6CxU8KzD+fAYTgj2ddBvceAiYoktwWYtAmdmNTxInvYpEcDYOaZ3cpieOWha3h8v96Nt6EYLGh3GPWoFBo2c=
+  environment: production
+  on:
+    repo: cosmic-api/teleport
+after_failure:
+- cat /build/npm-debug.log

@@ -1,0 +1,9 @@
+sudo: required
+
+services:
+- docker
+
+before_install:
+  - docker build -t teleport/teleport .
+  - docker run -d teleport/teleport make .cache/site.tar
+

@@ -1,2 +1,7 @@
 script:
-  - true
+- rm -rf dist
+- mkdir -p dist
+- tar xf .cache/site.tar -C dist
+- node_modules/.bin/divshot push staging -t $DIVSHOT_KEY
+env:
+- secure: O+aTDIgtUSUyZ6uFzzA+T6elwB2YLynHJdYGtvHlpm/qxCNiF4QC/AiDR/nqkBwHeMFlyVgH/EY/g3Oq2jMICaDU48/UVzhHmy2eYLDrRRWKgI61PPd4YxGFBo4xcZ7SYqjdoior8bStIVgEdPLO4dV0YeSRHMF5/HrZrYd9xX07MUHjBUtr5+i36NotK/y/wJgI/zIt/TAQwegriNRf3dBpwxMwyNB0x9Qi49ecBkXv0tcB3sKSkQ3DqxekwZV0TybCzhnScobGAPSvFVCyBwAly5PJ2+at9ItVFiK7g+JUmUD8a2xtotOxDMOvOYm0NAtbV7RCNO5Q7lsMLNdtQA==

@@ -3,7 +3,7 @@
 Python Interface
 ================
 
-Teleport's `tiny specification <http://teleport-json.org/spec/draft-02/`_
+Teleport's `tiny specification <http://www.teleport-json.org/spec/draft-02/>`_
 operates entirely on JSON values and mathematical sets, making it
 language-agnostic and allowing for a common test suite for all implementations.
 

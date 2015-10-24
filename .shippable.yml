@@ -2,6 +2,6 @@ script:
 - rm -rf dist
 - mkdir -p dist
 - tar xf .cache/site.tar -C dist
-- node_modules/.bin/divshot push staging -t $DIVSHOT_KEY
+- node_modules/.bin/surge --project ./dist --domain teleport.surge.sh
 env:
-- secure: O+aTDIgtUSUyZ6uFzzA+T6elwB2YLynHJdYGtvHlpm/qxCNiF4QC/AiDR/nqkBwHeMFlyVgH/EY/g3Oq2jMICaDU48/UVzhHmy2eYLDrRRWKgI61PPd4YxGFBo4xcZ7SYqjdoior8bStIVgEdPLO4dV0YeSRHMF5/HrZrYd9xX07MUHjBUtr5+i36NotK/y/wJgI/zIt/TAQwegriNRf3dBpwxMwyNB0x9Qi49ecBkXv0tcB3sKSkQ3DqxekwZV0TybCzhnScobGAPSvFVCyBwAly5PJ2+at9ItVFiK7g+JUmUD8a2xtotOxDMOvOYm0NAtbV7RCNO5Q7lsMLNdtQA==
+- secure: fRv9V8Dy5N1DWV/ydNRoHfwMdAnBQtKq+Rn6t7mliQ56VR6RsaIOhfbs5maRp/sMJe50tIaF3YFojDM+yjBRNk9QTEgl23iQ5q37YyOLl8jlUaL/sARU6n8NWm9stFuFcD2pMKWfaNIDKWPswyZNlfcSnHOzrQftwD8uEOPO4z9jrsptjNCv44cP9GI0TINAa4ZFY/IrFA6HumhwUFIiDe5C9K4LkaJ3mlUGu/OyLsOzhIUtvW48S6cO7hKplIIgR5Wv0clHI91NtNvxayO24JZ1IEwj88LuAyI2UP2MRKXqJIcudSPGAafcm3u/VlyO5RNOp7mfKZexMvrsGQ8Vsg==

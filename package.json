@@ -27,6 +27,6 @@
     "tiny-lr": "0.1.4",
     "vis": "3.7.0",
     "zip-stream": "0.4.1",
-    "divshot-cli": "1.10.5"
+    "surge": "*"
   }
 }

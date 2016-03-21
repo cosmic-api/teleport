@@ -80,7 +80,7 @@ var formatSpec = function (source) {
 
         getCommands: function (tmp) {
             return `
-                xml2rfc _spec/${source}.xml --text --out=${tmp}/teleport.txt
+                xml2rfc --no-network _spec/${source}.xml --text --out=${tmp}/teleport.txt
                 mkdir ${tmp}/out
                 ${nodeExec} _site/spec.js < ${tmp}/teleport.txt > ${tmp}/out/index.html
             `;

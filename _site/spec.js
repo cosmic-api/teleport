@@ -1,3 +1,5 @@
+"use strict";
+
 var fs = require("fs");
 var marked = require("marked");
 var mustache = require("mustache");
@@ -20,7 +22,7 @@ process.stdin.on("end", function () {
     var titleMode = null;
     var spec = "";
 
-    for (let line of txt.split("\\n")) {
+    for (let line of txt.split("\n")) {
         if (pageStuffMode !== false) {
             if (line === "") {
                 (pageStuffMode === true ? pageStuffMode = false : undefined);

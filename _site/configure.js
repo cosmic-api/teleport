@@ -4,7 +4,7 @@ var fs = require("fs");
 var os = require("os");
 var builder = require("./builder/builder");
 var glob = require("glob");
-var nodeExec = "node"
+var nodeExec = "node";
 var bin = "node_modules/.bin";
 
 var copyFromArchive = function (name) {
@@ -93,7 +93,7 @@ var inject = function (options) {
     var args = options.args;
 
     return builder.tarFile({
-        archive: ((src.archive) + "-inject"),
+        archive: (src.archive + "-inject"),
         deps: ["_site/inject.js", "_site/templates/navbar.mustache"],
 
         mounts: {
@@ -112,7 +112,12 @@ var deployTmp = "dist";
 
 makefile.addTask(
     "deploy",
-    ("rm -rf " + (deployTmp) + "\\nmkdir -p " + (deployTmp) + "\\ntar xf .cache/site.tar -C " + (deployTmp) + "\\n" + (bin) + "/divshot push production")
+    `
+        rm -rf ${deployTmp}
+        mkdir -p ${deployTmp}
+        tar xf .cache/site.tar -C ${deployTmp}
+        ${bin}/surge --project ./dist --domain www.teleport-json.org
+    `
 );
 
 makefile.addTask("clean", "rm -rf build/*");
@@ -194,6 +199,11 @@ var site = builder.tarFile({
     mounts: {
         "/static/bootstrap": bootstrap,
 
+        // "/python/0.5": inject({
+        //     src: pythonDocs("0.5"),
+        //     args: "--navbar 'python/0.5' --bs"
+        // }),
+
         "/python/0.4": inject({
             src: pythonDocs("0.4"),
             args: "--navbar 'python/0.4' --bs"
@@ -227,6 +237,11 @@ var site = builder.tarFile({
         "/spec/draft-03": inject({
             src: formatSpec("draft-03"),
             args: "--navbar 'spec/draft-03' --bs"
+        }),
+
+        "/spec/draft-04": inject({
+            src: formatSpec("draft-04"),
+            args: "--navbar 'spec/draft-04' --bs"
         }),
 
         "/spec/1.0": inject({

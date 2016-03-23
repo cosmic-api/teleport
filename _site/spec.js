@@ -45,7 +45,7 @@ process.stdin.on("end", function () {
             }
         }
 
-        spec += line + "\\n";
+        spec += line + "\n";
     }
 
     return console.log(render("spec.mustache", {

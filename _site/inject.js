@@ -124,13 +124,12 @@ var renderNavbar = function (path) {
             repoLink: true,
             subMenuShow: true,
 
-            subMenu: [{
-                version: "0.4"
-            }, {
-                version: "0.3"
-            }, {
-                version: "0.2"
-            }]
+            subMenu: [
+                // { version: "0.5" },
+                { version: "0.4" },
+                { version: "0.3" },
+                { version: "0.2" }
+            ]
         },
 
         spec: {
@@ -138,19 +137,15 @@ var renderNavbar = function (path) {
             repoLink: true,
             subMenuShow: true,
 
-            subMenu: [{
-                version: "draft-03"
-            }, {
-                version: "draft-02"
-            }, {
-                version: "draft-01"
-            }, {
-                version: "draft-00"
-            }, {
-                divider: true
-            }, {
-                version: "1.0"
-            }]
+            subMenu: [
+                { version: "draft-04" },
+                { version: "draft-03" },
+                { version: "draft-02" },
+                { version: "draft-01" },
+                { version: "draft-00" },
+                { divider: true },
+                { version: "1.0" }
+            ]
         }
     };
 

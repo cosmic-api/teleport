@@ -1,6 +1,6 @@
 <html class="bs">
 <head>
-<title>Teleport Specification - Minimal JSON Types</title>
+    <title>Teleport Specification - Minimal JSON Types</title>
 </head>
 <body>
 
@@ -11,6 +11,12 @@
         </h1>
         <p>
         </p>
+        <h4>draft-04</h4>
+        <ul>
+            <li>Get rid of Decimal in favor of Float</li>
+            <li>Rename Struct to Object</li>
+            <li>Allow objects to have unspecified attributes</li>
+        </ul>
         <h4>draft-03</h4>
         <p><a href="https://tools.ietf.org/html/draft-boronine-teleport-03">Submitted on Sep 27, 2015</a></p>
         <ul>
@@ -20,7 +26,8 @@
         <p><a href="https://tools.ietf.org/html/draft-boronine-teleport-02">Submitted on Dec 5, 2014</a></p>
         <ul>
             <li>Get rid of Float in favor of Decimal</li>
-            <li>Use RFC 3339 instead of ISO 8601 (Thanks <a href="http://www.sw.it.aoyama.ac.jp/D%C3%BCrst/">Martin</a>!)</li>
+            <li>Use RFC 3339 instead of ISO 8601 (Thanks <a href="http://www.sw.it.aoyama.ac.jp/D%C3%BCrst/">Martin</a>!)
+            </li>
             <li>Expand Concrete Types section</li>
         </ul>
         <h4>draft-01</h4>
@@ -41,13 +48,13 @@
             {{{ body }}}
         </div>
     </div>
-  </div>
 </div>
+
 <footer style="margin-top:70px">
-  <div class="container">
-    <hr/>
-    <p>Copyright 2015 by Alexei Boronine.</p>
-  </div>
+    <div class="container">
+        <hr/>
+        <p>Copyright 2016 by Alexei Boronine.</p>
+    </div>
 </footer>
 
 </body>

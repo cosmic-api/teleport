@@ -28,8 +28,8 @@
 # Build
 ################################################
 
-/.cache
 /.env
+/build
 /dist
 /node_modules
 /Makefile

@@ -1,4 +1,3 @@
-var _ = require("underscore");
 var path = require("path");
 var fs = require("fs");
 var os = require("os");
@@ -7,20 +6,25 @@ var glob = require("glob");
 var nodeExec = "node";
 var bin = "node_modules/.bin";
 
+archiveFile = builder.archiveFile;
+
 var copyFromArchive = function (name) {
     var source = `_site/archive/${name}.tar`;
     var archive = `archive-${name}`;
+    var filename = archiveFile(name);
 
-    return new builder.Rule({
-        archive: archive,
-        deps: [source],
-        commands: [`cp -R ${source} ${builder.archiveFile(archive)}`]
+    return new builder.Target({
+        filename: filename,
+        staticDeps: [source],
+        commands: [
+            `mkdir -p build`,
+            `cp -R ${source} ${filename}`
+        ]
     });
 };
 
-var pythonBuildVenv = builder.tarFile({
-    archive: "python-build-venv",
-
+var pythonBuildVenv = new builder.BuildTarget({
+    salt: 'virtualenv',
     getCommands: function (tmp) {
         return `
             python3 -m venv --without-pip ${tmp}
@@ -32,52 +36,42 @@ var pythonBuildVenv = builder.tarFile({
 });
 
 var pythonDocs = function (version) {
-    return builder.tarFile({
-        archive: `python-${version}-sphinx`,
+    var staticDeps = glob.sync(`python/${version}/docs/**`);
+    staticDeps = staticDeps.concat(glob.sync(`python/${version}/teleport/**`));
+    staticDeps = staticDeps.concat(`python/${version}/CHANGES.rst`);
+
+    return new builder.BuildTarget({
         resultDir: "/python/out",
-        deps: glob.sync(`python/${version}/docs/**`)
-            .concat(glob.sync(`python/${version}/teleport/**`))
-            .concat(glob.sync("python/CHANGES.rst")),
-
+        staticDeps: staticDeps,
         mounts: {
-            "/flask-sphinx-themes": builder.tarFromZip({
-                name: "flask-sphinx-themes",
-                url: "https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"
-            }),
-
+            "/flask-sphinx-themes": builder.tarFromZip("https://github.com/cosmic-api/flask-sphinx-themes/archive/master.zip"),
             "/intersphinx/python2": builder.fileDownload({
                 filename: "python2.inv",
                 url: "https://docs.python.org/2.7/objects.inv"
             }),
-
             "/venv": pythonBuildVenv
         },
-
         getCommands: function (tmp) {
             return `
                 cp -R python/${version} ${tmp}/python
                 cp ${tmp}/intersphinx/python2/python2.inv ${tmp}/python/docs
                 echo '\\nhtml_theme_path = ["../../flask-sphinx-themes/flask-sphinx-themes-master"]\\n' >> ${tmp}/python/docs/conf.py
                 echo '\\nintersphinx_mapping = {"python": ("http://docs.python.org/2.7", "python2.inv")}\\n' >> ${tmp}/python/docs/conf.py
-                (cd ${tmp}/python; ${tmp}/venv/bin/python setup.py install)
-                (cd ${tmp}/python; ${tmp}/venv/bin/python ${tmp}/venv/bin/sphinx-build -b html -D html_theme=flask docs out)
+                (cd ${tmp}/python; ../venv/bin/python setup.py install)
+                (cd ${tmp}/python; ../venv/bin/python ../venv/bin/sphinx-build -b html -D html_theme=flask docs out)
             `;
         }
     });
 };
 
 var formatSpec = function (source) {
-    return builder.tarFile({
-        archive: `${source}-xml2rfc`,
-
-        deps: [
+    return new builder.BuildTarget({
+        staticDeps: [
             "_site/spec.js",
             "_site/templates/spec.mustache",
             `_spec/${source}.xml`
         ],
-
         resultDir: "/out",
-
         getCommands: function (tmp) {
             return `
                 xml2rfc --no-network _spec/${source}.xml --text --out=${tmp}/teleport.txt
@@ -91,15 +85,11 @@ var formatSpec = function (source) {
 var inject = function (options) {
     var src = options.src;
     var args = options.args;
-
-    return builder.tarFile({
-        archive: (src.archive + "-inject"),
-        deps: ["_site/inject.js", "_site/templates/navbar.mustache"],
-
+    return new builder.BuildTarget({
+        staticDeps: ["_site/inject.js", "_site/templates/navbar.mustache"],
         mounts: {
             "/": src
         },
-
         getCommands: function (tmp) {
             return `find ${tmp} -iname \\*.html | xargs ${nodeExec} _site/inject.js ${args}`;
         }
@@ -115,48 +105,35 @@ makefile.addTask(
     `
         rm -rf ${deployTmp}
         mkdir -p ${deployTmp}
-        tar xf .cache/site.tar -C ${deployTmp}
+        tar xf build/site.tar -C ${deployTmp}
         ${bin}/surge --project ./dist --domain www.teleport-json.org
     `
 );
 
 makefile.addTask("clean", "rm -rf build/*");
 
-makefile.addRule(new builder.Rule({
-    filename: "node_modules",
-    deps: ["package.json"],
-    commands: ["npm install", "touch node_modules"]
-}));
+var localNpmPackage = function (name) {
+    return new builder.BuildTarget({
+        staticDeps: [`node_modules/${name}/package.json`],
+        getCommands: function (tmp) {
+            return `cp -R node_modules/${name}/* ${tmp}`;
+        }
+    });
+};
 
-var bootstrap = builder.tarFile({
-    archive: "bootstrap",
+var bootstrap = new builder.BuildTarget({
     resultDir: "/dist",
-
     mounts: {
-        "/": builder.tarFromZip({
-            name: "bootstrap-dist",
-            url: "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"
-        }),
-
-        "/fonts": builder.googleFonts(
-            "http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Inconsolata:400,700"
-        ),
-
+        "/": builder.tarFromZip("https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip"),
+        "/fonts": builder.googleFonts("http://fonts.googleapis.com/css?family=Lato:400,700,400italic|Inconsolata:400,700"),
         "/lumen": builder.fileDownload({
             filename: "bootstrap-lumen.css",
             url: "http://bootswatch.com/flatly/bootstrap.css"
         }),
-
-        "/highlight": builder.localNpmPackage("highlight.js"),
-
-        "/awesome": builder.tarFromZip({
-            name: "font-awesome",
-            url: "http://fortawesome.github.io/Font-Awesome/assets/font-awesome-4.5.0.zip"
-        })
+        "/highlight": localNpmPackage("highlight.js"),
+        "/awesome": builder.tarFromZip("http://fortawesome.github.io/Font-Awesome/assets/font-awesome-4.5.0.zip")
     },
-
-    deps: ["_site/static/static.css"],
-
+    staticDeps: ["_site/static/static.css"],
     getCommands: function (tmp) {
         return `
             # Concatenate CSS from multiple sources
@@ -183,19 +160,14 @@ var bootstrap = builder.tarFile({
     }
 });
 
-var master = builder.gitCheckoutBranch("master");
-
-var site = builder.tarFile({
-    archive: "site",
-
-    deps: [
+var site = new builder.BuildTarget({
+    staticDeps: [
         "_site/static",
         "_site/index.js",
         "_site/templates/index.mustache",
         "_site/inject.js",
         "_site/templates/navbar.mustache"
     ],
-
     mounts: {
         "/static/bootstrap": bootstrap,
 
@@ -249,7 +221,7 @@ var site = builder.tarFile({
             args: "--navbar 'spec/1.0' --bs"
         }),
 
-        "/npm-jquery": builder.localNpmPackage("jquery")
+        "/npm-jquery": localNpmPackage("jquery")
     },
 
     getCommands: function (tmp) {
@@ -263,12 +235,11 @@ var site = builder.tarFile({
     }
 });
 
-makefile.addRule(site);
-
-makefile.addRule(inject({
+makefile.addRule(new builder.Dist('site', site));
+makefile.addRule(new builder.Dist('site-ga', inject({
     src: site,
     args: "--analytics"
-}));
+})));
 
 if (require.main === module) {
     fs.writeFileSync(`${__dirname}/../Makefile`, makefile.toString())

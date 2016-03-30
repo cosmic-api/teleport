@@ -29,7 +29,6 @@
 ################################################
 
 /.cache
-/.divshot-cache
 /.env
 /dist
 /node_modules

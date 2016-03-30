@@ -31,18 +31,9 @@ Create Makefile:
 
 	./configure
 
-To build full site:
-
-	make .cache/site.tar
-
 To clear cache:
 
 	make clean
-
-To deploy via rsync (private key):
-
-	make .cache/site-inject.tar
-	make deploy
 
 Live development mode (site, Python docs, spec):
 

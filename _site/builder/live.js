@@ -28,12 +28,14 @@ var hr = function () {
 class Server extends EventEmitter {
     constructor(options) {
         super();
-        this.tarball = options.tarball, this.port = options.port, this.lrport = options.lrport, options;
+        this.tarball = options.tarball;
+        this.port = options.port;
+        this.lrport = options.lrport;
         this.objects = null;
     }
 
     loadArchive() {
-        print(("loading " + (this.tarball) + " into memory"));
+        print(`loading ${this.tarball} into memory`);
 
         return loadTar(this.tarball, (err, objects) => {
             this.objects = objects;
@@ -45,7 +47,7 @@ class Server extends EventEmitter {
         this.lrserver = tinylr();
 
         this.lrserver.listen(this.lrport, () => {
-            print(("LiveReload running on " + (this.lrport) + " ..."));
+            print(`LiveReload running on ${this.lrport} ...`);
             return this.emit("lr-listening");
         });
 
@@ -84,7 +86,7 @@ class Server extends EventEmitter {
         this.server = http.createServer(app).listen(this.port);
 
         return this.server.on("listening", err => {
-            if (typeof err !== "undefined" && err !== null) {
+            if (err) {
                 throw err;
             }
 
@@ -134,7 +136,7 @@ class Server extends EventEmitter {
         });
 
         $("body").append(
-            ("<script type=\\\"text/javascript\\\" src=\\\"http://127.0.0.1:" + (this.lrport) + "/livereload.js\\\"></script>")
+            "<script type=\\\"text/javascript\\\" src=\\\"http://127.0.0.1:" + (this.lrport) + "/livereload.js\\\"></script>"
         );
 
         return $.html();
@@ -150,15 +152,13 @@ class Watcher extends EventEmitter {
     announce() {
         print("watching files:");
 
-        return (() => {
-            for (let file of this.files) {
-                print2(file);
-            }
-        })();
+        for (let file of this.files) {
+            print2(file);
+        }
     }
 
     watch() {
-        (this.watcher != null ? this.watcher.close() : undefined);
+        if (this.watcher) this.watcher.close();
 
         this.watcher = chokidar.watch(this.files, {
             persistent: true
@@ -245,27 +245,27 @@ class LiveAgent extends EventEmitter {
     constructor(options) {
         super();
         this.makefile = options.makefile;
-        this.tarball = options.tarball;
-        var port = options.port;
-        var lrport = options.lrport;
-        (!(port != null) ? port = 8000 : undefined);
-        (!(lrport != null) ? lrport = 35729 : undefined);
-        var deps = this.makefile.gatherDeps(this.tarball);
+        this.distDir = options.distDir;
+        var port = options.port || 8000;
+        var lrport = options.lrport || 35729;
+        var distTarget = this.makefile.targets[this.distDir];
+        var previousTarget = distTarget.getDeps()[0];
+        var deps = previousTarget.getStringDepsRecursive();
         deps.sort();
         this.watcher = new Watcher(deps);
 
         this.server = new Server({
-            tarball: this.tarball,
+            tarball: previousTarget.getFilename(),
             port: port,
             lrport: lrport
         });
     }
 
     bootstrap(callback) {
-        var firstBuild = new Builder(this.makefile, this.tarball);
+        var firstBuild = new Builder(this.makefile, this.distDir);
         firstBuild.build();
 
-        return firstBuild.on("done", () => {
+        firstBuild.on("done", () => {
             this.server.once("loaded", () => {
                 this.watcher.watch();
                 this.server.run();
@@ -273,7 +273,7 @@ class LiveAgent extends EventEmitter {
                 return callback();
             });
 
-            return this.server.loadArchive();
+            this.server.loadArchive();
         });
     }
 
@@ -293,8 +293,8 @@ class LiveAgent extends EventEmitter {
     }
 
     run() {
-        return this.bootstrap(() => {
-            return this.loop();
+        this.bootstrap(() => {
+            this.loop();
         });
     }
 }

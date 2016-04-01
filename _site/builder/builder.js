@@ -31,10 +31,6 @@ var normalizeCommands = function (commands) {
     }
 };
 
-var archiveFile = function (name) {
-    return `build/${name}.tar`;
-};
-
 class Makefile {
     constructor(rootDir) {
         this.rootDir = rootDir;
@@ -55,10 +51,6 @@ class Makefile {
         for (let dep of target.getDeps()) {
             this.addRule(dep);
         }
-    }
-
-    gatherDeps(target) {
-        // TODO
     }
 
     addTask(name, commands) {
@@ -103,20 +95,6 @@ class Target {
         return this.options.deps || [];
     }
 
-    getDepsRecursive() {
-        var allDeps = new Map();
-        var filename;
-        for (let dep of this.getDeps()) {
-            for (let subDep of dep.getDepsRecursive()) {
-                filename = subDep.getFilename();
-                if (!allDeps.has(filename)) {
-                    allDeps.set(filename, subDep)
-                }
-            }
-        }
-        return Array.from(allDeps.values());
-    }
-
     getStaticDeps() {
         return this.options.staticDeps || [];
     }
@@ -146,15 +124,6 @@ class Target {
     }
 }
 
-class BuildDirectory extends Target {
-    constructor() {
-        super({
-            filename: 'build',
-            commands: ['mkdir build']
-        });
-    }
-}
-
 class Dist extends Target {
     constructor(name, src) {
         var distDir = `dist/${name}`;
@@ -169,8 +138,6 @@ class Dist extends Target {
         });
     }
 }
-
-var buildDirectory = new BuildDirectory();
 
 class BuildTarget extends Target {
 
@@ -191,7 +158,7 @@ class BuildTarget extends Target {
     }
 
     getFilename() {
-        return archiveFile(this.getHash());
+        return `build/${this.getHash()}.tar`;
     }
 
     getMounts() {
@@ -264,7 +231,6 @@ var tarFromZip = function (url) {
 
 module.exports = {
     normalizeCommands: normalizeCommands,
-    archiveFile: archiveFile,
     Makefile: Makefile,
     Target: Target,
     Dist: Dist,

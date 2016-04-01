@@ -1,13 +1,8 @@
 var parseArgs = require("minimist");
 
-var makefile;
-makefile = require("./configure").makefile;
+var configure = require("./configure");
+var live = require("./builder/live");
 
-var LiveAgent;
-LiveAgent = require("./builder/live").LiveAgent;
-
-var archiveFile;
-archiveFile = require("./builder/builder").archiveFile;
 
 var main = function () {
     var argv = parseArgs(process.argv.slice(2));
@@ -16,11 +11,11 @@ var main = function () {
         throw "missing argument";
     }
 
-    var archive = argv._[0];
+    var distDir = argv._[0];
 
-    var agent = new LiveAgent({
-        makefile: makefile,
-        tarball: archiveFile(archive)
+    var agent = new live.LiveAgent({
+        makefile: configure.makefile,
+        distDir: distDir
     });
 
     return agent.run();

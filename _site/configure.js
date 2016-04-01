@@ -6,12 +6,11 @@ var glob = require("glob");
 var nodeExec = "node";
 var bin = "node_modules/.bin";
 
-archiveFile = builder.archiveFile;
 
 var copyFromArchive = function (name) {
     var source = `_site/archive/${name}.tar`;
     var archive = `archive-${name}`;
-    var filename = archiveFile(name);
+    var filename = `build/${name}`;
 
     return new builder.Target({
         filename: filename,

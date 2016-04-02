@@ -4,7 +4,7 @@ var fs = require("fs");
 var url = require("url");
 var mime = require("mime");
 var cheerio = require("cheerio");
-var tar = require("tar-stream");
+var AdmZip = require('adm-zip');
 var connect = require("connect");
 var http = require("http");
 var chokidar = require("chokidar");
@@ -35,12 +35,7 @@ class Server extends EventEmitter {
     }
 
     loadArchive() {
-        print(`loading ${this.tarball} into memory`);
-
-        return loadTar(this.tarball, (err, objects) => {
-            this.objects = objects;
-            return this.emit("loaded");
-        });
+        this.objects = loadZip(this.tarball);
     }
 
     run() {
@@ -55,32 +50,40 @@ class Server extends EventEmitter {
 
         app.use((req, res, next) => {
             var mimetype;
-            var path = "." + url.parse(req.url).pathname;
-            var maybeFile = this.objects[path];
+            var relativePath = url.parse(req.url).pathname.substr(1);
+            var body;
 
-            if (maybeFile !== null && maybeFile !== undefined) {
-                mimetype = mime.lookup(path);
-            } else {
-                maybeFile = this.objects[path + "index.html"];
-                mimetype = "text/html";
-
-                if (maybeFile === null || maybeFile === undefined) {
-                    res.writeHead(404);
-                    res.end();
-                    return;
-                }
+            var maybeFile = this.objects[relativePath];
+            if (!maybeFile) {
+                relativePath += 'index.html';
+                mimetype = 'text/html';
+                maybeFile = this.objects[relativePath];
             }
 
-            var body = (mimetype === "text/html" ? this.processHtml(maybeFile) : maybeFile);
+            const status = maybeFile ? 200 : 404;
+            print2(`${status} ${relativePath}`);
 
-            var headers = {
-                "Content-Type": mimetype,
-                "Cache-Control": "max-age=0, no-cache, no-store"
-            };
+            if (!maybeFile) {
+                res.writeHead(status);
+                return res.end();
 
-            res.writeHead(200, headers);
-            res.write(body);
-            return res.end();
+            } else {
+                if (!mimetype) {
+                    mimetype = mime.lookup(relativePath);
+                }
+                if (mimetype === "text/html") {
+                    body = this.processHtml(maybeFile);
+                } else {
+                    body = maybeFile;
+                }
+
+                res.writeHead(status, {
+                    "Content-Type": mimetype,
+                    "Cache-Control": "max-age=0, no-cache, no-store"
+                });
+                res.write(body);
+                return res.end();
+            }
         });
 
         this.server = http.createServer(app).listen(this.port);
@@ -264,16 +267,14 @@ class LiveAgent extends EventEmitter {
     bootstrap(callback) {
         var firstBuild = new Builder(this.makefile, this.distDir);
         firstBuild.build();
-
         firstBuild.on("done", () => {
+            this.server.loadArchive();
+            this.server.run();
             this.server.once("loaded", () => {
                 this.watcher.watch();
-                this.server.run();
                 this.watcher.announce();
                 return callback();
             });
-
-            this.server.loadArchive();
         });
     }
 
@@ -284,8 +285,8 @@ class LiveAgent extends EventEmitter {
             builder.removeAllListeners("done");
 
             builder.once("done", () => {
+                this.server.loadArchive();
                 this.server.once("loaded", this.server.triggerReload);
-                return this.server.loadArchive();
             });
 
             return builder.build();
@@ -299,41 +300,25 @@ class LiveAgent extends EventEmitter {
     }
 }
 
-var loadTar = function (file, next) {
+var loadZip = function (file) {
+
     var objects = {};
-    var extract = tar.extract();
+    var zip = new AdmZip('./' + file);
 
-    extract.on("entry", function (header, stream, callback) {
-        if (header.type === "file") {
-            var chunks = [];
-
-            stream.on("data", function (chunk) {
-                return chunks.push(chunk);
-            });
-
-            stream.on("end", function () {
-                objects[header.name] = Buffer.concat(chunks);
-                return callback();
-            });
-
-            return stream.resume();
-        } else if (header.type === "directory") {
-            objects[header.name] = null;
-            return callback();
+    for (let entry of zip.getEntries()) {
+        let data = entry.getData();
+        if (!entry.isDirectory && data) {
+            objects[entry.entryName] = data
         }
-    });
-
-    extract.on("finish", function () {
-        return next(null, objects);
-    });
-
-    return fs.createReadStream(file).pipe(extract);
+    }
+    print(`loaded ${Object.keys(objects).length} objects from ${file} into memory`);
+    return objects;
 };
 
 module.exports = {
     print: print,
     print2: print2,
-    loadTar: loadTar,
+    loadTar: loadZip,
     Server: Server,
     Watcher: Watcher,
     Builder: Builder,

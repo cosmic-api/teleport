@@ -1,6 +1,8 @@
 Teleport
 ========
 
+[![Join the chat at https://gitter.im/cosmic-api/teleport](https://badges.gitter.im/cosmic-api/teleport.svg)](https://gitter.im/cosmic-api/teleport?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Teleport is a lightweight type system that extends JSON. It can be used for:
 
 * Serializing data

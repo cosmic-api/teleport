@@ -3,7 +3,7 @@ rec {
   pkgs = import <nixpkgs> {};
   nodejs = pkgs.nodejs-5_x;
 
-  xml2rfc = pkgs.buildPythonPackage rec {
+  specBuilder = pkgs.buildPythonPackage rec {
     name = "xml2rfc-2.5.1";
     propagatedBuildInputs = with pkgs.pythonPackages; [ lxml requests2 ];
     src = pkgs.fetchurl {
@@ -50,37 +50,37 @@ rec {
     inherit nodeBuilder;
   };
 
-  injectNavbar = {htmlSite, args} : pkgs.stdenv.mkDerivation {
+  inject = {htmlTree, opts} : pkgs.stdenv.mkDerivation {
     name = "inject";
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
+      PATH=$nodejs/bin:$nodeModules/node_modules/.bin:$PATH
       mkdir $out
-      cp -R $htmlSite/* $out
-      find $out -iname \\*.html | xargs $nodejs/bin/node $nodeBuilder/inject.js $args
+      echo LOL
+      cp -R $htmlTree/* $out/
+      echo WTF
+      find $out -iname \\*.html | xargs node $nodeBuilder/inject.js $opts
     ";
     inherit nodejs;
     inherit nodeBuilder;
+    inherit htmlTree;
+    inherit opts;
   };
 
-  spec = version : pkgs.stdenv.mkDerivation {
-    name = "spec-${version}";
+  xml2rfc = xmlFile : pkgs.stdenv.mkDerivation {
+    name = "spec";
     specs = ./_spec;
     python = pkgs.python3;
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       PATH=$python/bin:$PATH
       mkdir cache
-      $xml2rfc/bin/xml2rfc --no-network --cache=./cache $specs/draft-${version}.xml --text --out=$out
+      $specBuilder/bin/xml2rfc --no-network --cache=./cache $xmlFile --text --out=$out
+      chmod 644 $out
     ";
-    inherit version;
-    inherit xml2rfc;
+    inherit xmlFile;
+    inherit specBuilder;
   };
-
-  spec00 = spec "00";
-  spec01 = spec "01";
-  spec02 = spec "02";
-  spec03 = spec "03";
-  spec04 = spec "04";
 
   bootstrapDist = pkgs.fetchzip {
       url = "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip";
@@ -101,6 +101,11 @@ rec {
     ";
   };
 
+  jqueryMin = pkgs.fetchurl {
+    url = "https://code.jquery.com/jquery-2.2.3.min.js";
+    sha256 = "16hh52338jahcjk1pppmagqr7gxvsgmlgnry78cd2xkqvgaf0vbb";
+  };
+
   bootswatch = pkgs.fetchzip {
     url = "https://github.com/thomaspark/bootswatch/archive/v3.3.6+1.zip";
     sha256 = "1d2pdxk5zavs6v9am4gv3im19x9mra19cc6xipb7qnwab1wqmb1d";
@@ -119,6 +124,7 @@ rec {
   bootstrap = pkgs.stdenv.mkDerivation {
     name = "bootstrap";
     staticCss = _site/static/static.css;
+    fontsCss = _site/static/fonts.css;
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       PATH=$nodejs/bin:$nodeModules/node_modules/.bin:$PATH
@@ -131,18 +137,17 @@ rec {
       cp $fontAwesome/fonts/fontawesome-webfont.ttf $out/fonts
 
       touch everything.css
-      cat $bootswatch/lumen/bootstrap.css >> everything.css
+      cat $bootswatch/flatly/bootstrap.css | sed '/googleapis/d' > everything.css
       cat $highlightjs/src/styles/default.css >> everything.css
       cat $staticCss >> everything.css
       # Make the css safe to mix with other css
       namespace-css everything.css -s .bs >> everything-safe.css
       sed -i.bak 's/\\.bs\\ body/\\.bs,\\ \\.bs\\ body/g' everything-safe.css
-
+      # @font-face shouldn't be namespaced
+      cat $fontsCss >> everything-safe.css
+      cat $fontAwesome/css/font-awesome.css >> everything-safe.css
       cp everything-safe.css $out/css/bootstrap.css
       cleancss $out/css/bootstrap.css > $out/css/bootstrap.min.css
-
-      cat $fontAwesome/css/font-awesome.css >> $out/css/bootstrap.css
-
     ";
     inherit bootswatch;
     inherit bootstrapDist;
@@ -156,21 +161,50 @@ rec {
   site = pkgs.stdenv.mkDerivation {
     name = "site";
     staticDir = ./_site/static;
-    spec00 = rfc2html(spec "00");
-    spec01 = spec "01";
-    spec02 = spec "02";
-    spec03 = spec "03";
-    spec04 = spec "04";
+
+    spec00 = rfc2html (xml2rfc ./_spec/draft-00.xml);
+    spec01 = rfc2html (xml2rfc ./_spec/draft-01.xml);
+    spec02 = rfc2html (xml2rfc ./_spec/draft-02.xml);
+    spec03 = rfc2html (xml2rfc ./_spec/draft-03.xml);
+    spec04 = rfc2html (xml2rfc ./_spec/draft-04.xml);
+    
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       PATH=$nodejs/bin:$nodeBuilder/node_modules/.bin:$PATH
-      mkdir -p $out/static
-      cp -R $staticDir/* $out/static
-      cp -R $bootstrap $out/static/bootstrap
-      node $nodeBuilder/index.js > $out/index.html
+  
+      mkdir -p static
+      cp -R $staticDir/* static
+      cp $jqueryMin static/jquery.min.js
+      cp -R $bootstrap static/bootstrap
+      node $nodeBuilder/index.js > index.html
+      node $nodeBuilder/inject.js index.html --navbar '/' --bs --highlight
+
+      mkdir -p spec/draft-00
+      cat $spec00 > spec/draft-00/index.html
+      node $nodeBuilder/inject.js spec/draft-00/index.html --navbar 'spec/draft-00' --bs
+
+      mkdir -p spec/draft-01
+      cat $spec01 > spec/draft-01/index.html
+      node $nodeBuilder/inject.js spec/draft-01/index.html --navbar 'spec/draft-01' --bs
+
+      mkdir -p spec/draft-02
+      cat $spec02 > spec/draft-02/index.html
+      node $nodeBuilder/inject.js spec/draft-02/index.html --navbar 'spec/draft-02' --bs
+
+      mkdir -p spec/draft-03
+      cat $spec03 > spec/draft-03/index.html
+      node $nodeBuilder/inject.js spec/draft-03/index.html --navbar 'spec/draft-03' --bs
+
+      mkdir -p spec/draft-04
+      cat $spec04 > spec/draft-04/index.html
+      node $nodeBuilder/inject.js spec/draft-04/index.html --navbar 'spec/draft-04' --bs
+
+      mkdir -p $out
+      cp -R * $out
     ";
     inherit nodejs;
     inherit bootstrap;
+    inherit jqueryMin;
     inherit nodeBuilder;
   };
 

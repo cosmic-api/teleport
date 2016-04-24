@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-# required argument: name of nix derivation
-[ -z "$1" ] || nix-shell all-packages.nix -A $1 --run "python -m SimpleHTTPServer"

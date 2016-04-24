@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-
-touch .env
-sh -ac ' . ./.env; node _site/configure.js'

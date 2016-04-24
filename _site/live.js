@@ -1,26 +1,52 @@
-var parseArgs = require("minimist");
+"use strict";
+var fs = require("fs");
+var url = require("url");
+var http = require("http");
+var path = require("path");
 
-var configure = require("./configure");
-var live = require("./builder/live");
 
+function getServer(rootDir) {
+    return http.createServer((request, response) => {
 
-var main = function () {
-    var argv = parseArgs(process.argv.slice(2));
+        var uri = url.parse(request.url).pathname;
+        var filename = path.join(rootDir, uri);
 
-    if (argv._.length === 0) {
-        throw "missing argument";
-    }
+        fs.exists(filename, function(exists) {
+            console.log(request.method, filename);
+            if(!exists) {
+                response.writeHead(404, {"Content-Type": "text/plain"});
+                response.write("404 Not Found\n");
+                response.end();
+                return;
+            }
 
-    var distDir = argv._[0];
+            if (fs.statSync(filename).isDirectory()) filename += '/index.html';
 
-    var agent = new live.LiveAgent({
-        makefile: configure.makefile,
-        distDir: distDir
+            fs.readFile(filename, "binary", function(err, file) {
+                if(err) {
+                    response.writeHead(500, {"Content-Type": "text/plain"});
+                    response.write(err + "\n");
+                    response.end();
+                    return;
+                }
+
+                response.writeHead(200);
+                response.write(file, "binary");
+                response.end();
+            });
+        });
     });
-
-    return agent.run();
-};
+}
 
 if (require.main === module) {
-    main();
+    var port = parseInt(process.argv[2] || "8000");
+    var server = getServer("./result");
+    server.listen(8000);
+    server.on("listening", err => {
+        if (err) {
+            throw err;
+        }
+
+        console.log("HTTP server listening on " + port);
+    });
 }

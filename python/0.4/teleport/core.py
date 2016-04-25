@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import json
-import pyrfc3339
 from collections import OrderedDict
 
 from .compat import test_integer, test_long, normalize_string
@@ -272,12 +271,14 @@ class BooleanType(ConcreteType):
 class DateTimeType(ConcreteType):
 
     def from_json(self, value):
+        import pyrfc3339
         try:
             return pyrfc3339.parse(value)
         except (TypeError, ValueError):
             raise Undefined("Invalid DateTime")
 
     def to_json(self, value):
+        import pyrfc3339
         return pyrfc3339.generate(value, accept_naive=True, microseconds=True)
 
 

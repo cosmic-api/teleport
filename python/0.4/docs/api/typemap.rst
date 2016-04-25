@@ -15,5 +15,5 @@ module is actually an instance of this class:
 
 
 .. autoclass:: teleport.TypeMap
-:members:
-:special-members: __call__
+   :members:
+   :special-members: __call__

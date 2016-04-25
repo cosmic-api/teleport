@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import isodate
 from .compat import test_integer, normalize_string
 
 
@@ -225,9 +224,13 @@ class DateTimeType(ConcreteType):
 
     def from_json(self, value):
         try:
-            return isodate.parse_datetime(value)
-        except (isodate.isoerror.ISO8601Error, Exception):
-            raise Undefined()
+            import isodate
+            try:
+                return isodate.parse_datetime(datum)
+            except (isodate.isoerror.ISO8601Error, Exception) as e:
+                raise Undefined()
+        except ImportError:
+            raise RuntimeError("unmet dependency: isodate")
 
     def to_json(self, value):
         return value.isoformat()

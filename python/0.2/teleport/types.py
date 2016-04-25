@@ -1,6 +1,5 @@
 import json
 import base64
-import isodate
 
 try:
     from collections import OrderedDict
@@ -334,9 +333,13 @@ def standard_types(type_getter=None, include=None):
             :exc:`ValidationError`.
             """
             try:
-                return isodate.parse_datetime(datum)
-            except (ValueError, isodate.isoerror.ISO8601Error) as e:
-                raise ValidationError(e.args[0], datum)
+                import isodate
+                try:
+                    return isodate.parse_datetime(datum)
+                except (ValueError, isodate.isoerror.ISO8601Error) as e:
+                    raise ValidationError(e.args[0], datum)
+            except ImportError:
+                raise RuntimeError("unmet dependency: isodate")
 
         @classmethod
         def disassemble(cls, datum):

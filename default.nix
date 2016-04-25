@@ -2,6 +2,7 @@ rec {
 
   pkgs = import <nixpkgs> {};
   nodejs = pkgs.nodejs-5_x;
+  sphinx = pkgs.python3Packages.sphinx;
 
   specBuilder = pkgs.buildPythonPackage rec {
     name = "xml2rfc-2.5.1";
@@ -63,13 +64,11 @@ rec {
 
   inject = {htmlTree, opts} : pkgs.stdenv.mkDerivation {
     name = "inject";
+    buildInputs = [nodejs];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
-      PATH=$nodejs/bin:$nodeModules/node_modules/.bin:$PATH
-      mkdir $out
-      echo LOL
-      cp -R $htmlTree/* $out/
-      echo WTF
+      PATH=$nodeModules/node_modules/.bin:$PATH
+      cp -R --no-preserve=mode $htmlTree $out
       find $out -iname \\*.html | xargs node $nodeBuilder/inject.js $opts
     ";
     inherit nodejs;
@@ -93,12 +92,36 @@ rec {
     inherit specBuilder;
   };
 
-  bootstrapDist = pkgs.fetchzip {
-      url = "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip";
-      sha256 = "0i014fyw07vzhbjns05zjxv23q0k47m8ks7nfiv8psqaca45l1sy";
+  pythonDocs = pythonRoot : pkgs.stdenv.mkDerivation {
+    name = "sphinx-docs";
+    buildInputs = [pkgs.python3 sphinx];
+    builder = builtins.toFile "builder.sh" "
+      source $stdenv/setup
+      cp -R $pythonRoot/* .
+      sphinx-build -W -b html docs $out
+    ";
+    inherit pythonRoot;
   };
 
-  googleFonts= pkgs.stdenv.mkDerivation {
+  pythonDocs02 = inject {
+    htmlTree = pythonDocs ./python/0.2;
+    opts = "--navbar python/0.2 --bs";
+  };
+  pythonDocs03 = inject {
+    htmlTree = pythonDocs ./python/0.3;
+    opts = "--navbar python/0.3 --bs";
+  };
+  pythonDocs04 = inject {
+    htmlTree = pythonDocs ./python/0.4;
+    opts = "--navbar python/0.4 --bs";
+  };
+  
+  bootstrapDist = pkgs.fetchzip {
+    url = "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip";
+    sha256 = "0i014fyw07vzhbjns05zjxv23q0k47m8ks7nfiv8psqaca45l1sy";
+  };
+
+  googleFonts = pkgs.stdenv.mkDerivation {
     name = "google-fonts";
     fonts = pkgs.google-fonts;
     builder = builtins.toFile "builder.sh" "
@@ -219,6 +242,11 @@ rec {
       cat $spec04 > spec/draft-04/index.html
       node $nodeBuilder/inject.js spec/draft-04/index.html --navbar 'spec/draft-04' --bs
 
+      mkdir python
+      cp -R --no-preserve=mode $pythonDocs02 python/0.2
+      cp -R --no-preserve=mode $pythonDocs03 python/0.3
+      cp -R --no-preserve=mode $pythonDocs04 python/0.4
+
       mkdir -p $out
       cp -R . $out
     '';
@@ -226,6 +254,9 @@ rec {
     inherit bootstrap;
     inherit jqueryMin;
     inherit nodeBuilder;
+    inherit pythonDocs02;
+    inherit pythonDocs03;
+    inherit pythonDocs04;
   };
 
 }

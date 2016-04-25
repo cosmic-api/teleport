@@ -69,7 +69,7 @@ They are here to be refuted and rewised, through the project's `mailing list <ht
 History
 -------
 
-Teleport was started in May 2013 and developed as part of `Cosmic <http://www.cosmic-api.com>`_,
+Teleport was started in May 2013 and developed as part of `Cosmic <http://www.cosmic-api.com>`__,
 little-known web API library by yours truly. It was rewritted from scratch in
 November 2014 based on a new and improved specification. With enough eyes and
 some helping hands, we should see version 1.0 soon.
@@ -92,6 +92,6 @@ is kept in good order to welcome all kinds of patches:
 * Removing immature humor from the documentation
 
 If you are interested in building web APIs with Teleport, take a look at
-`Cosmic <http://www.cosmic-api.com/>`_, a project by the same author. It will
+`Cosmic <http://www.cosmic-api.com/>`__, a project by the same author. It will
 be updated soon with the new Teleport implementation and will become the best
 showcase for Teleport.

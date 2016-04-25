@@ -1,0 +1,6 @@
+include tox.ini
+include .coveragerc
+include README.rst
+recursive-include docs *
+recursive-exclude docs *.pyc
+recursive-exclude docs *.pyo

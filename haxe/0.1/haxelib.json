@@ -1,0 +1,13 @@
+{
+  "name": "teleport",
+  "url" : "http://www.teleport-json.org",
+  "license": "MIT",
+  "tags": ["teleport", "JSON"],
+  "description": "Minimal JSON Types",
+  "version": "1.0.0",
+  "contributors": ["Alexei Boronine <alexei@boronine.com>"],
+  "dependencies": {
+    "chartjs": "1.0.0"
+  },
+  "classPath": "src"
+}

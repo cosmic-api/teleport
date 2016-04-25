@@ -27,6 +27,17 @@ rec {
     inherit nodejs;
   };
 
+  zip2dir = zipFile: pkgs.stdenv.mkDerivation {
+    name = "unzip";
+    buildInputs = [pkgs.unzip];
+    builder = builtins.toFile "builder.sh" "
+      source $stdenv/setup
+      mkdir $out
+      unzip $zipFile -d $out
+    ";
+    inherit zipFile;
+  };
+
   nodeBuilder = pkgs.stdenv.mkDerivation {
     name = "node-builder";
     siteDir = ./_site;
@@ -158,19 +169,24 @@ rec {
     inherit nodejs;
   };
 
+  specLegacy = zip2dir ./_site/archive/spec-old.zip;
+
   site = pkgs.stdenv.mkDerivation {
     name = "site";
     staticDir = ./_site/static;
-
+    buildInputs = [pkgs.unzip nodejs];
+    specLegacy = zip2dir ./_site/archive/spec-old.zip;
     spec00 = rfc2html (xml2rfc ./_spec/draft-00.xml);
     spec01 = rfc2html (xml2rfc ./_spec/draft-01.xml);
     spec02 = rfc2html (xml2rfc ./_spec/draft-02.xml);
     spec03 = rfc2html (xml2rfc ./_spec/draft-03.xml);
     spec04 = rfc2html (xml2rfc ./_spec/draft-04.xml);
     
-    builder = builtins.toFile "builder.sh" "
+    builder = builtins.toFile "builder.sh" ''
       source $stdenv/setup
-      PATH=$nodejs/bin:$nodeBuilder/node_modules/.bin:$PATH
+      PATH=$nodeBuilder/node_modules/.bin:$PATH
+
+      echo $(pwd)
   
       mkdir -p static
       cp -R $staticDir/* static
@@ -178,6 +194,10 @@ rec {
       cp -R $bootstrap static/bootstrap
       node $nodeBuilder/index.js > index.html
       node $nodeBuilder/inject.js index.html --navbar '/' --bs --highlight
+
+      mkdir spec
+      cp -R --no-preserve=mode $specLegacy/spec-old spec/1.0
+      node $nodeBuilder/inject.js spec/1.0/index.html --navbar 'spec/1.0' --bs
 
       mkdir -p spec/draft-00
       cat $spec00 > spec/draft-00/index.html
@@ -200,8 +220,8 @@ rec {
       node $nodeBuilder/inject.js spec/draft-04/index.html --navbar 'spec/draft-04' --bs
 
       mkdir -p $out
-      cp -R * $out
-    ";
+      cp -R . $out
+    '';
     inherit nodejs;
     inherit bootstrap;
     inherit jqueryMin;

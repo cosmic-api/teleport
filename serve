@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
 # required argument: name of nix derivation
-DIST=$(nix-build all-packages.nix -A $1)
-nix-shell all-packages.nix -A pkgs.python3 --run "(cd $DIST && python3 -m http.server)"
+DIST=$(nix-build all-packages.nix -K -A $1)
+COMMAND="(cd $DIST && python3 -m http.server)"
+
+[ -z $DIST ] || nix-shell all-packages.nix -A pkgs.python3 --run "$COMMAND"
+

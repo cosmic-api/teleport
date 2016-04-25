@@ -1,6 +1,0 @@
-.cache
-.divshot-cache
-node_modules
-.git
-*.pyc
-*.pyo

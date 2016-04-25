@@ -3,5 +3,4 @@
 DIST=$(nix-build -K -A $1)
 COMMAND="(cd $DIST && python3 -m http.server)"
 
-[ -z $DIST ] || nix-shell -A pkgs.python3 --run "$COMMAND"
-
+[ -z "$DIST" ] || nix-shell -A nodeBuilder --run "$COMMAND"

@@ -16,14 +16,26 @@ rec {
   nodeModules = pkgs.stdenv.mkDerivation {
     # npm2nix is neat but broken, consider trying again in a few months
     name = "node-modules";
-    packageJson = ./package.json;
+    siteDir = ./_site;
+    propagatedBuildInputs = [nodejs];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       HOME=.
-      cp $packageJson package.json
-      $nodejs/bin/npm install
+      npm install cheerio@0.19.0
+      npm install clean-css@3.4.12
+      npm install find@0.1.4
+      npm install highlight.js@8.3.0
+      npm install jquery@2.1.1
+      npm install minimist@1.1.0
+      npm install mustache@0.8.1
+      npm install namespace-css@0.1.3
+      npm install glob@5.0.14
+      npm install marked@0.3.5
+      npm install surge@0.17.7
+      npm install http-server@0.9.0
       mkdir $out
       cp -R node_modules $out/node_modules
+      ln -sv $out/node_modules/.bin $out/bin
     ";
     inherit nodejs;
   };
@@ -41,13 +53,14 @@ rec {
 
   nodeBuilder = pkgs.stdenv.mkDerivation {
     name = "node-builder";
-    siteDir = ./_site;
+    propagatedBuildInputs = [nodeModules nodejs];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       mkdir $out
       cp -R $siteDir/* $out
-      cp -R $nodeModules/node_modules $out/node_modules
+      cp -R $nodeModules/* $out
     ";
+    siteDir = ./_site;
     inherit nodeModules;
   };
 
@@ -67,7 +80,6 @@ rec {
     buildInputs = [nodejs];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
-      PATH=$nodeModules/node_modules/.bin:$PATH
       cp -R --no-preserve=mode $htmlTree $out
       find $out -iname \\*.html | xargs node $nodeBuilder/inject.js $opts
     ";
@@ -159,9 +171,9 @@ rec {
     name = "bootstrap";
     staticCss = _site/static/static.css;
     fontsCss = _site/static/fonts.css;
+    buildInputs = [nodeModules nodejs];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
-      PATH=$nodejs/bin:$nodeModules/node_modules/.bin:$PATH
 
       mkdir $out
       cp -R $bootstrapDist/js $out/js
@@ -207,7 +219,7 @@ rec {
     
     builder = builtins.toFile "builder.sh" ''
       source $stdenv/setup
-      PATH=$nodeBuilder/node_modules/.bin:$PATH
+      PATH=$nodeBuilder/bin:$PATH
 
       echo $(pwd)
   
@@ -257,6 +269,23 @@ rec {
     inherit pythonDocs02;
     inherit pythonDocs03;
     inherit pythonDocs04;
+  };
+
+  siteGA = inject {
+    htmlTree = site;
+    opts = "--analytics";
+  };
+
+  deploySite = pkgs.stdenv.mkDerivation {
+    name = "deploy";
+    buildInputs = [site nodeModules nodejs];
+    # surge login
+    # surge --project $site --domain www.teleport-json.org
+    builder = builtins.toFile "builder.sh" ''
+      source $stdenv/setup
+      touch $out
+    '';
+    inherit site;
   };
 
 }

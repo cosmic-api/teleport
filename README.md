@@ -19,29 +19,22 @@ Teleport is:
 Status
 ======
 
-The latest [specification](http://www.teleport-json.org/spec/draft-02/) has been submitted as [an Internet Draft](https://datatracker.ietf.org/doc/draft-boronine-teleport/) on Dec 5, 2014. It is implemented as a [Python library](http://www.teleport-json.org/python/0.4/).
+The latest [specification](http://www.teleport-json.org/spec/draft-03/) has been submitted as [an Internet Draft](https://datatracker.ietf.org/doc/draft-boronine-teleport/) on Sep 27, 2015. It is implemented as a [Python library](http://www.teleport-json.org/python/0.4/).
 
 Build Instructions
 ==================
 
-Install requirements (in project root):
+[Nix](https://nixos.org/nix/) is required to build Teleport and its documentation.
 
-    sudo pip install sphinx xml2rfc
-    npm install
+To build site:
 
-Create Makefile:
+	nix-build -A site
 
-	./configure
+Output for current build goes into the `result` directory. See `default.nix` for other buildable derivations.
 
-To clear cache:
+To launch a static web server immediatedly after building:
 
-	make clean
-
-Live development mode (site, Python docs, spec):
-
-	./live site
-	./live python-0.4-sphinx
-	./live draft-02-xml2rfc
+	./serve site
 
 License
 -------

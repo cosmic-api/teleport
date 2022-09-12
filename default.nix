@@ -1,12 +1,18 @@
 rec {
+  pkgs = import (pkgsSrc) {};
+  pkgsOriginal = import <nixpkgs> {};
 
-  pkgs = import <nixpkgs> {};
-  nodejs = pkgs.nodejs-5_x;
+  pkgsSrc = pkgsOriginal.fetchzip {
+    url = "https://github.com/NixOS/nixpkgs/archive/refs/tags/22.05.zip";
+    sha256 = "sha256-M6bJShji9AIDZ7Kh7CPwPBPb/T7RiVev2PAcOi4fxDQ=";
+  };
+
+  nodejs = pkgs.nodejs;
   sphinx = pkgs.python3Packages.sphinx;
 
-  specBuilder = pkgs.buildPythonPackage rec {
+  specBuilder = pkgs.python3Packages.buildPythonPackage rec {
     name = "xml2rfc-2.5.1";
-    propagatedBuildInputs = with pkgs.pythonPackages; [ lxml requests2 ];
+    propagatedBuildInputs = with pkgs.python3Packages; [ lxml requests ];
     src = pkgs.fetchurl {
       url = "https://pypi.python.org/packages/source/x/xml2rfc/xml2rfc-2.5.1.tar.gz";
       sha256 = "67d44fce6548c44e6065b95d0ef5b3a6e08928e6d659d4396928d8937c2be32d";
@@ -14,30 +20,24 @@ rec {
   };
 
   nodeModules = pkgs.stdenv.mkDerivation {
-    # npm2nix is neat but broken, consider trying again in a few months
+    inherit nodejs;
     name = "node-modules";
-    siteDir = ./_site;
     propagatedBuildInputs = [nodejs];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       HOME=.
       npm install cheerio@0.19.0
       npm install clean-css@3.4.12
-      npm install find@0.1.4
       npm install highlight.js@8.3.0
       npm install jquery@2.1.1
       npm install minimist@1.1.0
       npm install mustache@0.8.1
       npm install namespace-css@0.1.3
       npm install glob@5.0.14
-      npm install marked@0.3.5
-      npm install surge@0.17.7
-      npm install http-server@0.9.0
       mkdir $out
       cp -R node_modules $out/node_modules
       ln -sv $out/node_modules/.bin $out/bin
     ";
-    inherit nodejs;
   };
 
   zip2dir = zipFile: pkgs.stdenv.mkDerivation {
@@ -65,17 +65,16 @@ rec {
   };
 
   rfc2html = rfc : pkgs.stdenv.mkDerivation {
+    inherit rfc nodejs nodeBuilder;
     name = "rfc2html";
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       $nodejs/bin/node $nodeBuilder/spec.js < $rfc > $out
     ";
-    inherit rfc;
-    inherit nodejs;
-    inherit nodeBuilder;
   };
 
   inject = {htmlTree, opts} : pkgs.stdenv.mkDerivation {
+    inherit nodejs nodeBuilder htmlTree opts;
     name = "inject";
     buildInputs = [nodejs];
     builder = builtins.toFile "builder.sh" "
@@ -83,13 +82,10 @@ rec {
       cp -R --no-preserve=mode $htmlTree $out
       find $out -iname \\*.html | xargs node $nodeBuilder/inject.js $opts
     ";
-    inherit nodejs;
-    inherit nodeBuilder;
-    inherit htmlTree;
-    inherit opts;
   };
 
   xml2rfc = xmlFile : pkgs.stdenv.mkDerivation {
+    inherit xmlFile specBuilder;
     name = "spec";
     specs = ./_spec;
     python = pkgs.python3;
@@ -100,19 +96,18 @@ rec {
       $specBuilder/bin/xml2rfc --no-network --cache=./cache $xmlFile --text --out=$out
       chmod 644 $out
     ";
-    inherit xmlFile;
-    inherit specBuilder;
   };
 
   pythonDocs = pythonRoot : pkgs.stdenv.mkDerivation {
+    inherit pythonRoot;
     name = "sphinx-docs";
     buildInputs = [pkgs.python3 sphinx];
     builder = builtins.toFile "builder.sh" "
       source $stdenv/setup
       cp -R $pythonRoot/* .
-      sphinx-build -W -b html docs $out
+      SOURCE_DATE_EPOCH=1451606400 # sphinx overrides copyright year based on this environment variable
+      sphinx-build -v -W -b html docs $out
     ";
-    inherit pythonRoot;
   };
 
   pythonDocs02 = inject {
@@ -127,7 +122,7 @@ rec {
     htmlTree = pythonDocs ./python/0.4;
     opts = "--navbar python/0.4 --bs";
   };
-  
+
   bootstrapDist = pkgs.fetchzip {
     url = "https://github.com/twbs/bootstrap/releases/download/v3.3.0/bootstrap-3.3.0-dist.zip";
     sha256 = "0i014fyw07vzhbjns05zjxv23q0k47m8ks7nfiv8psqaca45l1sy";
@@ -168,6 +163,7 @@ rec {
   };
 
   bootstrap = pkgs.stdenv.mkDerivation {
+    inherit bootswatch bootstrapDist highlightjs nodeModules fontAwesome googleFonts nodejs;
     name = "bootstrap";
     staticCss = _site/static/static.css;
     fontsCss = _site/static/fonts.css;
@@ -195,13 +191,6 @@ rec {
       cp everything-safe.css $out/css/bootstrap.css
       cleancss $out/css/bootstrap.css > $out/css/bootstrap.min.css
     ";
-    inherit bootswatch;
-    inherit bootstrapDist;
-    inherit highlightjs;
-    inherit nodeModules;
-    inherit fontAwesome;
-    inherit googleFonts;
-    inherit nodejs;
   };
 
   specLegacy = zip2dir ./_site/archive/spec-old.zip;
@@ -216,13 +205,13 @@ rec {
     spec02 = rfc2html (xml2rfc ./_spec/draft-02.xml);
     spec03 = rfc2html (xml2rfc ./_spec/draft-03.xml);
     spec04 = rfc2html (xml2rfc ./_spec/draft-04.xml);
-    
+
     builder = builtins.toFile "builder.sh" ''
       source $stdenv/setup
       PATH=$nodeBuilder/bin:$PATH
 
       echo $(pwd)
-  
+
       mkdir -p static
       cp -R $staticDir/* static
       cp $jqueryMin static/jquery.min.js
@@ -279,8 +268,8 @@ rec {
   deploySite = pkgs.stdenv.mkDerivation {
     name = "deploy";
     buildInputs = [site nodeModules nodejs];
-    # surge login
-    # surge --project $site --domain www.teleport-json.org
+    # nix-build -A site
+    # aws s3 sync result s3://www.teleport-json.org
     builder = builtins.toFile "builder.sh" ''
       source $stdenv/setup
       touch $out

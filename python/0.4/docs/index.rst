@@ -56,7 +56,7 @@ Design Notes
 ------------
 
 These notes explain some of the design decisions of the Teleport specification.
-They are here to be refuted and rewised, through the project's `mailing list <https://groups.google.com/forum/#!forum/teleport-json>`_.
+They are here to be refuted and rewised, through the project's `forum <https://github.com/cosmic-api/teleport/discussions>`_.
 
 .. toctree::
    :maxdepth: 1
@@ -85,7 +85,7 @@ Contributing
 Teleport is a one-man operation with a big scope. The `GitHub repository <http://github.com/cosmic-api/teleport>`_
 is kept in good order to welcome all kinds of patches:
 
-* Improvements to the specification (see also: the `mailing list <https://groups.google.com/forum/#!forum/teleport-json>`_)
+* Improvements to the specification (see also: the `forum <https://github.com/cosmic-api/teleport/discussions>`_)
 * Interesting recipes for the :mod:`teleport.examples` module
 * Difficult test cases for the language-agnostic test suite
 * Tweaks, fixes, aggressive refactorings
